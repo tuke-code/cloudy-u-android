@@ -97,4 +97,24 @@ class AdbTransportStatusTest {
         c.invalidate()
         assertEquals(AdbLink.WIRELESS_OFF, c.status().adb)
     }
+
+    /** #1743 the Local server profile: the embedded session is closed after the launch by design, a live shell round trip over the server IS the connection. */
+    private class LocalProfile(f: AdbFacts?, val optional: String?) : BrokerChannel {
+        private val inner = Ch(f) { null }
+        override fun name() = inner.name(); override fun ready() = true
+        override fun run(cmd: String, stdin: File?) = inner.run(cmd, stdin)
+        override fun adbFacts() = inner.adbFacts(); override fun adbRun(cmd: String) = inner.adbRun(cmd)
+        override fun sessionOptionalVia() = optional
+    }
+
+    @Test fun `local server profile with the embedded session closed and a healthy round trip is connected`() {
+        val f = AdbFacts(true, true, paired = true, session = false, endpoint = null)
+        val s = BrokerCore({ list }, LocalProfile(f, "local-server"), AuditLog(), { 1_000L }).status()
+        assertEquals(AdbLink.CONNECTED, s.adb)
+        assertTrue(s.adbDetail, s.adbDetail.contains("embedded session closed after launch"))
+        // the same facts in a profile where the session is required stay "paired, but adbd does not answer"
+        assertEquals(AdbLink.UNREACHABLE, BrokerCore({ list }, LocalProfile(f, null), AuditLog(), { 1_000L }).status().adb)
+        // another channel carrying the commands (not the profile's own) never turns it green
+        assertEquals(AdbLink.UNREACHABLE, BrokerCore({ list }, LocalProfile(f, "shizuku"), AuditLog(), { 1_000L }).status().adb)
+    }
 }

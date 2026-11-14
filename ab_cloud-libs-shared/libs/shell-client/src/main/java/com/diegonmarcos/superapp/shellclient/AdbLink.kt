@@ -25,11 +25,17 @@ enum class AdbLink(val id: String, val label: String) {
 
         /**
          * Pure rule. [adbEnabled] = Settings.Global adb_enabled == 1, [wireless] = adb_wifi_enabled == 1 (null = unreadable),
-         * [paired] = this app's pairing record, [roundTrip] = a `getprop` answered over the embedded adb session within the timeout
+         * [paired] = this app's pairing record, [sessionOptional] / [shellRoundTrip] = the Local server profile and a live shell round trip over its server, [roundTrip] = a `getprop` answered over the embedded adb session within the timeout
          * (null = not attempted). A successful round trip is the truth whatever the switches read (adb tcpip, for instance).
          */
-        fun classify(adbEnabled: Boolean?, wireless: Boolean?, paired: Boolean, roundTrip: Boolean?): AdbLink = when {
+        fun classify(
+            adbEnabled: Boolean?, wireless: Boolean?, paired: Boolean, roundTrip: Boolean?,
+            sessionOptional: Boolean = false, shellRoundTrip: Boolean = false,
+        ): AdbLink = when {
             roundTrip == true -> CONNECTED
+            // #1743 Local server profile: the embedded session is closed after the launch BY DESIGN (#1709), so a live shell
+            // round trip over the profile's own channel is the connection. Same rule for every ADB indicator (Store chip included).
+            sessionOptional && shellRoundTrip -> CONNECTED
             wireless == false -> WIRELESS_OFF
             adbEnabled == false -> ADB_OFF
             wireless == null -> UNKNOWN

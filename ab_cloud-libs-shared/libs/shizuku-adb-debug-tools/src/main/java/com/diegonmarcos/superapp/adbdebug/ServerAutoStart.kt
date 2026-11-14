@@ -75,6 +75,9 @@ object LocalServerAutoStart {
     fun addListener(l: () -> Unit) { listeners.addIfAbsent(l) }
     fun removeListener(l: () -> Unit) { listeners.remove(l) }
 
+    /** #1743 A run started by a button publishes its live steps so every page (Status step list, Home table) shows them. */
+    fun publish(steps: List<StepRun>) { lastSteps = steps; listeners.forEach { l -> runCatching { l() } } }
+
     /** Pure: how long a finished run keeps an implicit "command" trigger quiet. */
     fun cooldownMs(status: ConnectStatus): Long = when (status) {
         ConnectStatus.SUCCESS -> 0L
@@ -115,4 +118,18 @@ object LocalServerAutoStart {
 
     /** One line for a button. */
     fun summary(o: ConnectOutcome?): String = o?.let { AutoStartCore.describe(it) } ?: "another launch is already running"
+}
+
+/**
+ * #1743 The ONE chain runner behind every Connect / Reconnect button: the profile's whole chain (every step re-probes the real state
+ * through [ConnectExecutor.facts], nothing trusted from a cache), single-flight, a failed transient step retried with backoff, the
+ * exact reason in the outcome. The lib page, the cockpit and the owner Status page all call this.
+ */
+object ChainRunner {
+    private val core = AutoStartCore()
+    fun inFlight(): Boolean = core.inFlight()
+
+    /** Null when another run is in flight. [onUpdate] gets the live step list. */
+    fun run(mode: ChannelMode, exec: ConnectExecutor, log: ChannelLog?, ownsServer: Boolean, onUpdate: (List<StepRun>) -> Unit = {}): ConnectOutcome? =
+        core.run(mode, exec, { line -> log?.add("connect", line) }, log, ownsServer) { steps -> LocalServerAutoStart.publish(steps); onUpdate(steps) }
 }

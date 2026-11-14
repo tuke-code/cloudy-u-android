@@ -14,6 +14,8 @@ import com.diegonmarcos.cloudwebserver.ui.DNote
 import com.diegonmarcos.cloudwebserver.ui.DRow
 import com.diegonmarcos.cloudwebserver.ui.DenseCard
 import com.diegonmarcos.superapp.adbdebug.AdbShellBootstrap
+import com.diegonmarcos.superapp.adbdebug.AdbStatus
+import com.diegonmarcos.superapp.adbdebug.Dot
 import com.diegonmarcos.superapp.adbdebug.AutoStartCore
 import com.diegonmarcos.superapp.adbdebug.ChannelFacts
 import com.diegonmarcos.superapp.adbdebug.ChannelModePrefs
@@ -55,7 +57,10 @@ object AdbHomeModel {
             else -> "NOT RUNNING (no answer on 127.0.0.1:${f.serverPort})"
         }
         fun yn(b: Boolean?, yes: String, no: String) = when (b) { true -> yes; false -> no; null -> "unknown" }
+        // #1743 the one verdict (AdbStatus.verdict): the same words and colour as the Status page, the chip and the Store
+        val v = f?.let { AdbStatus.verdict(it) }
         return listOf(
+            AdbHomeRow("connection", "Connection", v?.let { it.title + ": " + it.detail } ?: failed.ifEmpty { "reading..." }, v?.let { when (it.dot) { Dot.OK -> true; Dot.BAD -> false; else -> null } }, Decl.PAGE_ADB_STATUS),
             AdbHomeRow("profile", "Profile", profile, null, Decl.PAGE_ADB_SERVER),
             AdbHomeRow("state", "Server", state, if (f == null) null else running, Decl.PAGE_ADB_SERVER),
             AdbHomeRow("port", "Port", f?.serverPort?.takeIf { it > 0 }?.let { "127.0.0.1:$it (loopback, token)" } ?: "unknown", null, Decl.PAGE_ADB_SERVER),

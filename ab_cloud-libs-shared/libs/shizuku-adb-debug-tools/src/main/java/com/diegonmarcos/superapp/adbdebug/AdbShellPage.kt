@@ -85,7 +85,8 @@ private fun ConnState.title(): String = when (this) {
 
 /** #1550 the shared adb transport state from this page's facts (adbConnected is an echo round trip over the embedded client). */
 internal fun adbLink(f: ChannelFacts): com.diegonmarcos.superapp.shellclient.AdbLink =
-    com.diegonmarcos.superapp.shellclient.AdbLink.classify(adbEnabled = null, wireless = f.wirelessDebug, paired = f.adbPaired, roundTrip = f.adbConnected)
+    com.diegonmarcos.superapp.shellclient.AdbLink.classify(adbEnabled = null, wireless = f.wirelessDebug, paired = f.adbPaired, roundTrip = f.adbConnected,
+        sessionOptional = ChannelState.sessionOptional(f), shellRoundTrip = ChannelState.localCarries(f))
 
 private fun stamp(ms: Long): String = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date(ms))
 
@@ -196,7 +197,7 @@ fun AdbShellPage(modifier: Modifier = Modifier) {
         if (connecting) return
         connecting = true; outcome = null; steps = emptyList(); note = ""
         scope.launch(Dispatchers.IO) {
-            val out = ConnectPlan.run(mode, via, DeviceConnectExecutor(ctx), log, ChannelModePrefs.ownsServer()) { steps = it }
+            val out = ChainRunner.run(mode, DeviceConnectExecutor(ctx), log, ChannelModePrefs.ownsServer()) { steps = it }
             outcome = out
             connecting = false
             tick++
@@ -308,8 +309,8 @@ fun AdbShellPage(modifier: Modifier = Modifier) {
                     val on = enab?.get(a)?.enabled == true && busy == null && !connecting
                     DenseButton(a.label, enabled = on, onClick = {
                         when (a) {
-                            ChannelAction.DISCONNECT -> runChannelAction(a) { ChannelOps.disconnect(it) }
-                            ChannelAction.RECONNECT -> runChannelAction(a) { ChannelOps.reconnect(it) }
+                            ChannelAction.DISCONNECT -> runChannelAction(a) { ChannelOps.disconnectAll(it) }
+                            ChannelAction.RECONNECT -> runChannelAction(a) { ChannelOps.reconnectFull(it) }
                             ChannelAction.RESTART_SERVER -> runChannelAction(a) { ChannelOps.startServer(it, restart = true) }
                             ChannelAction.STOP_SERVER -> runChannelAction(a) { ChannelOps.stopServer(it) }
                             ChannelAction.TEST -> runChannelAction(a) { ChannelOps.test(it) }

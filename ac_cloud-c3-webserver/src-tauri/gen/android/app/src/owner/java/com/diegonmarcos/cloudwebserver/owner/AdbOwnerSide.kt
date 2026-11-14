@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.testTag
@@ -67,7 +70,7 @@ object AdbOwnerSide {
      * NavSectionLayout in ui/Shell.kt) over build.json::ui.sections[adb_shell].pages, not a tab row of this file.
      */
     val FIELD_HOME: Map<String, String> = mapOf(
-        "Status" to Decl.PAGE_ADB_STATUS, "Tester" to Decl.PAGE_ADB_STATUS, "Logs" to Decl.PAGE_ADB_STATUS, "ADB Shell" to Decl.PAGE_ADB_ALL,
+        "Status" to Decl.PAGE_ADB_STATUS, "Tester" to Decl.PAGE_ADB_ALL, "Logs" to Decl.PAGE_ADB_ALL, "ADB Shell" to Decl.PAGE_ADB_ALL,
     )
 
     /** #1723 the ADB shell status table on Home (AdbHomeStatus.kt); every row opens its ADB Shell sub page. */
@@ -91,15 +94,15 @@ object AdbOwnerSide {
                 Decl.PAGE_ADB_PERMS -> CloudKitTheme(palette) { AdbPermsTab() }
                 Decl.PAGE_ADB_SERVER -> AdbServerTab()
                 Decl.PAGE_ADB_ALL -> AllTab(palette)
-                else -> StatusTab(palette)
+                else -> AdbStatusPage()
             }
         }
     }
 
+    /** #1743 the Tester ("Run id -u") and the channel log, moved off Status (explicit removal of the bottom panel): reachable here only. */
     @Composable
-    private fun StatusTab(palette: KitPalette) {
+    private fun TesterAndLogs() {
         val ctx = LocalContext.current
-        val ready by AdbReadiness.state.collectAsState()
         val scope = rememberCoroutineScope()
         var tester by remember { mutableStateOf("") }
         var logText by remember { mutableStateOf(ChannelLog.shared.asText()) }
@@ -108,37 +111,35 @@ object AdbOwnerSide {
             ChannelLog.shared.addListener(l)
             onDispose { ChannelLog.shared.removeListener(l) }
         }
-        Column(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(3f).fillMaxWidth()) { CloudKitTheme(palette) { AdbStatusTab() } }
-            // the old Server tab's Status, Tester and Logs cards (#1713: moved here, not dropped)
-            Box(Modifier.weight(2f).fillMaxWidth()) { PageColumn("c3_adb_owner") {
-                Card("Status", "c3_adb_owner_status") {
-                    Note(ready.linkText())
-                    Acts {
-                        Act("Connect", "c3_adb_owner_connect") { AdbReadiness.connect(ctx) {} }
-                        Act("Re-check", "c3_adb_owner_recheck") { scope.launch { withContext(Dispatchers.IO) { AdbReadiness.check(ctx, fresh = true) } } }
-                    }
+        val ready by AdbReadiness.state.collectAsState()
+        Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp).testTag("c3_adb_owner"), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            // the previous Status card (readiness line, Connect, Re-check) kept whole; Status's own Connect is the chain runner
+            Card("Status", "c3_adb_owner_status") {
+                Note(ready.linkText())
+                Acts {
+                    Act("Connect", "c3_adb_owner_connect") { AdbReadiness.connect(ctx) {} }
+                    Act("Re-check", "c3_adb_owner_recheck") { scope.launch { withContext(Dispatchers.IO) { AdbReadiness.check(ctx, fresh = true) } } }
                 }
-                Card("Tester", "c3_adb_owner_tester") {
-                    Acts {
-                        Act("Run id -u", "c3_adb_owner_test") {
-                            scope.launch {
-                                tester = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        when (val r = ShellBroker.exec(ctx, ShellBroker.SELF, "id -u")) {
-                                            is ShellResult.Ok -> "exit ${r.exitCode} via ${r.source}: ${r.stdout.trim()}"
-                                            else -> r.toString()
-                                        }
-                                    }.getOrElse { "tester failed (${it.javaClass.simpleName})" }
-                                }
-                                AdbReadiness.check(ctx)
+            }
+            Card("Tester", "c3_adb_owner_tester") {
+                Acts {
+                    Act("Run id -u", "c3_adb_owner_test") {
+                        scope.launch {
+                            tester = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    when (val r = ShellBroker.exec(ctx, ShellBroker.SELF, "id -u")) {
+                                        is ShellResult.Ok -> "exit ${r.exitCode} via ${r.source}: ${r.stdout.trim()}"
+                                        else -> r.toString()
+                                    }
+                                }.getOrElse { "tester failed (${it.javaClass.simpleName})" }
                             }
+                            AdbReadiness.check(ctx)
                         }
                     }
-                    if (tester.isNotEmpty()) Note(tester)
                 }
-                Card("Logs", "c3_adb_owner_logs") { Note(logText.ifBlank { "no channel log yet" }) }
-            } }
+                if (tester.isNotEmpty()) Note(tester)
+            }
+            Card("Logs", "c3_adb_owner_logs") { Note(logText.ifBlank { "no channel log yet" }) }
         }
     }
 
@@ -146,6 +147,9 @@ object AdbOwnerSide {
     private fun AllTab(palette: KitPalette) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             Box(Modifier.fillMaxWidth()) { CloudKitTheme(palette) { AdbShellBrokerPage() } }
+            // #1743 the previous Status page's full cockpit (mode selector, per-mode cards, keep-alive, logs) lives here now (it scrolls itself)
+            Box(Modifier.fillMaxWidth().height(640.dp)) { CloudKitTheme(palette) { AdbStatusTab() } }
+            TesterAndLogs()
             // the old Server tab's ADB Shell card: the lib's full page (pairing, modes, connect, server buttons, logs, needs, setup, keep-alive)
             PageColumn("c3_adb_owner_all") {
                 Card("ADB Shell", "c3_adb_owner_page") { Column(Modifier.fillMaxWidth()) { AdbShellPage() } }

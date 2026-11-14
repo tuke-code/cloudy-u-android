@@ -32,6 +32,17 @@ for m in re.finditer(r'(?:text|content-desc)="(Status|Shell|Perms|Server|All)"[^
 order = ["Status", "Shell", "Perms", "Server", "All"]
 sys.exit(0 if all(k in pos for k in order) and [pos[k] for k in order] == sorted(pos[k] for k in order) else 1)
 PY
+# #1743 the Status page is the chain as a step list; the old bottom overlay (STATUS / TESTER / LOGS) is gone from it
+python3 - "$OUT/1-status.xml" <<'PY' || fail "the Status page is not the step list (or still carries the Tester / Logs overlay)"
+import re, sys
+x = open(sys.argv[1], encoding="utf-8").read()
+want = ["Perms", "Developer options", "Wireless debugging", "Paired", "Embedded connect", "Local server launched", "Round trip", "Profile", "Clients using it"]
+have = lambda t: re.search(r'(?:text|content-desc)="%s"' % re.escape(t), x)
+miss = [t for t in want if not have(t)]
+overlay = [t for t in ("Run id -u", "Tester", "Logs") if have(t)]
+print("step rows missing: %s; overlay still on Status: %s" % (miss, overlay))
+sys.exit(0 if not miss and not overlay else 1)
+PY
 adb logcat -d -t 800 > "$OUT/logcat.txt" 2>/dev/null || true
 grep -q "FATAL EXCEPTION.*$W\|Process: $W" "$OUT/logcat.txt" && fail "the app crashed during the walk"
 exit $rc

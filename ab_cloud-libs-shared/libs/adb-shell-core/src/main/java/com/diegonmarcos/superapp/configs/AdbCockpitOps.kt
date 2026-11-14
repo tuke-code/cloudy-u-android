@@ -1,6 +1,7 @@
 package com.diegonmarcos.superapp.configs
 
 import android.content.Context
+import com.diegonmarcos.superapp.adbdebug.ChainRunner
 import com.diegonmarcos.superapp.adbdebug.ChannelLog
 import com.diegonmarcos.superapp.adbdebug.ChannelMode
 import com.diegonmarcos.superapp.adbdebug.LaunchVia
@@ -102,7 +103,8 @@ object AdbCockpitOps {
         // Only the selected mode's own prerequisites are walked; no step of another mode, and no server start.
         log.add("autofix", "start, ${AdbCockpitModel.modeName(mode)} mode (" + AdbCockpitModel.autoFixOrder(mode, via, ownsServer).joinToString(", ") + ")")
         val perms = grant()
-        val o = ConnectPlan.run(mode, via, exec, log, ownsServer)
+        // #1743 one runner: every step re-probes the real state, a failed transient step is retried with backoff, the exact reason comes back
+        val o = ChainRunner.run(mode, exec, log, ownsServer) ?: return CockpitResult("A connect is already running.")
         val r = result(o)
         log.add("autofix", when (o.status) {
             ConnectStatus.SUCCESS -> "done: connected"
@@ -130,8 +132,9 @@ object AdbCockpitOps {
             AdbCockpitModel.Do.EMB_INIT -> if (!paired) said(ChannelOps.setup(app, SetupAction.PAIR)) else said(ChannelOps.reconnect(app))
             AdbCockpitModel.Do.EMB_RESET -> { ChannelOps.disconnect(app); said("Reset: " + ChannelOps.reconnect(app)) }
             AdbCockpitModel.Do.CONNECT -> connect(app)
-            AdbCockpitModel.Do.DISCONNECT -> said(ChannelOps.disconnect(app))
-            AdbCockpitModel.Do.RECONNECT -> said(ChannelOps.reconnect(app))
+            AdbCockpitModel.Do.DISCONNECT -> said(ChannelOps.disconnectAll(app))
+            // #1743 Reconnect = Disconnect, then the full chain again
+            AdbCockpitModel.Do.RECONNECT -> said(ChannelOps.reconnectFull(app))
         }
     }
 }

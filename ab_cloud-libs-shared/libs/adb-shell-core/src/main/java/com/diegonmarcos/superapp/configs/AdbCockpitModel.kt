@@ -151,6 +151,8 @@ object AdbCockpitModel {
         fun e(a: ChannelAction) = en.getValue(a)
         val adbPart = when {
             f.adbConnected -> "paired · connected" + (f.adbEndpoint?.let { " $it" } ?: "")
+            // #1743 closed after the launch is the designed end state of the Local server profile
+            ChannelState.localCarries(f) -> "paired · embedded session closed after launch (by design)"
             f.adbPaired -> "paired · not connected"
             else -> "not paired"
         }
@@ -165,7 +167,7 @@ object AdbCockpitModel {
                 Act(Do.LOCAL_START, e(ChannelAction.RESTART_SERVER).enabled && !f.serverRunning, e(ChannelAction.RESTART_SERVER).why ?: if (f.serverRunning) "already running" else null),
                 Act(Do.LOCAL_STOP, e(ChannelAction.STOP_SERVER).enabled, e(ChannelAction.STOP_SERVER).why),
                 Act(Do.LOCAL_RESTART, e(ChannelAction.RESTART_SERVER).enabled, e(ChannelAction.RESTART_SERVER).why)),
-            subs = listOf(Sub("adbd round trip", if (f.adbConnected) Light.GREEN else if (on) Light.AMBER else Light.GREY),
+            subs = listOf(Sub("adbd round trip", if (f.adbConnected || (on && ChannelState.localCarries(f))) Light.GREEN else if (on) Light.AMBER else Light.GREY),
                 Sub("Loopback server", if (f.serverRunning && shellUid) Light.GREEN else Light.GREY)),
             dim = !on, badge = if (on) "active mode" else "inactive")
     }
@@ -246,7 +248,8 @@ object AdbCockpitModel {
             (if (ChannelState.used(ChannelState.ROW_DEV, f.mode)) "" else " · not used in ${modeName(f.mode)} mode")
         val paired = if (f.adbPaired) Light.GREEN else Light.AMBER
         val pairedMsg = if (f.adbPaired) "paired" else "not paired"
-        val adbMsg = if (f.adbConnected) "connected" + (f.adbEndpoint?.let { " $it" } ?: "") else "not connected"
+        val adbMsg = if (f.adbConnected) "connected" + (f.adbEndpoint?.let { " $it" } ?: "")
+            else if (ChannelState.localCarries(f)) "closed after launch (by design)" else "not connected"
 
         val p = by.getValue(PERMS)
         val s = by.getValue(SETUP)

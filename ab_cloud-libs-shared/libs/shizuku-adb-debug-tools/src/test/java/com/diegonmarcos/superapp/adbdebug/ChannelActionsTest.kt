@@ -31,20 +31,23 @@ class ChannelActionsTest {
         assertTrue(e.values.all { it.why == "a connect is running" })
     }
 
-    @Test fun degradedKeepsTestAndStopButCannotRestart() {
+    @Test fun sessionClosedAfterLaunchIsConnectedAndDisconnectStopsTheServer() {
+        // #1743 Local server mode, embedded session closed by design, server answers as the shell: Connected, Disconnect and Reconnect usable
         val d = up.copy(adbConnected = false, shizukuRunning = false)
-        assertEquals(ConnState.DEGRADED, ChannelState.connState(d))
-        assertEquals(setOf(RECONNECT, STOP_SERVER, TEST), on(d))
+        assertEquals(ConnState.UP, ChannelState.connState(d))
+        assertEquals(setOf(DISCONNECT, RECONNECT, STOP_SERVER, TEST), on(d))
+        assertNull(ChannelActions.enablement(d)[DISCONNECT]!!.why)
         assertEquals("no adb session to start it with", ChannelActions.enablement(d)[RESTART_SERVER]!!.why)
         // Shizuku being up changes nothing in Local server mode: its channel is never borrowed to launch the server
         val shizukuUp = up.copy(adbConnected = false)
-        assertEquals(setOf(RECONNECT, STOP_SERVER, TEST), on(shizukuUp))
-        assertEquals("no adb session to start it with", ChannelActions.enablement(shizukuUp)[RESTART_SERVER]!!.why)
+        assertEquals(setOf(DISCONNECT, RECONNECT, STOP_SERVER, TEST), on(shizukuUp))
         // the Auto ladder may use either
         assertTrue(ChannelActions.enablement(shizukuUp.copy(mode = ChannelMode.AUTO))[RESTART_SERVER]!!.enabled)
         assertEquals("no adb or Shizuku session to start it with",
             ChannelActions.enablement(d.copy(mode = ChannelMode.AUTO))[RESTART_SERVER]!!.why)
-        assertEquals("embedded adb is not connected", ChannelActions.enablement(d)[DISCONNECT]!!.why)
+        // nothing to disconnect: said why
+        val none = d.copy(serverRunning = false)
+        assertEquals("nothing is connected (embedded adb closed, local server not running)", ChannelActions.enablement(none)[DISCONNECT]!!.why)
     }
 
     @Test fun noServerIsStillUpOverAdbAndDownOnlyWhenNothingAnswers() {

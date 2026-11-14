@@ -117,6 +117,27 @@ object ChannelOps {
         return "Embedded adb disconnected; the pairing is kept."
     }
 
+    /**
+     * #1743 Disconnect = everything this profile holds goes down: the local server is stopped (when this app owns one and it
+     * answers) and the embedded session is closed (pairing kept). One verdict afterwards: Disconnected.
+     */
+    fun disconnectAll(ctx: Context): String {
+        val parts = ArrayList<String>()
+        if (ChannelModePrefs.ownsServer() && runCatching { LocalShellChannel.isReady(ctx) && LocalShellChannel.probe(ctx) }.getOrDefault(false)) {
+            parts += runCatching { stopServer(ctx) }.getOrElse { "stop server failed (${it.message})" }
+        }
+        parts += disconnect(ctx)
+        return parts.joinToString(" ")
+    }
+
+    /** #1743 Reconnect = Disconnect, then the whole chain again (every step re-probed, retries with backoff). Blocking. */
+    fun reconnectFull(ctx: Context): String {
+        val said = disconnectAll(ctx)
+        runCatching { Thread.sleep(500) }
+        val o = ChainRunner.run(ChannelModePrefs.current(ctx), DeviceConnectExecutor(ctx), ChannelLog.shared, ChannelModePrefs.ownsServer())
+        return said + " " + (o?.let { if (it.status == ConnectStatus.SUCCESS) "Connected." else it.explanation ?: "Stopped." } ?: "another connect is already running")
+    }
+
     /** Reconnect the CHOSEN mode's own channel ([ShellAccess.rungs]): re-bind Shizuku in Shizuku mode, re-attach adb in the adb modes. */
     fun reconnect(ctx: Context): String {
         val msg = ShellAccess.ensure(ctx) { }

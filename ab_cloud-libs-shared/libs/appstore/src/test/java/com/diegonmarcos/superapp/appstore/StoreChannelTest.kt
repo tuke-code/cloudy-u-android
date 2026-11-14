@@ -56,4 +56,18 @@ class StoreChannelTest {
         assertTrue("broker still usable for shell work", s.shellUsable)
         assertTrue(ControlStatus.label(s).contains("Wireless debugging is off") && ControlStatus.label(s).contains("local-server"))
     }
+
+    /** #1743 the reported chip: Local server profile, embedded session closed after the launch, healthy round trip over the server. */
+    @Test fun localServerProfileWithAHealthyRoundTripIsGreenAndNeverSaysAdbdDoesNotAnswer() {
+        val link = AdbLink.classify(adbEnabled = true, wireless = true, paired = true, roundTrip = false, sessionOptional = true, shellRoundTrip = true)
+        assertEquals(AdbLink.CONNECTED, link)
+        val s = ControlStatus.fromBroker(ShellStatus(true, true, "local-server", "armed", 5_000L, "", link, "local-server round trip ok; embedded session closed after launch"))
+        assertEquals(ControlStatus.Ink.GREEN, ControlStatus.ink(s))
+        val label = ControlStatus.label(s)
+        assertTrue(label, label.contains("ADB: connected") && label.contains("local-server") && !label.contains("does not answer"))
+        // outside the profile the same facts stay amber with the real reason
+        val amber = AdbLink.classify(true, true, true, false)
+        assertEquals(AdbLink.UNREACHABLE, amber)
+        assertEquals(ControlStatus.Ink.AMBER, ControlStatus.ink(ControlStatus.fromBroker(ShellStatus(true, true, "local-server", "armed", 5_000L, "", amber))))
+    }
 }
