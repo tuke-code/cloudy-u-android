@@ -33,9 +33,14 @@ order = ["Status", "Shell", "Perms", "Server", "All"]
 sys.exit(0 if all(k in pos for k in order) and [pos[k] for k in order] == sorted(pos[k] for k in order) else 1)
 PY
 # #1743 the Status page is the chain as a step list; the old bottom overlay (STATUS / TESTER / LOGS) is gone from it
-python3 - "$OUT/1-status.xml" <<'PY' || fail "the Status page is not the step list (or still carries the Tester / Logs overlay)"
+# the list is longer than the screen: back to Status, scroll to the end, dump again; the check reads both dumps
+tap_exact "Status" || true; sleep 3
+H=$(adb shell wm size | grep -oE '[0-9]+x[0-9]+' | tail -1 | cut -dx -f2); adb shell input swipe 300 $((H*3/4)) 300 $((H/6)) 400; sleep 1
+adb shell input swipe 300 $((H*3/4)) 300 $((H/6)) 400; sleep 1
+shoot "1b-status-end"; dump "1b-status-end"
+python3 - "$OUT/1-status.xml" "$OUT/1b-status-end.xml" <<'PY' || fail "the Status page is not the step list (or still carries the Tester / Logs overlay)"
 import re, sys
-x = open(sys.argv[1], encoding="utf-8").read()
+x = open(sys.argv[1], encoding="utf-8").read() + open(sys.argv[2], encoding="utf-8").read()
 want = ["Perms", "Developer options", "Wireless debugging", "Paired", "Embedded connect", "Local server launched", "Round trip", "Profile", "Clients using it"]
 have = lambda t: re.search(r'(?:text|content-desc)="%s"' % re.escape(t), x)
 miss = [t for t in want if not have(t)]
