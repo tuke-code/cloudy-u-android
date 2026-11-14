@@ -1,0 +1,26 @@
+{
+  "_doc": "#1746 the SSHd verdict table, shared by the webserver (server/src/sshd_status.rs) and the SuperApp strip (launcher/SshdVerdict.kt): each case lists the checks (id, required, ok = true | false | null for not checked) and the verdict + failed ids both implementations must return. green = every required check passed; amber = some passed, some failed (failed lists which); red = none passed (off); grey = nothing required has been checked yet.",
+  "cases": [
+    {"name": "all pass", "checks": [["process", true, true], ["port", true, true], ["loopback", true, true], ["lan", true, true], ["mesh", true, true]], "verdict": "green", "failed": []},
+    {"name": "lan not required, absent", "checks": [["process", true, true], ["port", true, true], ["loopback", true, true], ["lan", false, false], ["mesh", true, true]], "verdict": "green", "failed": []},
+    {"name": "loopback only, mesh fails", "checks": [["process", true, true], ["port", true, true], ["loopback", true, true], ["mesh", true, false]], "verdict": "amber", "failed": ["mesh"]},
+    {"name": "mesh and lan fail", "checks": [["port", true, true], ["loopback", true, true], ["lan", true, false], ["mesh", true, false]], "verdict": "amber", "failed": ["lan", "mesh"]},
+    {"name": "process alive but port closed", "checks": [["process", true, true], ["port", true, false], ["loopback", true, false], ["mesh", true, false]], "verdict": "amber", "failed": ["port", "loopback", "mesh"]},
+    {"name": "port open but no banner anywhere", "checks": [["port", true, true], ["loopback", true, false], ["mesh", true, false]], "verdict": "amber", "failed": ["loopback", "mesh"]},
+    {"name": "everything fails", "checks": [["process", true, false], ["port", true, false], ["loopback", true, false], ["mesh", true, false]], "verdict": "red", "failed": ["process", "port", "loopback", "mesh"]},
+    {"name": "off, unrequired lan ignored", "checks": [["port", true, false], ["loopback", true, false], ["lan", false, true]], "verdict": "red", "failed": ["port", "loopback"]},
+    {"name": "not checked yet", "checks": [["port", true, null], ["loopback", true, null], ["mesh", true, null]], "verdict": "grey", "failed": []},
+    {"name": "no checks", "checks": [], "verdict": "grey", "failed": []},
+    {"name": "one passed, rest unchecked", "checks": [["port", true, true], ["loopback", true, null], ["mesh", true, null]], "verdict": "grey", "failed": []}
+  ],
+  "banners": [
+    {"bytes": "SSH-2.0-OpenSSH_9.8\r\n", "ident": "SSH-2.0-OpenSSH_9.8"},
+    {"bytes": "SSH-2.0-russh_0.65\r\nSSH", "ident": "SSH-2.0-russh_0.65"},
+    {"bytes": "Welcome\r\nSSH-2.0-dropbear_2022.83\r\n", "ident": "SSH-2.0-dropbear_2022.83"},
+    {"bytes": "SSH-1.99-Old\n", "ident": "SSH-1.99-Old"},
+    {"bytes": "SSH-1.5-Ancient\r\n", "ident": null},
+    {"bytes": "HTTP/1.1 400 Bad Request\r\n", "ident": null},
+    {"bytes": "", "ident": null},
+    {"bytes": "SSH-2.0-", "ident": null}
+  ]
+}

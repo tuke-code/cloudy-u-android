@@ -80,6 +80,8 @@ class StoreCloudFragment : KitComposeFragment() {
 
     /** The feed page open over the Cloud page ("commits" / "cicd"), or null for the fleet list. */
     private var feedOpen by mutableStateOf<String?>(null)
+    /** #1744 bumped whenever an adopt attempt ends, so rows and detail views re-read the installer. */
+    private var adoptTick by mutableIntStateOf(0)
 
     private val fleet by lazy { Fleet.parse(BuildConfig.CONSTELLATION_FLEET_B64) }
 
@@ -287,10 +289,19 @@ class StoreCloudFragment : KitComposeFragment() {
         super.onResume()
         resume++
         context?.let { c -> runCatching { StoreAuto.onPending(c.applicationContext, 0) } }
+        // #1736 another fleet app asked for this app's About sheet (StoreAbout): open it over the page.
+        StoreAbout.appFor(fleet, StoreAbout.take())?.let { app -> details.add(app to states[app.id]) }
         // #858 back in front: resolve handed-over installs and show a prompt
         // that is still pending again, then repaint the rows.
         context?.applicationContext?.let { c ->
             thread(name = "store-install-watch") {
+                // #1735 our stale installer sessions are reclaimed as the Store comes up, and harder when the budget is spent,
+                // so "Install all" never starts against a cap the last run filled.
+                runCatching {
+                    com.diegonmarcos.superapp.updater.install.InstallSessions.reapOwn(c,
+                        aggressive = com.diegonmarcos.superapp.updater.install.InstallSessions.openCount(c) >=
+                            com.diegonmarcos.superapp.updater.install.InstallSessions.BUDGET_CAP)
+                }
                 // Repaint only when a handover was resolved: the first resume
                 // must not jump ahead of #857's updates-first refresh.
                 if (runCatching { StoreInstallWatch.onForeground(c, fleet) }.getOrDefault(false))
@@ -520,6 +531,9 @@ class StoreCloudFragment : KitComposeFragment() {
             updateAll = { updateAll(ctx, "the whole fleet", fleet) },
             downloadAll = { downloadAll(ctx, fleet) },
         ), resume = resume)
+        // #1744 Adopt all: make Cloud Store the installer of record of every fleet package installed elsewhere (pm set-installer
+        // through the ADB owner), so they stop prompting. Never crashes with ADB down: the reason lands in each detail view.
+        StoreBar.Button("Adopt all (installer of record)", Ink.BLUE_FILL, { adoptAll(ctx) }, Modifier.fillMaxWidth(), "store-adopt-all")
         // Feed moved into Cloud: Commits and CI-CD are two buttons with the action buttons, above the status row; each opens its own
         // page (StoreFeedPanels.Page, the Store's declared feeds). The Feed bottom-nav destination is gone.
         StoreFeedPanels.Buttons { feedOpen = it }
@@ -561,12 +575,12 @@ class StoreCloudFragment : KitComposeFragment() {
             val isOpen = open == e.pkg
             StoreRow.Item(e.label, isOpen, { open = if (isOpen) null else e.pkg }, tag = "store-retired:${e.pkg}",
                 dot = "✕", dotColor = cErr, meta = RetiredApps.meta(e), metaColor = cErr,
-                quick = StoreQuick("Uninstall", cBlk) { runCatching { Fleet.uninstall(ctx, e.pkg) } },
+                quick = StoreQuick(ctx.getString(R.string.store_retired_uninstall), cBlk) { runCatching { Fleet.uninstall(ctx, e.pkg) } },
                 headTag = "store-retired-head:${e.pkg}", metaTag = "store-retired-meta:${e.pkg}") {
                 StoreCaption(RetiredApps.explain(e))
                 Text(e.pkg, color = cDim.ink(), fontSize = StoreDensity.T_CAPTION.sp, fontFamily = FontFamily.Monospace)
                 StoreRow.Actions(listOfNotNull(
-                    StoreVerb("Uninstall", cBlk, { runCatching { Fleet.uninstall(ctx, e.pkg) } }, "store-retired-uninstall:${e.pkg}"),
+                    StoreVerb(ctx.getString(R.string.store_retired_uninstall), cBlk, { runCatching { Fleet.uninstall(ctx, e.pkg) } }, "store-retired-uninstall:${e.pkg}"),
                     StoreVerb("Open ${e.replacementLabel.ifBlank { "replacement" }}", cMiss, { openReplacement(ctx, e.replacementPackage) },
                         "store-retired-open:${e.pkg}").takeIf { e.replacementPackage.isNotBlank() },
                 ))
@@ -752,37 +766,20 @@ class StoreCloudFragment : KitComposeFragment() {
         val stg = stages[app.id]
         val ui = rowUi(ctx, app, s, stg, checking[app.id] == true)
         val open = expanded[app.id] == true
-        // #1704 a SILENT next update is folded into the right-hand status as a small marker (one-line row); the full
-        // "Next update: silent" text stays in the detail view. A PROMPT keeps its own explanatory line under the row.
-        val silentLine = remember(stg) { nextUpdateLine(ctx, app) }
-        val silent = silentLine == "silent"
+        // #1744 the row is ONE line in every tab: the next update (silent or prompting) is only the small marker in the right-hand
+        // status ("· silent" / "· prompts"); the full "Next update: ..." text, and why, lives in the detail view.
+        val marker = remember(stg, adoptTick) { StoreAdopt.marker(nextUpdateLine(ctx, app)) }
         StoreRow.Item(app.label, open, { expanded[app.id] = !open },
             Modifier.onGloballyPositioned { rowTops[app.id] = it.positionInRoot().y }, tag = "store-row:${app.id}",
-            dot = ui.dot, dotColor = ui.dotColor, meta = if (silent && ui.meta.isNotEmpty()) ui.meta + " · silent" else ui.meta, metaColor = ui.metaColor,
+            dot = ui.dot, dotColor = ui.dotColor, meta = if (ui.meta.isNotEmpty()) ui.meta + marker else marker.removePrefix(" · "), metaColor = ui.metaColor,
             // The per-app action, on the collapsed row on purpose: updating ONE app is the common case, and
             // making it expand-then-tap would cost two taps for the thing people do most.
             quick = ui.quick?.let { (label, fill) -> StoreQuick(label, fill) { next(ctx, app) } },
             headTag = "store-head:${app.id}", metaTag = "store-meta:${app.id}", dotTag = "store-dot:${app.id}",
             below = {
                 ui.error?.let { ErrorArea(ctx, app, it) }
-                SilentArea(ctx, app, stg)
                 MigrationArea(ctx, app, stg)
             }) { FleetDetail(ctx, app, ui, stg) }
-    }
-
-    /**
-     * #1675 Whether this app's NEXT update installs silently or will prompt, and why (not installer of record, targetSdk, a new
-     * permission, the throttle, first install), read from [SilentReadiness] for an installed app. Re-read whenever the row's
-     * stage changes; the last session's real outcome is under Diagnose (install diagnostics).
-     */
-    @Composable
-    private fun SilentArea(ctx: Context, app: Fleet.App, stg: StoreStages.Stage?) {
-        val line = remember(stg) { nextUpdateLine(ctx, app) } ?: return
-        if (line == "silent") return   // #1704 folded into the row's status; the detail view carries the full text
-        Text("Next update: $line", color = cErr.ink(), fontSize = StoreDensity.T_META.sp,
-            maxLines = 2, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = sdp(StoreDensity.S12), end = sdp(StoreDensity.S12), bottom = sdp(StoreDensity.S4))
-                .testTag("store-silent:${app.id}"))
     }
 
     /** The assessed next-update line of an installed app (null when not installed or unreadable). */
@@ -891,9 +888,14 @@ class StoreCloudFragment : KitComposeFragment() {
     private fun FleetDetail(ctx: Context, app: Fleet.App, ui: RowUi, stg: StoreStages.Stage?) {
         Column {
             // #1704 the full next-update text, always reachable here (rule 16: the row only folds it).
-            remember(stg) { nextUpdateLine(ctx, app) }?.let { line ->
+            remember(stg, adoptTick) { nextUpdateLine(ctx, app) }?.let { line ->
                 Text("Next update: $line", color = (if (line == "silent") cDim else cErr).ink(), fontSize = StoreDensity.T_META.sp,
                     modifier = Modifier.padding(bottom = sdp(StoreDensity.S4)).testTag("store-detail-next-update:${app.id}"))
+            }
+            // #1744 the adopt outcome (or why it could not run, e.g. ADB down), from the last real attempt and read-back.
+            remember(stg, adoptTick) { StoreAdopt.detailLine(app.pkg) }?.let { line ->
+                Text(line, color = cDim.ink(), fontSize = StoreDensity.T_META.sp,
+                    modifier = Modifier.padding(bottom = sdp(StoreDensity.S4)).testTag("store-detail-adopt:${app.id}"))
             }
             // The chip must offer the SAME bytes the updater would install, so it
             // uses the per-ABI asset too — handing an x86_64 user the arm64 APK is
@@ -986,6 +988,19 @@ class StoreCloudFragment : KitComposeFragment() {
     private fun current(): List<Fleet.App> = tabs.getOrNull(tab)?.rows.orEmpty()
 
     // ── concurrent status — one thread per app, independent + non-blocking ───
+    private fun adoptAll(ctx: Context) {
+        Toast.makeText(ctx, "Adopting fleet packages (installer of record)…", Toast.LENGTH_SHORT).show()
+        thread(name = "fleet-adopt-all") {
+            val rs = StoreAdopt.adopt(ctx, fleet.map { it.pkg })
+            val ok = rs.count { it.state == StoreAdopt.State.ADOPTED || it.state == StoreAdopt.State.ALREADY }
+            val why = rs.firstOrNull { it.state != StoreAdopt.State.ADOPTED && it.state != StoreAdopt.State.ALREADY }?.reason
+            main.post {
+                adoptTick++
+                Toast.makeText(ctx, "Adopt: $ok of ${rs.size} are Cloud Store's" + (why?.let { " - $it" } ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun checkAll(ctx: Context, list: List<Fleet.App> = current(), force: Boolean = true) {
         // #804 a Store refresh is an auto-chain trigger: what it is about to
         // show as pending is what the chain downloads and installs (gated by
@@ -1037,6 +1052,8 @@ class StoreCloudFragment : KitComposeFragment() {
                 else -> StoreStages.clear(ctx, app)
             }
             ticker.interrupt()
+            // #1744 an install through the Store adopts it when ADB is up (no-op, with the reason kept, otherwise)
+            if (verb == StoreStages.INSTALL && done.failedAt == null) main.post { adoptTick++ }   // StoreStages.install already adopted it
             if (done.failedAt != null)
                 main.post { Toast.makeText(ctx, "${app.label}: ${done.text}", Toast.LENGTH_LONG).show() }
             val st = StoreChecks.status(ctx, app, force = true)   // #1517 refreshes the TTL cache too
@@ -1240,6 +1257,8 @@ class StoreCloudFragment : KitComposeFragment() {
             // failed at <stage> — because a count of zero has meant "everything
             // is current" and "everything failed" alike before.
             StoreStages.updateAll(ctx, targets)
+            StoreAdopt.adoptAfterInstall(ctx, targets.map { it.pkg })
+            main.post { adoptTick++ }
             // The HOST update goes LAST. It still runs unconditionally, so the
             // button stays the repair tool it was built to be when the baked
             // fleet is empty — an empty fleet just makes the batch above a

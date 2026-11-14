@@ -60,7 +60,9 @@
   .served .pg:last-child { border-bottom:0; }
   .served .rh, .drift .rh { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
   .dot { width:9px; height:9px; border-radius:50%; background:var(--dim); display:inline-block; flex:none; }
-  .dot.up { background:#7ee2a8; } .dot.down { background:#ff8a8a; }
+  .dot.up { background:#7ee2a8; } .dot.down { background:#ff8a8a; } .dot.amber { background:#e0a35a; } .dot.grey { background:var(--dim); }
+  .srv .srow { display:flex; align-items:center; gap:8px; padding:3px 6px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12px; } .srv .srow .nm { flex:1; } .srv .srow .w { min-width:90px; }
+  .srv .sx { display:none; padding:2px 6px 6px 24px; } .srv .srow.open + .sx { display:block; }
   .served .nm { font-weight:600; }
   .badge.g { color:#7ee2a8; border-color:#2b5f5a; } .badge.a { color:#e0a35a; border-color:#5a3a2b; }
   .spc { margin-left:auto; }
@@ -248,6 +250,47 @@ function fmtUp(sec) {
   if (sec === null || sec === undefined) return '-';
   return sec >= 3600 ? Math.floor(sec / 3600) + ' h ' + Math.floor(sec % 3600 / 60) + ' min' : sec >= 60 ? Math.floor(sec / 60) + ' min ' + (sec % 60) + ' s' : sec + ' s';
 }
+// #1746 the REAL state, as /__app__/api/sshd reports it (server/src/sshd_status.rs): green / amber / red / grey from live checks, never a flag.
+function sshVerdict(d) { var v = d.status && d.status.verdict; return v === 'green' || v === 'amber' || v === 'red' ? v : 'grey'; }
+function sshWord(d) {
+  if (d.port === null || d.port === undefined) return 'NO PORT';
+  if (!d.status) return 'NOT CHECKED';
+  return d.status.label + (sshVerdict(d) === 'amber' && d.status.failed && d.status.failed.length ? ': ' + d.status.failed.join(', ') + ' failed' : '');
+}
+function sshMesh(d) { return d.status && d.status.mesh_reachable === true ? 'yes' : d.status && d.status.mesh_reachable === false ? 'no' : '-'; }
+function sshDot(d) { var v = sshVerdict(d); return '<span class="dot ' + (v === 'green' ? 'up' : v === 'red' ? 'down' : v) + '" data-verdict="' + v + '"></span>'; }
+var CHECK_LABEL = { process: 'Process alive', port: 'Port listening', loopback: 'Banner on loopback', lan: 'Banner on Wi-Fi LAN', mesh: 'Banner on mesh (wg0)' };
+function sshChecks(d) {
+  var cs = d.status && d.status.checks;
+  if (!cs || !cs.length) return [['Checks', 'not run: ' + (d.port === null || d.port === undefined ? 'this app has no sshd' : 'no answer from the server')]];
+  return cs.map(function (c) {
+    var res = (c.ok === true ? 'ok' : c.ok === false ? 'FAIL' : 'not checked') + (c.required ? '' : ' (not required)');
+    return [CHECK_LABEL[c.id] || c.id, res + ' \u00b7 ' + c.detail + (c.rtt_ms != null ? ' \u00b7 ' + c.rtt_ms + ' ms' : '') + (c.at_ms ? ' \u00b7 ' + new Date(c.at_ms).toTimeString().slice(0, 8) : '')];
+  });
+}
+function sshExtra(d) {
+  var st = d.status || null, log = (d.log_tail || []).map(function (e) { return new Date(e.at_ms).toTimeString().slice(0, 8) + ' ' + e.event; });
+  return [['Status', sshWord(d) + (st && st.reason ? ' \u00b7 ' + st.reason : '')]].concat(sshChecks(d)).concat([
+    ['Process / pid', d.pid != null ? String(d.pid) : 'none: ' + d.pid_note],
+    ['User', d.user || '-'],
+    ['Server addresses', st ? 'loopback 127.0.0.1' + (st.lan_ip ? ', Wi-Fi ' + st.lan_ip : '') + (st.mesh_ip ? ', mesh ' + st.mesh_ip : ', mesh: no address') : '-'],
+    ['Host key', d.host_key ? d.host_key : 'not readable: ' + (d.host_key_note || '')],
+    ['Auth methods', (d.auth_methods || []).join(', ') || d.auth],
+    ['Authorized keys', d.keys_count != null ? String(d.keys_count) : 'not readable here: ' + (d.authorized_keys_note || '')],
+    ['Last connections', log.length ? log.join('\n') : (d.log_note || 'none yet')],
+    ['Config path', d.config_path || '-'],
+    ['ssh command', st && st.ssh_command ? st.ssh_command : 'ssh -p ' + d.port + ' ' + (d.user || 'user') + '@<mesh-ip>']
+  ]);
+}
+// The compact list: one row per sshd the app knows (name, real status dot + word, port, mesh yes/no, uptime); tap to open the full door below.
+function renderServers(data) {
+  return '<section class="door srv" id="sshd-servers"><h2>SSH servers &middot; ' + data.doors.length + '<button data-recheck-all>Re-check all</button></h2>' + data.doors.map(function (d) {
+    return '<div class="srow" data-srow="' + esc(d.id) + '">' + sshDot(d) + '<span class="nm">' + esc(d.title) + '</span><span class="w">' + esc(sshWord(d)) + '</span><span>' +
+      (d.port === null || d.port === undefined ? 'no port' : ':' + esc(String(d.port))) + '</span><span>mesh ' + sshMesh(d) + '</span><span>up ' + esc(fmtUp(d.seen_up_s)) + '</span></div>' +
+      '<div class="sx" id="sx-' + esc(d.id) + '"><button data-door-op="restart" data-door="' + esc(d.id) + '"' + (d.control && d.control.available ? '' : ' disabled') + '>Restart</button>' +
+      '<button data-recheck>Re-check</button><button data-copy-ssh="' + esc(sshExtra(d).filter(function (f) { return f[0] === 'ssh command'; })[0][1]) + '">Copy ssh command</button></div>';
+  }).join('') + '</section>';
+}
 function doorFacts(d) {
   var ses = (d.sessions === null || d.sessions === undefined) ? 'unknown: ' + d.sessions_note : (d.sessions.length ? d.sessions.length + ' connected: ' + d.sessions.join(', ') : 'none connected');
   return [
@@ -278,13 +321,13 @@ function bindBadge(d) {
   return '';
 }
 function renderDoor(d, cidrs) {
-  var rows = doorFacts(d).map(function (f) { return '<div class="row"><div class="k">' + esc(f[0]) + '</div><div class="v">' + esc(f[1]) + '</div></div>'; }).join('');
+  var rows = sshExtra(d).concat(doorFacts(d)).map(function (f) { return '<div class="row"><div class="k">' + esc(f[0]) + '</div><div class="v">' + esc(f[1]) + '</div></div>'; }).join('');
   var c = d.control, off = c.available ? '' : ' disabled title="' + esc(c.note) + '"';
   var tools = '<div class="tool"><button data-door-op="start" data-door="' + esc(d.id) + '"' + off + '>Start</button><button data-door-op="stop" data-door="' + esc(d.id) + '"' + off + '>Stop</button>' +
     (c.available && c.explicit !== null ? '<button data-door-op="follow" data-door="' + esc(d.id) + '">Follow Keep alive</button>' : '') +
     '<span class="sum">' + esc(c.note) + '</span></div>' + (d.port === null || d.port === undefined ? '' : renderMeshOnly(d, cidrs || []));
-  var up = d.state === 'listening' || d.state === 'connected';
-  return '<section class="door" id="door-' + esc(d.id) + '"><h2>' + esc(d.title) + '<span class="badge ' + (up ? 'up' : 'down') + '">' + esc(d.state) + '</span>' + bindBadge(d) + '</h2>' + rows + tools + '</section>';
+  var up = (d.state === 'listening' || d.state === 'connected') && sshVerdict(d) === 'green';
+  return '<section class="door" id="door-' + esc(d.id) + '"><h2>' + sshDot(d) + ' ' + esc(d.title) + '<span class="badge ' + (up ? 'up' : 'down') + '">' + esc(d.state) + '</span>' + bindBadge(d) + '</h2>' + rows + tools + '</section>';
 }
 function renderOther(o) {
   return '<section class="door"><h2>Other SSH servers answering on loopback</h2>' + o.map(function (x) {
@@ -307,12 +350,12 @@ function renderKeepAlive(data) {
     '<span class="sum">Keep alive is ' + (on ? 'ON' : 'OFF') + '; the supervised door is ' + (data.wanted ? 'wanted' : 'not wanted') + (hs ? '; ' + esc(hs) : '') + '. ON keeps the server and the hosted sshd up with a notification and starts them at boot; OFF stops them when the app closes.</span></div></section>';
 }
 function renderSshd(data) {
-  return renderKeepAlive(data) + data.doors.map(function (d) { return renderDoor(d, data.mesh_cidrs); }).join('') + (data.other.length ? renderOther(data.other) : '') +
+  return renderKeepAlive(data) + renderServers(data) + data.doors.map(function (d) { return renderDoor(d, data.mesh_cidrs); }).join('') + (data.other.length ? renderOther(data.other) : '') +
     '<section><h2>All doors</h2><div class="tool"><button data-copy-doors>Copy All Infos</button><span class="sum">Keep alive ' + (data.keep_alive ? 'ON' : 'OFF') + '; the supervised door is ' + (data.wanted ? 'wanted' : 'not wanted') + '</span></div></section>';
 }
 function doorsText(data) {
   var out = ['Keep alive: ' + (data.keep_alive ? 'ON' : 'OFF') + ' (mesh ranges ' + data.mesh_cidrs.join(', ') + ')'];
-  out = out.concat(data.doors.map(function (d) { return d.title + '\n' + doorFacts(d).map(function (f) { return '  ' + f[0] + ': ' + f[1]; }).join('\n'); }));
+  out = out.concat(data.doors.map(function (d) { return d.title + '\n' + sshExtra(d).concat(doorFacts(d)).map(function (f) { return '  ' + f[0] + ': ' + f[1]; }).join('\n'); }));
   data.other.forEach(function (x) { out.push('Other SSH server\n  tcp ' + x.port + ': ' + x.engine + ' (' + x.banner + ')'); });
   return out.join('\n\n');
 }
@@ -579,10 +622,9 @@ function renderServedStrip(pg) {
 // SSHd engines: /__app__/api/sshd doors (nix 8024, termux 8023, webserver 8025) with state and keep-alive.
 function renderSshdStrip(d) {
   var rows = d.doors.map(function (x) {
-    var up = x.state === 'listening' || x.state === 'connected';
     var own = x.control && x.control.explicit !== null && x.control.explicit !== undefined;
-    return '<div class="row" data-home-door="' + esc(x.id) + '"><div class="k">' + dot(up) + ' ' + esc(x.title) + '</div><div class="v">' +
-      (x.port === null || x.port === undefined ? 'no port' : 'tcp ' + esc(String(x.port))) + ' &middot; ' + esc(x.state) + ' &middot; ' + (own ? 'own switch' : 'follows keep alive') + '</div></div>';
+    return '<div class="row" data-home-door="' + esc(x.id) + '"><div class="k">' + sshDot(x) + ' ' + esc(x.title) + '</div><div class="v">' +
+      (x.port === null || x.port === undefined ? 'no port' : 'tcp ' + esc(String(x.port))) + ' &middot; ' + esc(x.state) + ' &middot; ' + esc(sshWord(x)) + ' &middot; mesh ' + sshMesh(x) + ' &middot; ' + (own ? 'own switch' : 'follows keep alive') + '</div></div>';
   }).join('');
   return '<section class="stat" id="home-sshd"><h2>SSHd engines &middot; keep alive ' + (d.keep_alive ? 'ON' : 'OFF') + '<span class="spc"></span><a href="#" data-goto="sshd">SSHd &rsaquo;</a></h2>' + rows + '</section>';
 }
@@ -823,7 +865,7 @@ if (typeof module !== 'undefined') {
     renderCfgTabs: renderCfgTabs, renderServing: renderServing, renderEngines: renderEngines, hostIsLocal: hostIsLocal, classifyLink: classifyLink,
     isLinkTarget: isLinkTarget, embedUrl: embedUrl, subsOf: subsOf, renderSubNav: renderSubNav, renderSubRow: renderSubRow, renderForm: renderForm, renderSubPage: renderSubPage, decide: decide, renderSheet: renderSheet, renderLinks: renderLinks,
     renderHealth: renderHealth, renderServedStrip: renderServedStrip, renderSshdStrip: renderSshdStrip, renderPortsStrip: renderPortsStrip, deviceFacts: deviceFacts, renderDeviceStrip: renderDeviceStrip, renderTopologyLink: renderTopologyLink, renderHome: renderHome,
-    renderPower: renderPower, renderMeshOnly: renderMeshOnly, renderSshd: renderSshd, renderDoor: renderDoor, doorsText: doorsText,
+    renderPower: renderPower, renderMeshOnly: renderMeshOnly, renderSshd: renderSshd, doorFacts: doorFacts, renderServers: renderServers, sshVerdict: sshVerdict, sshWord: sshWord, sshExtra: sshExtra, renderDoor: renderDoor, doorsText: doorsText,
     pagesFrom: pagesFrom, PAGES_SUBS: PAGES_SUBS, rootsOf: rootsOf, rootUrl: rootUrl, renderRootRow: renderRootRow, renderRootList: renderRootList, renderRootsHead: renderRootsHead,
     renderRootsAll: renderRootsAll, renderRootsMode: renderRootsMode, renderRootBar: renderRootBar, renderBrowser: renderBrowser, renderTreeLevel: renderTreeLevel, renderExplorer: renderExplorer, renderAdbShell: renderAdbShell };
 }
@@ -1163,6 +1205,11 @@ if (typeof module !== 'undefined') {
       post('/__app__/api/sshd', { door: mo.getAttribute('data-door'), mesh_only: mo.getAttribute('data-mesh-only') === 'true' }).then(function () { toast('Mesh-only applied'); refreshTab(); }).catch(function (e) { toast(e.message, true); });
       return;
     }
+    var sr = ev.target.closest('[data-srow]');
+    if (sr) { sr.classList.toggle('open'); return; }
+    if (ev.target.closest('[data-recheck]') || ev.target.closest('[data-recheck-all]')) { refreshTab(); return; }
+    var cs = ev.target.closest('[data-copy-ssh]');
+    if (cs) { copyText(cs.getAttribute('data-copy-ssh'), cs); return; }
     var cd = ev.target.closest('[data-copy-doors]');
     if (cd) { copyText(doorsText(DOORS), cd); return; }
     var gt = ev.target.closest('[data-goto]');

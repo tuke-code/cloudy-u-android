@@ -3007,7 +3007,7 @@
         ],
         "tile_groups": [
           {
-            "_doc": "#1627 Primary (renamed from 'Tools Primary'). Order: Drive, Browser | Calc, Navigation, Camera, Keyboard, Writer || Wallet. Single '|' after Browser, DOUBLE '||' after Writer. Drive moved in from Data; Vault moved out to Data. Pinned by test-primary-tools-order.sh, test-calc-tile.sh, test-camera-tiles.sh, test-writer-tile.sh, test-me-account-tile.sh and test-quickmarks-field-parity.sh.",
+            "_doc": "#1627 Primary (renamed from 'Tools Primary'). Order: Drive, Browser | Calc, Navigation, Camera, Keyboard || Wallet. Single '|' after Browser, DOUBLE '||' after Keyboard (#1736: the Writer tile is gone, Writer is an Action of the Keyboard app menu, ui.external_apps[cloud-keyboard].actions). Drive moved in from Data; Vault moved out to Data. Pinned by test-primary-tools-order.sh, test-calc-tile.sh, test-camera-tiles.sh, test-writer-tile.sh, test-me-account-tile.sh and test-quickmarks-field-parity.sh.",
             "title": "Primary",
             "tiles": [
               {
@@ -3057,13 +3057,6 @@
                 "label": "Keyboard",
                 "icon": "ic_keyboard",
                 "target": "extapp:cloud-keyboard"
-              },
-              {
-                "_doc": "Writer \u2014 opens the Writer tab of Cloud Keyboard (#1707: the standalone Cloud Writer app was retired and merged into the keyboard). target=extapp:cloud-keyboard#page:writer \u2192 ShellActivity.launchExternalApp opens com.diegonmarcos.cloudkeyboard (ui.external_apps[id=cloud-keyboard]) with shortcut_action=page:writer, which the keyboard's SettingsActivity resolves through SettingsDestination.externalRoute(\"writer\") to the Writer tab; not installed \u2192 the keyboard's install offer.",
-                "id": "writer",
-                "label": "Writer",
-                "icon": "ic_writer",
-                "target": "extapp:cloud-keyboard#page:writer"
               },
               {
                 "_doc": "#1627 DOUBLE divider ('||'): a stronger group rule than the single '|'. `separator:true` + `double:true`; GroupedTilesFragment draws a bolder TileDivider on the previous tile's edge. Not clickable, not focusable, no target, dropped by TileGroup.destinations.",
@@ -3486,7 +3479,7 @@
             "title": "Configs",
             "_doc_store_apps": "#1704 Store-only members: c3 apps that have no tile on this row (the Cloud tab of the Store files every app by this declaration, never in an Others group). Same group, same category, no tile drawn. Parity: test-store-cloud-categories.sh.",
             "store_apps": ["c3-webserver", "morpheus", "watchtower"],
-            "_doc_row_order": "#1628 OWNER ORDER (2026-11, supersedes #1611): the Cloud > Apps > Configs row reads exactly Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About - six tile groups divided by five '|' separators. Groups: [Quick Actions, UI] [Firewall, WiFi] [Store] [Account, C3] [Watchdog] [About]. Each tile maps to a real existing page/app id (no page invented): Quick Actions=page:config/controls, UI=page:config/panels-ui, Firewall=page:config/firewall, WiFi=page:config/wifi, Store=extapp:cloud-store, Account=extapp:cloud-account, C3=extapp:cloud-c3, Watchdog=extapp:c3-watchdog, About=page:config/app-about. #1611's five tiles (Quick Actions, Watchdog, Account, C3, Store) are all retained; UI, Firewall, WiFi, About added. test-c3-is-an-app.sh finds this group by its CONTENT (a group holding both Store and Quick Actions labels), so the reorder keeps it identifiable. Pinned by test-configs-apps-row.sh.",
+            "_doc_row_order": "#1628 OWNER ORDER (2026-11, supersedes #1611): the Cloud > Apps > Configs row reads exactly Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About (#1745 supersedes the #1628 Firewall, WiFi and Account placement) - seven tile groups divided by six '|' separators. Groups: [Quick Actions, UI] [Firewall, WiFi] [Store] [Account, C3] [Watchdog] [About]. Each tile maps to a real existing page/app id (no page invented): Quick Actions=page:config/controls, UI=page:config/panels-ui, Firewall=page:config/firewall, WiFi=page:config/wifi, Store=extapp:cloud-store, Account=extapp:cloud-account, C3=extapp:cloud-c3, Watchdog=extapp:c3-watchdog, About=page:config/app-about. #1611's five tiles (Quick Actions, Watchdog, Account, C3, Store) are all retained; UI, Firewall, WiFi, About added. test-c3-is-an-app.sh finds this group by its CONTENT (a group holding both Store and Quick Actions labels), so the reorder keeps it identifiable. Pinned by test-configs-apps-row.sh.",
             "tiles": [
               {
                 "_doc": "#1628 Configs row group 1a: Quick Actions -> the merged Controls page (page:config/controls).",
@@ -3503,27 +3496,20 @@
                 "target": "page:config/panels-ui"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-1",
                 "label": "|",
                 "separator": true
               },
               {
-                "_doc": "#1628 Configs row group 2a: Firewall -> the Network firewall page (page:config/firewall).",
-                "id": "configs-firewall",
+                "_doc": "#1745 Configs row group 2: NG Firewall -> the NG Firewall hub page (page:config/ng-firewall, #1737), which still reaches Firewall and Wi-Fi (and DNS, VPN, OS Perms, Webserver, Proxy). Replaces the separate Firewall and WiFi tiles; page:config/firewall and page:config/wifi stay reachable from the hub and from the Configs Network group.",
+                "id": "configs-ng-firewall",
                 "label": "NG Firewall",
-                "icon": "ic_lock",
-                "target": "page:config/firewall"
+                "icon": "ic_act_shield",
+                "target": "page:config/ng-firewall"
               },
               {
-                "_doc": "#1628 Configs row group 2b: WiFi -> the Network WiFi page (page:config/wifi).",
-                "id": "configs-wifi",
-                "label": "WiFi",
-                "icon": "ic_wifi",
-                "target": "page:config/wifi"
-              },
-              {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-2",
                 "label": "|",
                 "separator": true
@@ -3536,17 +3522,10 @@
                 "target": "extapp:cloud-store"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-3",
                 "label": "|",
                 "separator": true
-              },
-              {
-                "_doc": "#1628 Configs row group 4a: Account -> the Cloud Account app (extapp:cloud-account).",
-                "id": "configs-account",
-                "label": "Account",
-                "icon": "ic_p_accounts",
-                "target": "extapp:cloud-account"
               },
               {
                 "_doc": "#1628 (was #663) Configs row group 4b: C3 -> cloud-c3, a published APK, so extapp: (opens the app or offers the install). Resolves through ui.external_apps 'cloud-c3' (no label; caption derives from the id). test-c3-is-an-app.sh fails if this goes back to a page: route.",
@@ -3556,7 +3535,7 @@
                 "target": "extapp:cloud-c3"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-4",
                 "label": "|",
                 "separator": true
@@ -3569,8 +3548,21 @@
                 "target": "extapp:c3-watchdog"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-5",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#1628 Configs row group 6: Account -> the Cloud Account app (extapp:cloud-account).",
+                "id": "configs-account",
+                "label": "Account",
+                "icon": "ic_p_accounts",
+                "target": "extapp:cloud-account"
+              },
+              {
+                "_doc": "#1745 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
+                "id": "configs-sep-6",
                 "label": "|",
                 "separator": true
               },
@@ -5203,24 +5195,29 @@
             "label": "Network",
             "icon": "ic_settings",
             "pages": [
-              "network",
-              "firewall",
+              "ng-firewall",
+              "network-sep-a",
+              "wifi",
+              "bluetooth",
               "dns",
-              "webserver",
               "wg",
+              "network-sep-b",
+              "firewall",
+              "os-perms",
+              "network-sep-c",
+              "webserver",
+              "proxy",
               "apps-access",
               "adb-shell",
               "adb-status",
               "adb-term",
               "adb-perms",
               "adb-all",
-              "wifi",
               "wifi-scan",
               "wifi-channels",
               "wifi-link",
               "wifi-tools",
               "wifi-log",
-              "bluetooth",
               "bluetooth-find",
               "bluetooth-analyze",
               "bluetooth-locate",
@@ -5245,7 +5242,6 @@
             "label": "Connect",
             "icon": "ic_settings",
             "pages": [
-              "profile",
               "c3",
               "kde"
             ]
@@ -5267,6 +5263,8 @@
             "label": "Configs",
             "icon": "ic_settings",
             "pages": [
+              "profile",
+              "configs-sep-a",
               "perms",
               "logcat",
               "xray-app",
@@ -5284,6 +5282,9 @@
         "_doc_pages_order": "Order here is the single source of truth — it drives the Configs page-grid, its SECTION and SUBSECTION headings, and (via home_groups tiles_from_section: 'config') the Home Apps Configs row. TWO LEVELS, DECLARED PER PAGE (#649): `group` is the section heading a tile sits under and `subgroup` is the heading below it, both rendered verbatim by TileGridFragment — the words \"Launcher\", \"Setup\", \"Apps\", \"Network\" and \"Observability\" appear in no Kotlin file, which is the same contract `label` already keeps for a page name. There is deliberately no parallel group map: a run of consecutive pages carrying the same group/subgroup IS the group, so moving an entry in this array moves it on the screen and a group with no pages left simply stops being drawn. A page that declares no group falls under the default Pages heading, which is every other section in this file. #649 replaced the old flat shape (Account/WireGuard/KDE/AI/Permissions — Launcher — Store/About, held together by `row_break`): Launcher stopped being a page wearing four tabs and became the TITLE over its four subpages as direct tiles, and the rest became Setup ▸ Apps + Setup ▸ Observability. `row_break: true` still starts a fresh grid row at a tile without printing a heading; no page in this section needs it any more, because every row break here is now a group boundary. ACTIONS ARE UNCHANGED: the trailing `is_action` entries are the same three, rendered under the same Actions heading from the same flag, and they carry no group — the grid appends them last whatever their position in this array. #723 (#878 relabelled: group Watchdog is now Setup, subgroups Setup/Mesh are Apps/Network): OWNER REGROUP (Agents): the order is Launcher, Apps, Setup. Apps is a group with no subgroup and holds C3 · Peer Control · Agents (C3 and Peer Control moved out of Setup ▸ Network with their ids unchanged, so page:config/c3 and page:config/kde are the same links; the Network separator went with them, see removed_pages). Before that regroup, the Setup group had THREE sub-sections in this order — Apps (Account · Permissions · Store), Network (WireGuard · Peer Control) and Observability (About) — and the AI page is gone (see removed_pages). #REORG 2026-10: Configs is exactly THREE sections, in this order: Setup (subgroups Apps = Account/Permissions/Store, Launcher = Presets/Controls/One-Hand/Notify, Network), Fleet (the former Apps group: C3 · Peer Control · Agents) and Observability (About). No ids changed, so every page:config/<id> link is intact. #733: Network is Cloud Mesh (the wg page, relabelled) · Peer Control · Apps Mesh (the Store's mesh page, reached from here too).",
         "_doc_retired_pages": "#697. A config page id that no longer exists, mapped to the pages its content lives on now. The page set is guarded: test-configs-two-sections.sh T9 holds the ids as they stood before #649 regrouped this section and fails if any of them is missing from `pages` without being named here, or if a page named here is still declared, or if one of its successors is not. So a page cannot be dropped by a regroup — removing one is a declared act with a declared destination. `launcher` is the only entry: #649 dissolved the page that wore four tabs and made those four tabs direct pages under the Launcher heading. Read by the tester only; the app routes by `pages` and never needs to know what was retired.",
         "retired_pages": {
+          "network": [
+            "ng-firewall"
+          ],
           "launcher": [
             "controls",
             "onehand",
@@ -5312,6 +5313,7 @@
         },
         "_doc_page_aliases": "(`watchtower` and `agents-watchtower`, the removed Agents hub over Observability, land on X-Ray Device, the first page of the Watchtower - Obsv subgroup that replaced it.) Old config page ids still spoken by links (launcher shortcuts, App-Tabs history, other apps, the debug API open op): Sections.canonicalPage resolves each to the page that holds its content now. About became X-Ray (a new About is app-about); Diagnostics and Agents were folded into X-Ray.",
         "page_aliases": {
+          "network": "ng-firewall",
           "about": "xray",
           "diagnostics": "xray",
           "agents": "xray",
@@ -5393,21 +5395,52 @@
             "subgroup": ""
           },
           {
-            "_doc": "#1719 NETWORK — the one visible Network page, with its own bottom nav (libs:bottomnav island): Wireless | DNS | VPN | Home | NG Firewall | OS Perms | Webserver. Home (default) is the icon grid of every Network item; Wireless holds the Wi-Fi and Bluetooth icons (their pages open as before); DNS and VPN (formerly Cloud Mesh) host the existing pages; NG Firewall opens full screen with its own nav and Back; OS Perms opens Cloud Store > Access; Webserver opens Cloud C3 Webserver. The eight pages the Network group held are still declared below, now `hidden` (reached from this page; every page: route and deep link unchanged). The ADB Shell icon is not drawn here any more (explicit owner removal #1719: ADB Shell lives in Cloud C3 Webserver, whose link covers it); its page id still resolves. The structure is network/NetworkNav.kt (pure) and network/NetworkNavFragment.kt.",
-            "id": "network",
-            "label": "Network",
-            "icon": "ic_world",
-            "hub_pages": ["wifi", "bluetooth", "dns", "wg", "firewall", "apps-access", "webserver"],
-            "reaches": ["firewall", "dns", "webserver", "wg", "apps-access", "adb-shell", "wifi", "bluetooth"],
+            "_doc": "#1737 NG FIREWALL HUB (replaces the #1719 unified Network tile and its bottom nav): one tile, first in the Network group, that opens a page listing the network items as icons under three headings: Connections (Wi-Fi, DNS, VPN), Firewalls (Firewall, OS Perms), Servers (Webserver, Proxy). The structure is network/NgFirewallHub (pure, tested) drawn by NgFirewallHubFragment; every item is also its own tile in this group. `reaches` names the pages kept declared (hidden) for deep links: ADB Shell (explicit owner removal of its icon, #1719; the page lives in Cloud C3 Webserver) and Apps Access (the Store's Access section, which OS Perms opens at Android Perms); `hub_pages` keeps Apps Access listed in the Agents hub next to the individual Network tiles.",
+            "id": "ng-firewall",
+            "label": "NG Firewall",
+            "icon": "ic_act_shield",
+            "reaches": ["adb-shell", "apps-access"],
+            "hub_pages": ["apps-access"],
             "group": "Network",
             "subgroup": ""
           },
           {
-            "_doc": "Firewall — the no-root per-app firewall (libs:firewall, firestack VPN) as a Network page. SectionPages embeds the engine's FirewallDialog (master switch, VPN consent, per-app rules) as the page; Configs ▸ Observability ▸ About keeps only a read-only status summary with a 'Manage in Network ▸ Firewall' link. First after the Watchdog hub in Network: it owns the one VPN slot the Cloud Mesh and DNS below depend on.",
-            "id": "firewall",
-            "label": "NG Firewall",
-            "icon": "ic_lock",
-            "hidden": true,
+            "_doc": "#1737 The | between Network sub-groups on the Configs main page: a CHARACTER, not a tile (`separator: true`).",
+            "id": "network-sep-a",
+            "label": "|",
+            "separator": true,
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1263 Configs ▸ Setup ▸ Network ▸ WiFi: the phone's Wi-Fi analyzer as a page over libs:wifi (WifiFragment draws WifiPanel), right after ADB Shell. Five tabs over one process-wide controller, so scans, the throttle window and running tools survive a tab switch: Scan (live AP list: SSID / BSSID / vendor from the IEEE OUI asset, smoothed RSSI + sparkline, band / channel / width / centre, 802.11 standard, security incl. WPA3 / OWE / Enterprise / PMF / WPS, hidden, 802.11mc / az RTT, Wi-Fi 7 MLO, age; filter, sort, search, group by SSID; the scan throttle state), Channels (spectrum per band, channel rating and best-channel recommendation per regulatory plan, congestion, RSSI over time), Link (the connected network: speeds, frequency, signal / quality / SNR estimate, IPv4 / IPv6 / gateway / DNS / DHCP lease / MTU, captive / validated / metered / private DNS, MAC randomization, roaming log), Tools (ping / jitter / loss, traceroute, DNS, bounded port scan, LAN discovery via NSD / SSDP / sweep / NetBIOS, throughput to build.json wifi_analyzer.throughput, RTT ranging, hot / cold locator) and Log (heatmap grid, events, CSV / JSON / PCAP export and share). Vendors, channel plans and defaults are DATA in the lib's assets; this app's overrides are build.json wifi_analyzer. hidden tabs: reached through the WiFi strip.",
+            "id": "wifi",
+            "label": "Wi-Fi",
+            "icon": "ic_wifi",
+            "tabs": [
+              "wifi-scan",
+              "wifi-channels",
+              "wifi-link",
+              "wifi-tools",
+              "wifi-log"
+            ],
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1221 Configs ▸ Setup ▸ Network ▸ Bluetooth (moved from the Fleet group, now Cloudy C3; the id and its seven tabs are unchanged): the phone's Bluetooth as a page over libs:bluetooth (BluetoothFragment draws BluetoothPanel). Tabs, one shared stack so a connection survives a tab switch: Find (scan with name / service / RSSI filters, the device list, paired devices), Analyze, Locate, Connect (the selected device: connect, bond, GATT discovery, MTU, RSSI), Interact (the live dashboard and the GATT tree: read, write, notify, indicate, descriptors), Debug (the ATT event log, copy and export) and Dev (raw hex write, test payloads, notify stream, permissions, adb grant commands). The known services, characteristics, decoders, filter presets and payloads are DATA (libs/bluetooth assets/bluetooth/gatt-catalog.json). hidden tabs: reached through the Bluetooth strip.",
+            "id": "bluetooth",
+            "label": "Bluetooth",
+            "icon": "ic_bluetooth",
+            "tabs": [
+              "bluetooth-find",
+              "bluetooth-analyze",
+              "bluetooth-locate",
+              "bluetooth-connect",
+              "bluetooth-interact",
+              "bluetooth-debug",
+              "bluetooth-dev"
+            ],
             "group": "Network",
             "subgroup": ""
           },
@@ -5416,17 +5449,6 @@
             "id": "dns",
             "label": "DNS",
             "icon": "ic_world",
-            "hidden": true,
-            "group": "Network",
-            "subgroup": ""
-          },
-          {
-            "_doc": "Webserver - opens the Cloud C3 Webserver app (fleet id c3-webserver; the package is read from data/constellation-fleet.json at run time, WebserverLaunch.kt) through its explicit launch intent. If that app is not installed it opens http://localhost:8002 in Cloud Browser. Sits right after DNS.",
-            "id": "webserver",
-            "label": "Webserver",
-            "icon": "ic_web",
-            "action": "action:open_webserver",
-            "hidden": true,
             "group": "Network",
             "subgroup": ""
           },
@@ -5437,7 +5459,57 @@
             "label": "VPN",
             "icon": "ic_wg",
             "action": "section:wg",
-            "hidden": true,
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1737 The | between Network sub-groups on the Configs main page: a CHARACTER, not a tile (`separator: true`).",
+            "id": "network-sep-b",
+            "label": "|",
+            "separator": true,
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "Firewall — the no-root per-app firewall (libs:firewall, firestack VPN) as a Network page. SectionPages embeds the engine's FirewallDialog (master switch, VPN consent, per-app rules) as the page; Configs ▸ Observability ▸ About keeps only a read-only status summary with a 'Manage in Network ▸ Firewall' link. First after the Watchdog hub in Network: it owns the one VPN slot the Cloud Mesh and DNS below depend on.",
+            "id": "firewall",
+            "label": "Firewall",
+            "icon": "ic_lock",
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1737 OS PERMS - opens Cloud Store > Access > Android Perms (ShellActivity action open_os_perms -> CloudStoreHandoff.open(access, android)); Cloud Store absent: its install offer. Apps Access (the whole Access section) stays declared, hidden.",
+            "id": "os-perms",
+            "label": "OS Perms",
+            "icon": "ic_act_key",
+            "action": "action:open_os_perms",
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1737 The | between Network sub-groups on the Configs main page: a CHARACTER, not a tile (`separator: true`).",
+            "id": "network-sep-c",
+            "label": "|",
+            "separator": true,
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "Webserver - opens the Cloud C3 Webserver app (fleet id c3-webserver; the package is read from data/constellation-fleet.json at run time, WebserverLaunch.kt) through its explicit launch intent. If that app is not installed it opens http://localhost:8002 in Cloud Browser. Sits right after DNS.",
+            "id": "webserver",
+            "label": "Webserver",
+            "icon": "ic_web",
+            "action": "action:open_webserver",
+            "group": "Network",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1737 PROXY - the SuperApp has no proxy page or setting of its own (searched: proxy, HTTP proxy, sing-box, socks: only the Store feed proxy, MediaProxy and the mesh transport, none user-facing), so this opens the system network settings (ShellActivity action open_proxy_settings: Settings > Network & internet, where the Wi-Fi network's Proxy field lives), else Settings.",
+            "id": "proxy",
+            "label": "Proxy",
+            "icon": "ic_ctl_mobile_data",
+            "action": "action:open_proxy_settings",
             "group": "Network",
             "subgroup": ""
           },
@@ -5467,40 +5539,6 @@
             "subgroup": ""
           },
           {
-            "_doc": "#1263 Configs ▸ Setup ▸ Network ▸ WiFi: the phone's Wi-Fi analyzer as a page over libs:wifi (WifiFragment draws WifiPanel), right after ADB Shell. Five tabs over one process-wide controller, so scans, the throttle window and running tools survive a tab switch: Scan (live AP list: SSID / BSSID / vendor from the IEEE OUI asset, smoothed RSSI + sparkline, band / channel / width / centre, 802.11 standard, security incl. WPA3 / OWE / Enterprise / PMF / WPS, hidden, 802.11mc / az RTT, Wi-Fi 7 MLO, age; filter, sort, search, group by SSID; the scan throttle state), Channels (spectrum per band, channel rating and best-channel recommendation per regulatory plan, congestion, RSSI over time), Link (the connected network: speeds, frequency, signal / quality / SNR estimate, IPv4 / IPv6 / gateway / DNS / DHCP lease / MTU, captive / validated / metered / private DNS, MAC randomization, roaming log), Tools (ping / jitter / loss, traceroute, DNS, bounded port scan, LAN discovery via NSD / SSDP / sweep / NetBIOS, throughput to build.json wifi_analyzer.throughput, RTT ranging, hot / cold locator) and Log (heatmap grid, events, CSV / JSON / PCAP export and share). Vendors, channel plans and defaults are DATA in the lib's assets; this app's overrides are build.json wifi_analyzer. hidden tabs: reached through the WiFi strip.",
-            "id": "wifi",
-            "label": "WiFi",
-            "icon": "ic_wifi",
-            "tabs": [
-              "wifi-scan",
-              "wifi-channels",
-              "wifi-link",
-              "wifi-tools",
-              "wifi-log"
-            ],
-            "hidden": true,
-            "group": "Network",
-            "subgroup": ""
-          },
-          {
-            "_doc": "#1221 Configs ▸ Setup ▸ Network ▸ Bluetooth (moved from the Fleet group, now Cloudy C3; the id and its seven tabs are unchanged): the phone's Bluetooth as a page over libs:bluetooth (BluetoothFragment draws BluetoothPanel). Tabs, one shared stack so a connection survives a tab switch: Find (scan with name / service / RSSI filters, the device list, paired devices), Analyze, Locate, Connect (the selected device: connect, bond, GATT discovery, MTU, RSSI), Interact (the live dashboard and the GATT tree: read, write, notify, indicate, descriptors), Debug (the ATT event log, copy and export) and Dev (raw hex write, test payloads, notify stream, permissions, adb grant commands). The known services, characteristics, decoders, filter presets and payloads are DATA (libs/bluetooth assets/bluetooth/gatt-catalog.json). hidden tabs: reached through the Bluetooth strip.",
-            "id": "bluetooth",
-            "label": "Bluetooth",
-            "icon": "ic_bluetooth",
-            "tabs": [
-              "bluetooth-find",
-              "bluetooth-analyze",
-              "bluetooth-locate",
-              "bluetooth-connect",
-              "bluetooth-interact",
-              "bluetooth-debug",
-              "bluetooth-dev"
-            ],
-            "hidden": true,
-            "group": "Network",
-            "subgroup": ""
-          },
-          {
             "_doc": "#563 THE STORE — the one declaration of its identity (id `store`) and its display title (label). It was 'Constellation', an action page (action:constellation) with its own branch in ShellActivity; it is now an ordinary tabbed page, so every way in is a page: target resolved by the same strip Home/Launcher/AI use. Tab 1 is the fleet (every constellation APK: install/update/uninstall/open, per-app versions and digests); tab 2 is every launchable APK on the phone, each row with Update (fleet apps only, through the fleet's own install path) / Open / Stop / Remove / App info / its origin store read from the real installer (#564; map in libs/appstore assets/appstore-install-sources.json). Both tabs group by the central classification (ui.phone_folders + ui.phone_sections, through PhoneTaxonomy) — the store holds no taxonomy of its own. test-store-identity.sh guards that nothing routes here by the old name and that every tile pointing here carries this label.",
             "_doc_tabs_order": "Cloud first: the fleet is what the store exists to manage, and it is the tab the Update-All action, the update notification and a lib tile all land on (page:config/store-cloud).",
             "id": "store",
@@ -5509,17 +5547,6 @@
             "action": "extapp:cloud-store",
             "_doc_865": "#865 the Store is its own app (ac_cloud-store, com.diegonmarcos.cloudstore). This entry opens it: its action extapp:cloud-store is the tile's target. Not is_action, so the tile keeps its place under Setup ▸ Apps instead of moving to the Actions row, and when it is not installed ui.external_apps[id=cloud-store].install_apk_url is offered. The two tab pages below stay, hidden, for page: links (the update notification, Update All); CloudStoreHandoff shows Open Cloud Store on them once the app is installed.",
             "group": "Apps",
-            "subgroup": ""
-          },
-          {
-            "_doc": "Profile now owns config import. The old `import` page entry (action:import_configs) was REMOVED from this list and its two entries live inside ProfileFragment instead: 'Import · file · paste' (re-fires action:import_configs through MainActivity, so the launcher shortcut in res/xml/shortcuts.xml and the radial menu still reach ImportConfigsFragment unchanged) and 'OWebAuth Authelia · Auto Import Configs' (paste a bearer, fetch ui.config_source, apply via ConfigAutoImport).",
-            "_doc_label": "#626 RENAMED Profile → Account. This is the ONE declaration of the words: the Configs tile, the Home-Apps Configs row entry and the page title all read `label`, so the rename is this string and nothing else. The `id` deliberately stays `profile` — it is the page's IDENTITY, not a user-visible label (#380/#381/#499 is the rule that an identity string must not sit in a label, not that the two must be spelled the same). Renaming it would break three things that name it and have no reason to change: SectionPages.kt's route, the launcher-shortcut deep link, and ac_cloud-drive/build.json::…personal_auth.target = `page:config/profile`, which is another SHIPPED app's cross-app contract.",
-            "id": "profile",
-            "label": "Account",
-            "icon": "ic_person",
-            "action": "extapp:cloud-account",
-            "_doc_867": "#867 Account is its own app (ac_cloud-account, com.diegonmarcos.cloudaccount). This entry opens it: its action extapp:cloud-account is the tile's target. Not is_action, so the tile keeps its place under Setup > Apps instead of moving to the Actions row, and when it is not installed ui.external_apps[id=cloud-account].install_apk_url is offered. The page itself stays, hidden, for page: routes; AccountHandoff shows Open Cloud Account on it once the app is installed and the page itself (libs:account) until then.",
-            "group": "Connect",
             "subgroup": ""
           },
           {
@@ -5580,6 +5607,25 @@
               "Network"
             ],
             "group": "Tools",
+            "subgroup": ""
+          },
+          {
+            "_doc": "Profile now owns config import. The old `import` page entry (action:import_configs) was REMOVED from this list and its two entries live inside ProfileFragment instead: 'Import · file · paste' (re-fires action:import_configs through MainActivity, so the launcher shortcut in res/xml/shortcuts.xml and the radial menu still reach ImportConfigsFragment unchanged) and 'OWebAuth Authelia · Auto Import Configs' (paste a bearer, fetch ui.config_source, apply via ConfigAutoImport).",
+            "_doc_label": "#626 RENAMED Profile → Account. This is the ONE declaration of the words: the Configs tile, the Home-Apps Configs row entry and the page title all read `label`, so the rename is this string and nothing else. The `id` deliberately stays `profile` — it is the page's IDENTITY, not a user-visible label (#380/#381/#499 is the rule that an identity string must not sit in a label, not that the two must be spelled the same). Renaming it would break three things that name it and have no reason to change: SectionPages.kt's route, the launcher-shortcut deep link, and ac_cloud-drive/build.json::…personal_auth.target = `page:config/profile`, which is another SHIPPED app's cross-app contract.",
+            "id": "profile",
+            "label": "Account",
+            "icon": "ic_person",
+            "action": "extapp:cloud-account",
+            "_doc_867": "#867 Account is its own app (ac_cloud-account, com.diegonmarcos.cloudaccount). This entry opens it: its action extapp:cloud-account is the tile's target. Not is_action, so the tile keeps its place under Setup > Apps instead of moving to the Actions row, and when it is not installed ui.external_apps[id=cloud-account].install_apk_url is offered. The page itself stays, hidden, for page: routes; AccountHandoff shows Open Cloud Account on it once the app is installed and the page itself (libs:account) until then.",
+            "group": "Configs",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1745 The | after Account in the Configs group on the Configs main page: a CHARACTER, not a tile.",
+            "id": "configs-sep-a",
+            "label": "|",
+            "separator": true,
+            "group": "Configs",
             "subgroup": ""
           },
           {
@@ -9255,6 +9301,9 @@
         "folder": "sys_keyboards",
         "hub_package": "com.diegonmarcos.cloudkeyboard",
         "install_package": "com.diegonmarcos.cloudkeyboard",
+        "actions": [
+          {"label": "Writer", "target": "extapp:cloud-keyboard#page:writer", "_doc": "#1736 was the Cloud > Primary Writer tile (#1707: the Writer tab of the keyboard, the retired Cloud Writer app's successor). A tile on the Cloud list read as the retired app, so the entry point is now an Action of this app's tap menu (CloudAppMenu): target = the same deep link the tile had."}
+        ],
         "install_apk_url": "https://github.com/diegonmarcos/cloudy-u-android/releases/download/latest/Cloud-Keyboard.apk",
         "forks": {}
       },

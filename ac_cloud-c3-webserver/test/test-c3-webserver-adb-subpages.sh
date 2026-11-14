@@ -19,14 +19,14 @@ MAIN = "src-tauri/gen/android/app/src/main/java/com/diegonmarcos/cloudwebserver/
 ORDER = [("adb_status", "Status"), ("adb_term", "Shell"), ("adb_perms", "Perms"), ("adb_server", "Server"), ("adb_all", "All")]
 # fields of the previous Server tab (frozen; the list only grows): needle -> the page that draws it now
 OLD = {
-  '"c3_adb_owner"': "adb_status", '"c3_adb_owner_status"': "adb_status", '"c3_adb_owner_connect"': "adb_status", '"c3_adb_owner_recheck"': "adb_status",
-  '"c3_adb_owner_tester"': "adb_status", '"c3_adb_owner_test"': "adb_status", '"c3_adb_owner_logs"': "adb_status",
-  '"Run id -u"': "adb_status", 'ready.linkText()': "adb_status", 'AdbReadiness.connect(ctx': "adb_status", 'AdbReadiness.check(ctx, fresh = true)': "adb_status",
-  'ShellBroker.exec(ctx, ShellBroker.SELF, "id -u")': "adb_status", 'ChannelLog.shared.asText()': "adb_status", '"no channel log yet"': "adb_status",
+  '"c3_adb_owner"': "adb_all", '"c3_adb_owner_status"': "adb_all", '"c3_adb_owner_connect"': "adb_all", '"c3_adb_owner_recheck"': "adb_all",
+  '"c3_adb_owner_tester"': "adb_all", '"c3_adb_owner_test"': "adb_all", '"c3_adb_owner_logs"': "adb_all",
+  '"Run id -u"': "adb_all", 'ready.linkText()': "adb_all", 'AdbReadiness.connect(ctx': "adb_all", 'AdbReadiness.check(ctx, fresh = true)': "adb_all",
+  'ShellBroker.exec(ctx, ShellBroker.SELF, "id -u")': "adb_all", 'ChannelLog.shared.asText()': "adb_all", '"no channel log yet"': "adb_all",
   '"c3_adb_owner_page"': "adb_all", 'AdbShellPage()': "adb_all",
 }
 # the previous tab row's four lib tabs: each still drawn on its sub page
-LIBTABS = {"AdbStatusTab()": "adb_status", "AdbTermTab()": "adb_term", "AdbPermsTab()": "adb_perms", "AdbShellBrokerPage()": "adb_all"}
+LIBTABS = {"AdbStatusTab()": "adb_all", "AdbTermTab()": "adb_term", "AdbPermsTab()": "adb_perms", "AdbShellBrokerPage()": "adb_all"}
 SERVER_FIELDS = ["ChannelReader.read(", "f.serverRunning", "f.serverPort", "f?.serverPid", "f?.serverUid", "f?.serverUptime", "AdbShellBootstrap.lastLauncher(ctx)",
   "AdbShellBootstrap.bootstrapState(ctx)", "LocalServerAutoStart.lastOutcome", "LocalServerAutoStart.lastSteps", "ConnectPlan.steps(", "ChannelOps.startServer(ctx, restart = false)",
   "ChannelOps.stopServer(ctx)", "ChannelOps.startServer(ctx, restart = true)", "ChannelModeBar", "ChannelLog.shared.entries()", '"c3_adb_server_start"', '"c3_adb_server_stop"',
@@ -58,7 +58,7 @@ def check(bj, owner, server, shell, wpage, decl):
     for t in ("Local server", "Shizuku", "Embedded"):
         pass
     if "FIELD_HOME" not in owner: bad.append("P4 AdbOwnerSide.FIELD_HOME (where each field went) is missing")
-    for n, pid in (("Status", "PAGE_ADB_STATUS"), ("Tester", "PAGE_ADB_STATUS"), ("Logs", "PAGE_ADB_STATUS"), ("ADB Shell", "PAGE_ADB_ALL")):
+    for n, pid in (("Status", "PAGE_ADB_STATUS"), ("Tester", "PAGE_ADB_ALL"), ("Logs", "PAGE_ADB_ALL"), ("ADB Shell", "PAGE_ADB_ALL")):
         if not re.search(r'"%s" to Decl\.%s' % (n, pid), owner): bad.append("P4 FIELD_HOME does not map %s to %s" % (n, pid))
     return bad
 

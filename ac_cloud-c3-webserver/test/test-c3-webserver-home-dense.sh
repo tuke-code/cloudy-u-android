@@ -26,7 +26,7 @@ OLD = ['"c3_home"', '"c3_home_refresh"', '"Refresh"', '"c3_home_status"', '"Stat
   'Api.POWER', 'Api.HEALTH', 'Api.SERVING', 'Api.SERVED', 'Api.SSHD', 'Api.ABOUT', 'fun deviceFacts(', 'fun aboutText(', 'AboutGroups(', 'DeviceStrip(',
   '"Server ON, serving"', 'not answering (Server OFF stops :8003)', 'answering now', 'follows keep alive', 'own switch', 'Decl.SECTION_PAGES', 'Decl.SECTION_SSHD',
   'Decl.SECTION_CONFIGS', 'Decl.PAGE_DEVICE', 'Decl.SECTION_API', 'Decl.PAGE_TOPOLOGY']
-ROWS = [("profile", "adb_server"), ("state", "adb_server"), ("port", "adb_server"), ("pid", "adb_server"), ("uptime", "adb_server"), ("launcher", "adb_server"),
+ROWS = [("connection", "adb_status"), ("profile", "adb_server"), ("state", "adb_server"), ("port", "adb_server"), ("pid", "adb_server"), ("uptime", "adb_server"), ("launcher", "adb_server"),
   ("last_start", "adb_server"), ("auto_chain", "adb_server"), ("wireless", "adb_status"), ("paired", "adb_status"), ("clients", "adb_perms")]
 LIB = ["ChannelReader.read(", "LocalServerAutoStart.lastSteps", "LocalServerAutoStart.lastOutcome", "AdbShellBootstrap.lastLauncher(", "AdbShellBootstrap.bootstrapState(",
   "ChannelModePrefs.current(", "f?.wirelessDebug", "f.adbPaired", "ShellBroker.callerSummaries("]

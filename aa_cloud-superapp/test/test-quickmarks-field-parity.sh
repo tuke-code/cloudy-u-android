@@ -11,7 +11,7 @@
 #   T4  #1627 dividers: Primary = Drive, Browser | Calc, Navigation, Camera, Keyboard, Writer || Wallet and
 #       Data = Note(s), Tasks, Office | Gallery, Media Center || Me, Vault, with single '|' (separator:true) and
 #       DOUBLE '||' (separator:true + double:true) tiles, neither carrying a target.
-#   T5  #1628 Configs row = Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About, every
+#   T5  #1628 Configs row = Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About, every
 #       tile on a real page/app id, and the five #1611 tiles (Quick Actions, Watchdog, Account, C3, Store) retained.
 #   T6  the renderer learned the double divider: Sections parses "double" and TileDivider takes a double flag.
 set -u
@@ -47,13 +47,17 @@ def apptargets(group):
 # T2 — field parity for #1627 (the old Tools Primary ∪ Data Apps targets)
 PRE_PRIMARY_DATA = {
     "extapp:cloud-browser", "extapp:cloud-nav", "extapp:cloud-camera", "extapp:cloud-calc",
-    "extapp:cloud-keyboard", "extapp:cloud-keyboard#page:writer", "extapp:cloud-wallet", "extapp:cloud-vault",
+    "extapp:cloud-keyboard", "extapp:cloud-wallet", "extapp:cloud-vault",
     "extapp:cloud-drive", "extapp:cloud-notes", "extapp:cloud-tasks", "extapp:cloud-gallery",
     "extapp:cloud-media-center", "extapp:cloud-office",
 }
 now = set()
 if "Primary" in by: now |= set(apptargets(by["Primary"]))
 if "Data" in by: now |= set(apptargets(by["Data"]))
+# #1736 the Writer tile left the list; its deep link must survive as the Keyboard app menu's declared action (rule 16).
+kb_actions = {a.get("target") for e in d["ui"].get("external_apps", []) if e.get("id") == "cloud-keyboard" for a in e.get("actions", [])}
+if "extapp:cloud-keyboard#page:writer" not in kb_actions:
+    emit("T2", "the Writer deep link is no longer reachable (ui.external_apps[cloud-keyboard].actions)")
 missing = PRE_PRIMARY_DATA - now
 if missing:
     emit("T2", "apps dropped from Primary∪Data vs the pre-#1627 quickmarks: %s" % ", ".join(sorted(missing)))
@@ -78,7 +82,7 @@ else:
 def row(group): return [(t.get("label"), t.get("separator", False), t.get("double", False), t.get("target", "")) for t in by[group]["tiles"]]
 if "Primary" in by:
     labels = [l for l, s, dbl, tg_ in row("Primary")]
-    if labels != ["Drive", "Browser", "|", "Calc", "Navigation", "Camera", "Keyboard", "Writer", "||", "Wallet"]:
+    if labels != ["Drive", "Browser", "|", "Calc", "Navigation", "Camera", "Keyboard", "||", "Wallet"]:
         emit("T4", "Primary row = %r" % labels)
 if "Data" in by:
     labels = [l for l, s, dbl, tg_ in row("Data")]
@@ -102,19 +106,26 @@ for grp in ("Primary", "Data"):
 if "Configs" in by:
     ct = by["Configs"]["tiles"]
     labels = [t.get("label") for t in ct]
-    WANT = ["Quick Actions", "UI", "|", "NG Firewall", "WiFi", "|", "Store", "|", "Account", "C3", "|", "Watchdog", "|", "About"]
+    WANT = ["Quick Actions", "UI", "|", "NG Firewall", "|", "Store", "|", "C3", "|", "Watchdog", "|", "Account", "|", "About"]
     if labels != WANT:
         emit("T5", "Configs row = %r" % labels)
     bytgt = {t.get("label"): t.get("target") for t in ct if not t.get("separator")}
     EXP = {
         "Quick Actions": "page:config/controls", "UI": "page:config/panels-ui",
-        "NG Firewall": "page:config/firewall", "WiFi": "page:config/wifi",
+        "NG Firewall": "page:config/ng-firewall",
         "Store": "extapp:cloud-store", "Account": "extapp:cloud-account",
         "C3": "extapp:cloud-c3", "Watchdog": "extapp:c3-watchdog", "About": "page:config/app-about",
     }
     for lab, tgt in EXP.items():
         if bytgt.get(lab) != tgt:
             emit("T5", "Configs tile %r targets %r, want %r" % (lab, bytgt.get(lab), tgt))
+    # #1745 parity: the Firewall and WiFi tiles left this row for the NG Firewall hub; both pages must stay declared,
+    # visible and listed by the hub (Rule 16).
+    cfg = next(s for s in d["ui"]["sections"] if s["id"] == "config")["pages"]
+    cpid = {p["id"]: p for p in cfg}
+    for pid in ("firewall", "wifi", "ng-firewall"):
+        if pid not in cpid or cpid[pid].get("hidden"):
+            emit("T5", "page %r must stay declared and visible (reachable via the NG Firewall hub)" % pid)
     for retained in ("Quick Actions", "Watchdog", "Account", "C3", "Store"):
         if retained not in labels:
             emit("T5", "#1611 Configs tile %r was dropped (field parity)" % retained)

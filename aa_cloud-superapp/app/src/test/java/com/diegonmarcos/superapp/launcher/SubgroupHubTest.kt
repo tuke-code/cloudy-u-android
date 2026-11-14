@@ -2,6 +2,7 @@ package com.diegonmarcos.superapp.launcher
 
 import android.app.Application
 import androidx.compose.ui.test.onNodeWithTag
+import com.diegonmarcos.superapp.network.NgFirewallHub
 import com.diegonmarcos.superapp.ui.KitPageHarness
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -20,7 +21,7 @@ import org.robolectric.annotation.Config
  *   H2 the Agents hub shows one titled section, Network, derived from the nav (hub_sections name a group now that subgroups are gone)
  *   H3 routing: in-app pages are page:config/<id>; apps / sections / Cloud Store hand-offs keep their declared action
  *   H4 the hub routes to SubgroupHubFragment (not the C3 APKs) and draws a section heading and a Cloud ▸ Apps tile per entry
- *   H5 Cloud ▸ Apps ▸ Configs row = Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About (#1628); Watchdog launches extapp:c3-watchdog
+ *   H5 Cloud ▸ Apps ▸ Configs row = Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About (#1745, was #1628); Watchdog launches extapp:c3-watchdog
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -37,8 +38,8 @@ class SubgroupHubTest : KitPageHarness() {
         val runs = config.pages.filter { !it.isAction }.map { it.group to it.subgroup }.distinct()
         assertEquals(listOf(
             "Launcher" to "", "Network" to "", "Apps" to "", "Connect" to "", "Tools" to "", "Configs" to ""), runs)
-        // Connect carries Account, Cloudy C3 and Peer Control.
-        assertEquals(listOf("Account", "Cloudy C3", "Peer Control"), grp("Connect").map { it.label })
+        // Connect carries Cloudy C3 and Peer Control (#1745: Account moved to the Configs group).
+        assertEquals(listOf("Cloudy C3", "Peer Control"), grp("Connect").map { it.label })
         // Agents is the in-app agents-watchdog hub, in the Tools group (the owner's dual listing kept once, beside the observability pages).
         assertEquals(listOf("agents-watchdog"), config.pages.filter { it.hubSections.isNotEmpty() }.map { it.id })
         assertEquals("Tools" to "", config.pages.first { it.id == "agents-watchdog" }.let { it.group to it.subgroup })
@@ -48,14 +49,16 @@ class SubgroupHubTest : KitPageHarness() {
         // The groups as declared.
         assertEquals(listOf("controls", "panels-ui", "app-folders", "onehand", "notify"), grp("Launcher").map { it.id })
         assertEquals(listOf("c3-watchdog", "xray", "logcat-fleet", "agents-watchdog"), grp("Tools").map { it.id })
-        assertEquals(listOf("perms", "logcat", "xray-app", "app-about"), grp("Configs").map { it.id })
+        assertEquals(listOf("profile", "perms", "logcat", "xray-app", "app-about"), grp("Configs").map { it.id })
         assertEquals(listOf("X-Ray Device", "Logcat Fleet"),
             grp("Tools").filter { it.id == "xray" || it.id == "logcat-fleet" }.map { it.label })
-        // #1719 the Network group shows ONE page, Network (the page with its own bottom nav); Bluetooth, the firewall and the rest
-        // are still Network pages, declared hidden and reached from it (NetworkNavParityTest holds the full list).
-        assertEquals(listOf("network"), grp("Network").map { it.id })
-        assertTrue("Bluetooth is a Network page", config.allPages.any { it.id == "bluetooth" && it.group == "Network" })
-        assertEquals("firewall", config.allPages.first { it.group == "Network" && it.id != "network" }.id)
+        // #1737 the Network group shows the individual icons on the Configs page, in the owner's order, `|` between the sub-groups:
+        // NG Firewall (hub) | Wi-Fi Bluetooth DNS VPN | Firewall OS Perms | Webserver Proxy; Bluetooth right after Wi-Fi.
+        assertEquals(listOf("ng-firewall", "wifi", "bluetooth", "dns", "wg", "firewall", "os-perms", "webserver", "proxy"), grp("Network").map { it.id })
+        assertEquals(listOf("NG Firewall", "Wi-Fi", "Bluetooth", "DNS", "VPN", "Firewall", "OS Perms", "Webserver", "Proxy"), grp("Network").map { it.label })
+        assertEquals(NgFirewallHub.CONFIGS_NETWORK_ORDER,
+            config.allPages.filter { it.group == "Network" && !it.hidden }.map { if (it.separator) "|" else it.id })
+        assertTrue("no unified Network page", config.allPages.none { it.id == "network" })
         assertTrue("Watchdog is no Network item any more", grp("Network").none { it.id == "agents-watchdog" })
     }
 
@@ -63,15 +66,17 @@ class SubgroupHubTest : KitPageHarness() {
     fun `H2 the Agents hub shows Network`() {
         // #1623: agents-watchdog hubs the Network group (hub_sections name the group now that subgroups are flattened away).
         assertEquals(listOf("Network"), hub("agents-watchdog").map { it.title })
-        // #1719 rule 16: the hub keeps the icons it listed (every old Network page except the removed ADB Shell), beside the Network tile.
-        assertEquals(listOf("network", "firewall", "dns", "webserver", "wg", "apps-access", "wifi", "bluetooth"), hub("agents-watchdog")[0].tiles.map { it.id })
+        // #1737 rule 16: the Agents hub lists the individual items (every old Network page except the removed ADB Shell), plus the NG Firewall hub tile.
+        assertEquals(listOf("ng-firewall", "wifi", "bluetooth", "dns", "wg", "firewall", "os-perms", "webserver", "proxy", "apps-access"),
+            hub("agents-watchdog")[0].tiles.map { it.id })
     }
 
     @Test
     fun `H3 pages navigate in-app, apps keep their own declared action`() {
-        // #1719 the pages are hidden behind the Network page, so their targets are read from allPages.
         val by = config.allPages.filter { it.group == "Network" }.associateBy { it.id }
-        assertEquals("page:config/network", Sections.hubTarget("config", by.getValue("network")))
+        assertEquals("page:config/ng-firewall", Sections.hubTarget("config", by.getValue("ng-firewall")))
+        assertEquals("action:open_os_perms", Sections.hubTarget("config", by.getValue("os-perms")))
+        assertEquals("action:open_proxy_settings", Sections.hubTarget("config", by.getValue("proxy")))
         assertEquals("page:config/firewall", Sections.hubTarget("config", by.getValue("firewall")))
         assertEquals("page:config/dns", Sections.hubTarget("config", by.getValue("dns")))
         assertEquals("page:config/bluetooth", Sections.hubTarget("config", by.getValue("bluetooth")))
@@ -101,15 +106,18 @@ class SubgroupHubTest : KitPageHarness() {
     }
 
     @Test
-    fun `H5 Cloud Apps Configs row reads Quick Actions, UI, Firewall, WiFi, Store, Account, C3, Watchdog, About (1628)`() {
+    fun `H5 Cloud Apps Configs row reads Quick Actions, UI, NG Firewall, Store, C3, Watchdog, Account, About (1745)`() {
         // #1628 redefined the Cloud > Apps > Configs row (supersedes #1611): Quick Actions, UI | Firewall, WiFi |
         // Store | Account, C3 | Watchdog | About. Watchdog now launches the C3-Watchdog APK (extapp:c3-watchdog)
         // and a Firewall tile (page:config/firewall) is present. The config-section Agents hub page is a separate surface.
         val row = Sections.all().flatMap { it.tileGroups }.single { it.title == "Configs" }.tiles.filter { !it.separator }
         assertEquals(
-            listOf("Quick Actions", "UI", "NG Firewall", "WiFi", "Store", "Account", "C3", "Watchdog", "About"),
+            listOf("Quick Actions", "UI", "NG Firewall", "Store", "C3", "Watchdog", "Account", "About"),
             row.map { it.label })
         assertTrue("Watchdog launches the C3-Watchdog app", row.any { it.label == "Watchdog" && it.target == "extapp:c3-watchdog" })
-        assertTrue("Firewall opens the Network firewall page", row.any { it.label == "NG Firewall" && it.target == "page:config/firewall" })
+        assertTrue("NG Firewall opens the hub", row.any { it.label == "NG Firewall" && it.target == "page:config/ng-firewall" })
+        // Rule 16: Firewall and Wi-Fi left this row but stay declared and visible (hub + Configs Network group).
+        val ids = Sections.all().single { it.id == "config" }.allPages.filter { !it.hidden }.map { it.id }
+        assertTrue(ids.containsAll(listOf("firewall", "wifi", "ng-firewall")))
     }
 }

@@ -102,6 +102,12 @@ object LocalDoors {
         }.getOrElse { e -> Probe(door, State.OFF, reason(e), null, now()) }
     }
 
+    /** #1746 the phone's WireGuard mesh address (IPv4 of wg0), or null when the tunnel is down; never throws. */
+    fun meshAddress(): String? = runCatching {
+        java.net.NetworkInterface.getNetworkInterfaces()?.toList().orEmpty().firstOrNull { it.name == "wg0" && it.isUp }
+            ?.inetAddresses?.toList().orEmpty().firstOrNull { it is java.net.Inet4Address }?.hostAddress
+    }.getOrNull()
+
     private fun reason(e: Throwable): String = when (e) {
         is java.net.ConnectException -> "refused (nothing listening)"
         is java.net.SocketTimeoutException -> "timed out"

@@ -55,6 +55,9 @@ object ShellBroker {
                 return AdbFacts(global("adb_enabled"), global("adb_wifi_enabled"), emb.everPaired(app),
                     runCatching { emb.isReady(app) }.getOrDefault(false), runCatching { emb.endpoint(app) }.getOrNull())
             }
+            override fun sessionOptionalVia(): String? =
+                if (runCatching { com.diegonmarcos.superapp.adbdebug.ChannelModePrefs.ownsServer() && com.diegonmarcos.superapp.adbdebug.ChannelModePrefs.current(app) == com.diegonmarcos.superapp.adbdebug.ChannelMode.LOCAL_SERVER }.getOrDefault(false))
+                    com.diegonmarcos.superapp.adbdebug.ChannelSelector.LOCAL else null
             override fun adbRun(cmd: String): String? {
                 val emb = com.diegonmarcos.superapp.adbdebug.EmbeddedAdbChannel
                 return if (runCatching { emb.isReady(app) }.getOrDefault(false)) emb.exec(app, cmd) else null

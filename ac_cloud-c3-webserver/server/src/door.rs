@@ -504,6 +504,20 @@ pub fn state_of(has_port: bool, up: bool, sessions: usize, wanted_and_asked: boo
     }
 }
 
+/// #1746 the state word from the REAL verdict (sshd_status): connected / listening only when every required check passed; "partial"
+/// when some did and some did not; "starting" while a start was just asked; "down" when nothing answers; "not checked" before any check.
+pub fn state_real(v: crate::sshd_status::Verdict, sessions: usize, asked: bool) -> &'static str {
+    use crate::sshd_status::Verdict::*;
+    match (v, sessions > 0, asked) {
+        (Green, true, _) => "connected",
+        (Green, false, _) => "listening",
+        (Amber, _, _) => "partial",
+        (Red, _, true) => "starting",
+        (Red, _, false) => "down",
+        (Grey, _, _) => "not checked",
+    }
+}
+
 /// The compact state of the supervised door for the Server card: port, wanted, explicit switch, owned, live state.
 pub fn summary() -> Value {
     let st = power::current();
@@ -511,9 +525,10 @@ pub fn summary() -> Value {
     let p = probe(sup.port);
     let want = wanted(st.sw, st.ssh_door);
     let asked = LAST_START.lock().map(|l| l.map(|t| t.elapsed() < START_GRACE).unwrap_or(false)).unwrap_or(false);
+    let real = p.up && !p.banner.is_empty();
     json!({
-        "port": sup.port, "wanted": want, "explicit": st.ssh_door, "owned": st.ssh_owned, "up": p.up, "mesh_only": mesh_only(&st),
-        "state": state_of(true, p.up, 0, want && asked), "via": "Cloud Terminal Nix-on-Droid (mesh_sshd)",
+        "port": sup.port, "wanted": want, "explicit": st.ssh_door, "owned": st.ssh_owned, "up": real, "mesh_only": mesh_only(&st),
+        "state": state_of(true, real, 0, want && asked), "via": "Cloud Terminal Nix-on-Droid (mesh_sshd)",
     })
 }
 
@@ -532,13 +547,24 @@ pub fn doors_json() -> Value {
             }
             None => (None, None),
         };
-        let up = p.as_ref().map(|p| p.up).unwrap_or(false);
         let banner = p.as_ref().map(|p| p.banner.clone()).unwrap_or_default();
+        let hosted_on = d.hosted && hosted_wanted(&st, d);
+        // #1746 THE real state: process + port + a banner round trip on loopback, LAN and the mesh address.
+        let status = d.port.map(|port| {
+            crate::sshd_status::status_json(port, if d.hosted { Some(crate::sshd::running()) } else { None }, door_mesh_only(&st, d), &cfg().mesh.cidrs, cfg().timeout, &d.user)
+        });
+        let loop_ok = status.as_ref().and_then(|s| s["checks"].as_array()).map(|a| a.iter().any(|c| c["id"] == "loopback" && c["ok"] == true)).unwrap_or(false);
+        let up = loop_ok;
+        let verdict = match status.as_ref().and_then(|s| s["verdict"].as_str()) {
+            Some("green") => crate::sshd_status::Verdict::Green,
+            Some("amber") => crate::sshd_status::Verdict::Amber,
+            Some("red") => crate::sshd_status::Verdict::Red,
+            _ => crate::sshd_status::Verdict::Grey,
+        };
         let engine = if !banner.is_empty() { engine_of(&banner) } else { d.engine.clone() };
         let n = ses.as_ref().map(|s| s.len()).unwrap_or(0);
         let mesh_explicit = if d.supervised { st.mesh_only } else { st.door_mesh.get(&d.id).copied() };
-        let hosted_on = d.hosted && hosted_wanted(&st, d);
-        let state = state_of(d.port.is_some(), up, n, d.supervised && want && asked);
+        let state = if d.port.is_some() { state_real(verdict, n, d.supervised && want && asked) } else { state_of(false, false, 0, false) };
         let control = if d.hosted {
             json!({"available": true, "wanted": hosted_on, "explicit": st.door_on.get(&d.id), "owned": false,
                    "note": "This app hosts this sshd: Start and Stop set its own switch (default ON); Mesh-only below is this port's own switch."})
@@ -568,6 +594,15 @@ pub fn doors_json() -> Value {
             "authorized_keys": Value::Null,
             "authorized_keys_note": "Held in the hosting app's private home; not readable from this app's uid.",
             "seen_up_s": seen_up_s(&d.id, up),
+            "status": status, "user": d.user, "pid": if d.hosted && crate::sshd::running() { json!(std::process::id()) } else { Value::Null },
+            "pid_note": if d.hosted { "this app's own process" } else { "another app's process: not visible from this uid" },
+            "host_key": if d.hosted { json!(crate::sshd::facts().fingerprint) } else { Value::Null },
+            "host_key_note": if d.hosted { "SHA256 of this app's ed25519 host key (set once the engine has started)" } else { "the host key stays in the hosting app's private home" },
+            "auth_methods": if d.hosted { json!(["publickey"]) } else { json!([d.auth]) },
+            "keys_count": if d.hosted { json!(crate::sshd::facts().authorized_keys) } else { Value::Null },
+            "config_path": if d.hosted { json!(crate::sshd::facts().host_key_path) } else { json!(format!("{} (in {})", "~/.ssh/authorized_keys and the app's sshd_config", d.app)) },
+            "log_tail": if d.hosted { json!(crate::sshd::log_tail(8).iter().map(|(t, e)| json!({"at_ms": t, "event": e})).collect::<Vec<_>>()) } else { json!([]) },
+            "log_note": if d.hosted { "" } else { "the log lives in the hosting app; not readable from this app" },
             "sessions": ses, "sessions_note": sessions_note,
             "note": d.note, "control": control,
         }));
@@ -584,7 +619,7 @@ pub fn doors_json() -> Value {
         }
     }
     let hosted: Vec<Value> = cfg().doors.iter().filter(|d| d.hosted).map(|d| {
-        let up = d.port.map(|p| probe(p).up).unwrap_or(false);
+        let up = d.port.map(|p| { let r = probe(p); r.up && !r.banner.is_empty() }).unwrap_or(false);
         json!({"id": d.id, "port": d.port, "wanted": hosted_wanted(&st, d), "listening": up, "engine_running": crate::sshd::running()})
     }).collect();
     json!({"doors": rows, "other": other, "hosted": hosted, "wanted": want, "explicit": st.ssh_door, "keep_alive": st.sw.keep_alive, "server": st.sw.server,
@@ -599,13 +634,21 @@ pub fn command(door: &str, op: &str) -> Result<(), String> {
             "start" => power::set_door_on(&d.id, Some(true)),
             "stop" => power::set_door_on(&d.id, Some(false)),
             "follow" => power::set_door_on(&d.id, None),
-            _ => return Err("op must be start, stop or follow".to_string()),
+            "restart" => {
+                crate::sshd::stop();
+                power::set_door_on(&d.id, Some(true));
+            }
+            _ => return Err("op must be start, stop, restart or follow".to_string()),
         }
         sync_hosted();
         return Ok(());
     }
     if !d.supervised {
         return Err(format!("{} has no start/stop hook: use its own terminal", door));
+    }
+    if op == "restart" {
+        set("stop")?;
+        return set("start");
     }
     set(op)
 }
@@ -802,6 +845,17 @@ mod tests {
                   0: 00000000000000000000000001000000:1F58 00000000000000000000000000000000:0000 0A 0 0\n\
                   1: 00000000000000000000000000000000:1F58 00000000000000000000000000000000:0000 0A 0 0\n";
         assert_eq!(listening(t6, 8024), vec!["::1".parse::<IpAddr>().unwrap(), "::".parse::<IpAddr>().unwrap()]);
+    }
+
+    #[test]
+    fn real_state_words_follow_the_verdict() {
+        use crate::sshd_status::Verdict::*;
+        assert_eq!(state_real(Green, 0, false), "listening");
+        assert_eq!(state_real(Green, 2, false), "connected");
+        assert_eq!(state_real(Amber, 0, false), "partial");
+        assert_eq!(state_real(Red, 0, false), "down");
+        assert_eq!(state_real(Red, 0, true), "starting");
+        assert_eq!(state_real(Grey, 0, false), "not checked");
     }
 
     #[test]

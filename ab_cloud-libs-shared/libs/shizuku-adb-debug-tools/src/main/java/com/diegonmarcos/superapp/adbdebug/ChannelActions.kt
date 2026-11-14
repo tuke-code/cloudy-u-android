@@ -9,6 +9,9 @@ enum class ChannelAction(val label: String) {
     TEST("Test round-trip"),
 }
 
+/** #1743 The three buttons of the Status page, decided by the one verdict. */
+enum class StatusButton(val label: String) { CONNECT("Connect"), DISCONNECT("Disconnect"), RECONNECT("Reconnect") }
+
 /** Whether a button is live, and when it is not, the reason it shows. */
 data class Enablement(val enabled: Boolean, val why: String? = null)
 
@@ -26,8 +29,11 @@ object ChannelActions {
         val usesServer = f.ownsServer && (f.mode == ChannelMode.LOCAL_SERVER || f.mode == ChannelMode.AUTO)
         return mapOf(
             ChannelAction.DISCONNECT to when {
+                // #1743 Disconnect closes the embedded session AND stops the local server: either one makes it usable.
                 f.adbConnected -> yes
+                usesServer && f.serverRunning -> yes
                 f.mode == ChannelMode.SHIZUKU -> no("Shizuku is stopped from the Shizuku app")
+                usesServer -> no("nothing is connected (embedded adb closed, local server not running)")
                 else -> no("embedded adb is not connected")
             },
             ChannelAction.RECONNECT to yes,

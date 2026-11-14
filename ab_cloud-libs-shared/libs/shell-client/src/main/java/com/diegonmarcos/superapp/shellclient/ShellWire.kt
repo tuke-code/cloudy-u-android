@@ -101,14 +101,6 @@ object ShellWire {
     /** #1682 One audited broker call as the client sees it (never the output; the command is already redacted broker side). */
     data class AuditRow(val ts: Long, val caller: String, val cmd: String, val outcome: String, val exit: Int, val ms: Long, val source: String)
 
-    fun encodeAudit(rows: List<AuditRow>): String = org.json.JSONArray().apply {
-        rows.forEach { r -> put(JSONObject().put("ts", r.ts).put("caller", r.caller).put("cmd", r.cmd).put("outcome", r.outcome)
-            .put("exit", r.exit).put("ms", r.ms).put("source", r.source)) }
-    }.toString()
-
-    fun encodeCallers(rows: List<Pair<String, String>>): String =
-        org.json.JSONArray().apply { rows.forEach { (k, v) -> put(JSONObject().put("caller", k).put("summary", v)) } }.toString()
-
     /** Clamp a caller's timeout into 1 s .. [MAX_TIMEOUT_MS]; every call has one. */
     fun clampTimeout(ms: Long): Long = ms.coerceIn(1_000L, MAX_TIMEOUT_MS)
 

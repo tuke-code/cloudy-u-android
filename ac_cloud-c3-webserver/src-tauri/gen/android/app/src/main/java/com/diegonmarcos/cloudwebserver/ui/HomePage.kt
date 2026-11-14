@@ -153,7 +153,7 @@ fun SshdStrip(d: JSONObject, goto: () -> Unit) {
             val st = x.str("state")
             val ctl = x.optJSONObject("control")
             val own = ctl != null && ctl.has("explicit") && !ctl.isNull("explicit")
-            DRow(x.str("title"), "${if (x.has("port") && !x.isNull("port")) "tcp ${x.str("port")}" else "no port"} · $st · ${if (own) "own switch" else "follows keep alive"}", up = st == "listening" || st == "connected")
+            DRow(x.str("title"), "${if (x.has("port") && !x.isNull("port")) "tcp ${x.str("port")}" else "no port"} · $st · ${sshWord(x)} · mesh ${sshMesh(x)} · ${if (own) "own switch" else "follows keep alive"}", up = sshState(x) == SshState.GREEN)
         }
     }
 }

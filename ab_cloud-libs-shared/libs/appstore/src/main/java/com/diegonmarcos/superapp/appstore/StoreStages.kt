@@ -333,6 +333,8 @@ object StoreStages {
             if (!ApkCache.landed(ctx, ApkCache.entry(e.file), app.pkg)) return@named stage(ctx, app)
             // #1121 the terminals unpack their bundled files after an update: start that explicitly.
             runCatching { UnpackAfterInstall.run(ctx, app.pkg) }
+            // #1744 adopt it (pm set-installer through the ADB owner) when ADB is up; never fails the install
+            StoreAdopt.adoptAfterInstall(ctx, app.pkg)
             clear(ctx, app)
         }
     }

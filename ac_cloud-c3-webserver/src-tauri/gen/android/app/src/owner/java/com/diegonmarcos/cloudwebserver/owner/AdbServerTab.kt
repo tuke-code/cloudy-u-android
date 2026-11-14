@@ -22,6 +22,7 @@ import com.diegonmarcos.cloudwebserver.ui.Card
 import com.diegonmarcos.cloudwebserver.ui.Note
 import com.diegonmarcos.cloudwebserver.ui.PageColumn
 import com.diegonmarcos.superapp.adbdebug.AdbShellBootstrap
+import com.diegonmarcos.superapp.adbdebug.AdbStatus
 import com.diegonmarcos.superapp.adbdebug.AutoStartCore
 import com.diegonmarcos.superapp.adbdebug.ChannelAction
 import com.diegonmarcos.superapp.adbdebug.ChannelActions
@@ -90,6 +91,8 @@ internal fun AdbServerTab() {
                 else -> "NOT RUNNING (no answer on 127.0.0.1:${f.serverPort})"
             }
             Note("State: $st")
+            // #1743 the same single verdict as the Status page
+            f?.let { AdbStatus.verdict(it) }?.let { Note("Connection: ${it.title} - ${it.detail}") }
             Note("Port: " + (f?.serverPort?.takeIf { it > 0 }?.let { "127.0.0.1:$it (loopback only, token)" } ?: "unknown"))
             Note("Process: pid " + (f?.serverPid ?: "-") + "  ·  " + (f?.serverUid ?: "uid -") + "  ·  uptime " + (f?.serverUptime ?: "-"))
             Note("Started by: " + (AdbShellBootstrap.lastLauncher(ctx) ?: "nobody yet this boot") + " (automatic: embedded adb first, Shizuku only as the fallback)")

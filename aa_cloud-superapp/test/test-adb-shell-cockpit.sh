@@ -35,8 +35,8 @@ for t in tabs:
     if not by[t][0].get('hidden'): bad.append('%s is not hidden' % t)
     if sum(t in g['pages'] for g in sec['groups']) != 1: bad.append('%s not in exactly one group' % t)
 if '_doc' not in page or 'FOUR TABS' not in page['_doc']: bad.append('_doc does not describe the tabs')
-# #1719 the Network group shows one page (Network); the pages it held are declared hidden behind it, in the same order, and the ADB Shell icon is gone (explicit owner removal)
-vis = [p['id'] for p in sec['pages'] if p.get('group') == 'Network' and p['id'] in ('network','firewall','dns','webserver','wg','apps-access','adb-shell','wifi','bluetooth')]
+# #1737 the Network group shows individual icons again; the ADB Shell icon stays removed (explicit owner removal #1719), its page is declared hidden
+vis = [p['id'] for p in sec['pages'] if p.get('group') == 'Network' and p['id'] in ('ng-firewall','wifi','bluetooth','dns','wg','firewall','os-perms','webserver','proxy','apps-access','adb-shell')]
 if vis[vis.index('adb-shell') - 1] != 'apps-access': bad.append('not after apps-access')
 if not page.get('hidden'): bad.append('adb-shell icon is still drawn (#1719 removed it)')
 sys.exit(1 if bad else 0) if not print('; '.join(bad)) or True else 0
@@ -69,9 +69,11 @@ echo "$P" | grep -q 'KitStoreRow' && echo "$P" | grep -q 'LocalKitPalette' && ec
 echo "$P" | grep -q 'ChannelReader.read' && echo "$P" | grep -q 'ChannelLog.shared' && echo "$P" | grep -q 'ChannelModePrefs.set' && echo "$P$O" | grep -q 'readPermRows' && ok "bound to the real state: ChannelReader, ChannelLog.shared, ChannelModePrefs, the perms catalogue" || bad "not bound to the real state"
 echo "$P" | grep -q 'ON_RESUME' && ! echo "$P$S" | grep -Eq 'while \(true\)|delay\(' && ok "loads on open and resume, no polling" || bad "polls, or does not reload on resume"
 for w in '"filter' '"copy"' '"clear"' 'adbc:control' 'adbc:mode' 'adbc:toggle' 'adbc:reconnect' 'adbc:master' 'adbc:step:' 'adbc:row:' 'adbc:light:' 'adbc:name:' 'adbc:msg:' 'adbc:acts:' 'adbc:logs' 'adbc:keepalive' 'AdbCockpitModel.groups('; do echo "$P" | grep -qF "$w" && ok "status page: $w" || bad "status page is missing: $w"; done
-echo "$O" | grep -q 'ConnectPlan.run' && echo "$O" | grep -q 'needsUser = true' && ok "Connect walks ConnectPlan and hands over at the consent gates" || bad "Connect does not stop for the person"
+# #1743 the cockpit's Connect goes through the lib's ONE chain runner (ChainRunner: every step re-probed, retries with backoff), whose core is ConnectPlan.run
+SA="$(code "$ROOT/../ab_cloud-libs-shared/libs/shizuku-adb-debug-tools/src/main/java/com/diegonmarcos/superapp/adbdebug/ServerAutoStart.kt")"
+echo "$O" | grep -q 'ChainRunner.run(' && echo "$SA" | grep -q 'ConnectPlan.run(' && echo "$O" | grep -q 'needsUser = true' && ok "Connect walks ConnectPlan and hands over at the consent gates" || bad "Connect does not stop for the person"
 # 5. Connect IS the auto-fix.
-[ "$(echo "$O" | grep -c 'ConnectPlan.run(')" = 1 ] && echo "$O" | grep -q 'AutoFixExecutor(app)) { grantPerms(app) }' && echo "$O" | grep -q 'Do.CONNECT -> connect(app)' \
+[ "$(echo "$O" | grep -c 'ChainRunner.run(')" = 1 ] && [ "$(echo "$SA" | grep -c 'ConnectPlan.run(')" = 1 ] && echo "$O" | grep -q 'AutoFixExecutor(app)) { grantPerms(app) }' && echo "$O" | grep -q 'Do.CONNECT -> connect(app)' \
   && ok "one Connect path: perms, then the whole plan with the gates opened (no plain single-step connect)" || bad "Connect is not the one full chain"
 echo "$P" | grep -Eq 'adbc:autofix|autoFix' && bad "a separate Auto-fix control is back on the Status page" || ok "no separate Auto-fix control"
 echo "$P" | grep -q 'Do.CONNECT -> connect()' && echo "$P" | grep -q 'AdbCockpitModel.resumes(waiting, r.facts)' && ok "the top Connect runs the chain, and a run that stopped for the person resumes" || bad "the top Connect does not run / resume the chain"

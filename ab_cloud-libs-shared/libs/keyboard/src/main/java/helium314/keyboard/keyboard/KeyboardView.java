@@ -399,7 +399,7 @@ public class KeyboardView extends View {
                 && CornerSwipe.centerLegendOf(CornerSwipe.idOf(label, key.getCode())) != null; // Unexpected space bar: its glyph, not the language name
         if (label != null && !labelReplaced) {
             paint.setTypeface(KeyboardTypeface.resolve(label, key.selectTypeface(params)));
-            paint.setTextSize(key.selectTextSize(params) * mFontSizeMultiplier);
+            paint.setTextSize(key.selectTextSize(params) * mFontSizeMultiplier * (UnexpectedKb.active && !(this instanceof PopupKeysKeyboardView) ? UnexpectedKb.TEXT_FACTOR : 1f));
             final float labelCharHeight = TypefaceUtils.getReferenceCharHeight(paint);
             final float labelCharWidth = TypefaceUtils.getReferenceCharWidth(paint);
 
@@ -471,7 +471,7 @@ public class KeyboardView extends View {
         final java.util.List<String> corners = CornerSwipe.legendsOf(cornerId);
         if (corners != null) {
             // the design's corner glyphs are a little larger than the stock hint size
-            paint.setTextSize(key.selectHintTextSize(params) * mFontSizeMultiplier * (UnexpectedKb.active ? 1.4f : 1f));
+            paint.setTextSize(key.selectHintTextSize(params) * mFontSizeMultiplier * (UnexpectedKb.active ? UnexpectedKb.LEGEND_FACTOR : 1f));
             paint.setColor(params.mHintLabelColor);
             paint.setTextAlign(Align.CENTER);
             final float padX = Math.min(keyWidth * 0.18f, keyHeight * 0.24f);
@@ -504,7 +504,12 @@ public class KeyboardView extends View {
                     }
                 }
                 final String plain = UnexpectedKb.textOf(text);
-                if (!plain.isEmpty()) canvas.drawText(plain, 0, plain.length(), x, y, paint);
+                if (!plain.isEmpty()) {
+                    // a wide legend (Esc, F11, 123+) stays inside the key instead of hanging over its edge
+                    final float half = paint.measureText(plain) / 2f, margin = keyWidth * 0.03f;
+                    final float cx = Math.min(Math.max(x, half + margin), keyWidth - half - margin);
+                    canvas.drawText(plain, 0, plain.length(), cx, y, paint);
+                }
             }
             final String centerLegend = CornerSwipe.centerLegendOf(cornerId);
             if (centerLegend != null) {

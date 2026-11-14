@@ -26,6 +26,8 @@ interface BrokerChannel {
     fun adbFacts(): AdbFacts? = null
     /** #1550 Run [cmd] over the embedded adb session ONLY (never the local server or Shizuku); null = no session. */
     fun adbRun(cmd: String): String? = null
+    /** #1743 The channel name that carries commands while the embedded session is closed BY DESIGN (the Local server profile); null = the session is required. */
+    fun sessionOptionalVia(): String? = null
 }
 
 /** #1550 [session] = the embedded client holds a socket (a flag, never trusted alone); [endpoint] "host:port" when known. */
@@ -122,8 +124,11 @@ class BrokerCore(
             catch (e: Exception) { why = "adb refused (${(e.cause ?: e).javaClass.simpleName})"; false }
             finally { pool.shutdownNow() }
         }
-        val link = com.diegonmarcos.superapp.shellclient.AdbLink.classify(f.adbEnabled, f.wireless, f.paired, trip)
-        val detail = if (link.up) f.endpoint.orEmpty() else why
+        val optVia = runCatching { channel.sessionOptionalVia() }.getOrNull()
+        val viaServer = !trip && optVia != null && s.armed && s.channel == optVia
+        val link = com.diegonmarcos.superapp.shellclient.AdbLink.classify(f.adbEnabled, f.wireless, f.paired, trip,
+            sessionOptional = optVia != null, shellRoundTrip = viaServer)
+        val detail = if (viaServer) "$optVia round trip ok; embedded session closed after launch" else if (link.up) f.endpoint.orEmpty() else why
         return s.copy(adb = link, adbDetail = detail)
     }
 

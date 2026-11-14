@@ -90,14 +90,29 @@ object ChannelState {
         else -> true
     }
 
+    private fun shellUid(uid: String?) = uid == null || uid == "uid 2000" || uid == "uid 0"
+
+    /**
+     * #1743 Local server profile: the embedded adb session is a launcher that is CLOSED once the server answers (#1709), so its
+     * being closed is the designed outcome, never a fault. Only this profile (in an app that owns a server) has an optional session.
+     */
+    fun sessionOptional(f: ChannelFacts): Boolean = f.ownsServer && f.mode == ChannelMode.LOCAL_SERVER
+
+    /** The profile's own channel answers a shell round trip while the embedded session is closed by design. */
+    fun localCarries(f: ChannelFacts): Boolean =
+        sessionOptional(f) && !f.adbConnected && f.serverRunning && shellUid(f.serverUid) && route(f) == ChannelSelector.LOCAL
+
+    /**
+     * THE verdict, the only one: every surface (Status card, STATUS card, Home table, SuperApp dot, Store chip) reads it.
+     * Healthy round trip = UP. DEGRADED only for a real partial failure: the local server answers but not as the shell
+     * (its commands cannot do what the channel needs), or in Auto a lower rung (Shizuku, bridge) carries while a paired adb dropped.
+     */
     fun connState(f: ChannelFacts): ConnState {
         if (f.connecting) return ConnState.CONNECTING
         val r = route(f) ?: return ConnState.DOWN
         val degraded = when (f.mode) {
-            // The loopback server carries the commands while the adbd connection (the mode's channel) is down.
-            ChannelMode.LOCAL_SERVER -> r == ChannelSelector.LOCAL && !f.adbConnected
-            // A paired adb session that dropped while a lower rung carries the commands.
-            ChannelMode.AUTO -> r != ChannelSelector.EMBEDDED && f.adbPaired && !f.adbConnected
+            ChannelMode.LOCAL_SERVER -> r == ChannelSelector.LOCAL && !f.adbConnected && !shellUid(f.serverUid)
+            ChannelMode.AUTO -> r != ChannelSelector.EMBEDDED && r != ChannelSelector.LOCAL && f.adbPaired && !f.adbConnected
             else -> false
         }
         return if (degraded) ConnState.DEGRADED else ConnState.UP
@@ -175,8 +190,7 @@ object ChannelState {
 
     /** Why [ConnState.DEGRADED], in the words of what is missing. */
     fun degradedWhy(f: ChannelFacts): String = when (f.mode) {
-        ChannelMode.LOCAL_SERVER -> "commands run on the loopback server, but the adbd connection is down " +
-            "(embedded adb ${if (f.adbPaired) "not connected" else "not paired"})"
+        ChannelMode.LOCAL_SERVER -> "the local server answers as ${f.serverUid}, not the shell (uid 2000): commands that need shell rights fail"
         else -> "the embedded adb dropped; a lower rung carries the commands"
     }
 

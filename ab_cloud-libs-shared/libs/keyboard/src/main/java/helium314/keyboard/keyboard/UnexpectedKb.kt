@@ -24,6 +24,15 @@ object UnexpectedKb {
     const val MAIN_FN = "unexpected_kb_fn"
     const val FUNCTIONAL = "functional_keys_unexpected"
     const val COMPASS = "⦶"
+    /**
+     * Key height of the design relative to the stock keyboard. Measured on the 1080 px wide comparison: the design's five rows span 818 px,
+     * the first pass (factor 1.16) spanned 690 px, so 1.16 * 818 / 690.
+     */
+    const val HEIGHT_FACTOR = 1.375f
+    /** Centre glyph size relative to the stock key text, taking the taller keys into account (the design's 't' is 40 px tall; the pass before measured 42 px). */
+    const val TEXT_FACTOR = 1.14f
+    /** Corner legend size relative to the stock hint text (the design's '$' is 18 x 34 px; measured 17 x 30 at 1.52). */
+    const val LEGEND_FACTOR = 1.66f
 
     /** Theme on (mirrored from the prefs by [CornerSwipe.refresh]). */
     @JvmField @Volatile var active = false
@@ -113,7 +122,11 @@ object UnexpectedKb {
     }
 
     @Volatile private var cached: Layout? = null
-        set(v) { field = v; tables = if (v == null) emptyList() else listOf(false, true).map { l -> v.layer(l).all.associateBy { it.id } } }
+        set(v) { field = v; tables = if (v == null) emptyList() else listOf(false, true).map { l ->
+            val all = v.layer(l).all
+            // a key is found by its id and, for the special keys, by the glyph it carries as its label (the compass key's)
+            all.associateBy { it.id } + all.filter { it.center.isNotEmpty() && it.id != it.center.lowercase() }.associateBy { it.center.lowercase() }
+        } }
     /** id -> key per layer (base, fn), rebuilt when the layout is set: the key view asks per key per draw. */
     @Volatile private var tables: List<Map<String, KeyDef>> = emptyList()
 

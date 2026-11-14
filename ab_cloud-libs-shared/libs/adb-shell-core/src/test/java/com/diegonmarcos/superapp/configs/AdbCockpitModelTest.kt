@@ -146,8 +146,11 @@ class AdbCockpitModelTest {
         assertEquals(Light.GREY, AdbCockpitModel.master(null).light)
         assertEquals("Connected", AdbCockpitModel.master(inputs(facts(paired = true, connected = true, server = true))).label)
         assertEquals(Light.GREEN, AdbCockpitModel.master(inputs(facts(paired = true, connected = true, server = true))).light)
-        // the loopback server answers while the adbd connection is down: degraded
-        assertEquals("Degraded", AdbCockpitModel.master(inputs(facts(paired = true, server = true))).label)
+        // #1743 the loopback server answers and the embedded session is closed after the launch (designed): Connected, never Degraded
+        assertEquals("Connected", AdbCockpitModel.master(inputs(facts(paired = true, server = true))).label)
+        assertEquals(Light.GREEN, AdbCockpitModel.master(inputs(facts(paired = true, server = true))).light)
+        // degraded only for a real partial failure: the server answers, but not as the shell
+        assertEquals("Degraded", AdbCockpitModel.master(inputs(facts(paired = true, server = true).copy(serverUid = "uid 10234"))).label)
         val ready = AdbCockpitModel.master(inputs(facts(ChannelMode.EMBEDDED_ONLY, paired = true)))
         assertEquals(Light.AMBER, ready.light); assertEquals("Ready", ready.label)
         assertEquals("Setup needed", AdbCockpitModel.master(inputs(facts(wd = false))).label)
