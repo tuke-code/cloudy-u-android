@@ -11,12 +11,16 @@ import org.json.JSONObject
  * not declare in its `meta`: the broker runs `sh -c`, so `dumpsys battery; rm -rf x` must not pass a `^dumpsys .*$` rule.
  * Two declared, per-caller escapes exist for the SuperApp's own features (data, never a client choice):
  *  - `exact`: literal command lines (the X-Ray probes are fixed scripts with pipes and loops), matched as a whole;
- *  - `segments`: `;` and newline separate commands, and EACH segment must match a rule (the Background policy chains appops/am).
+ *  - `segments`: `;` and newline separate commands, and EACH segment must match a rule that declares `chain: true` (#1748: the
+ *    Background policy / Super Saving rules; an install, grant, adopt, role or `id` rule never stands in a chain, so `<allowed>; id`
+ *    is refused). A single command is matched against every rule, whole, as before.
  */
 class Allowlist(private val callers: Map<String, Entry>, private val aliases: Map<String, String> = emptyMap()) {
 
     /** [maxBytes] only applies to a `stdin` rule: the most input one call may stream (never above [ShellWire.STDIN_MAX_BYTES]). */
-    data class Rule(val id: String, val pattern: Regex, val meta: String = "", val maxBytes: Long = 0L)
+    data class Rule(val id: String, val pattern: Regex, val meta: String = "", val maxBytes: Long = 0L,
+                      /** #1748 may stand in a `;`/newline chain of a `segments` entry; default false (a lone command is unaffected). */
+                      val chain: Boolean = false)
     /** [stdin] = the caller's #1512 stdin rules (`pm install -S <size>`); empty = this caller may stream nothing. */
     data class Entry(val rules: List<Rule>, val exact: Map<String, Rule> = emptyMap(), val segments: Boolean = false,
                      val stdin: List<Rule> = emptyList(),
@@ -89,8 +93,11 @@ class Allowlist(private val callers: Map<String, Entry>, private val aliases: Ma
             return one(key, e.rules, c)
         }
         var last: Decision.Allow? = null
-        for (part in c.split(';', '\n').map { it.trim() }.filter { it.isNotEmpty() }) {
-            when (val d = one(key, e.rules, part)) {
+        val parts = c.split(';', '\n').map { it.trim() }.filter { it.isNotEmpty() }
+        // #1748 one command: any rule; two or more: only rules that declare `chain`
+        val pool = if (parts.size > 1) e.rules.filter { it.chain } else e.rules
+        for (part in parts) {
+            when (val d = one(key, pool, part)) {
                 is Decision.Deny -> return d
                 is Decision.Allow -> last = d
             }
@@ -133,7 +140,7 @@ class Allowlist(private val callers: Map<String, Entry>, private val aliases: Ma
                 val arr = c.optJSONArray("allow")
                 val own = if (arr == null) emptyList() else (0 until arr.length()).map { i ->
                     val r = arr.getJSONObject(i)
-                    Rule(r.getString("id"), Regex(r.getString("re")), r.optString("meta", ""))
+                    Rule(r.getString("id"), Regex(r.getString("re")), r.optString("meta", ""), 0L, r.optBoolean("chain", false))
                 }
                 val ex = LinkedHashMap<String, Rule>()
                 base?.let { ex.putAll(it.exact) }

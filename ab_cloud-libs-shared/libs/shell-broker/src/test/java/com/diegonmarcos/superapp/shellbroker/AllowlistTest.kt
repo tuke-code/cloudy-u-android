@@ -121,9 +121,49 @@ class AllowlistTest {
             assertTrue(who, a.decide(who, ok) is Decision.Allow)
             assertTrue(who, a.decide(who, "$ok 2>&1") is Decision.Allow)
             assertTrue(who, a.decide(who, "pm set-installer com.diegonmarcos.cloudmail com.evil.store") is Decision.Deny)
+            assertTrue(who, a.decide(who, "$ok; id") is Decision.Deny)
             assertTrue(who, a.decide(who, "$ok | id") is Decision.Deny)
         }
         assertTrue(a.decide("com.diegonmarcos.cloudbrowser", ok) is Decision.Deny)
         assertTrue(a.decide("com.diegonmarcos.cloudwebserver", ok) is Decision.Deny)
+    }
+
+    // #1748 no entry accepts an allowed command with anything appended: each rule matches the WHOLE command; a chain exists only
+    // on a `segments` entry and only between rules that declare `chain` (Background policy / Super Saving), never an install,
+    // grant, adopt, role or `id` rule.
+    private fun real(): Allowlist? = listOf("src/main/assets/shell-allowlist.json", "ab_cloud-libs-shared/libs/shell-broker/src/main/assets/shell-allowlist.json")
+        .map { java.io.File(it) }.firstOrNull { it.isFile }?.let { Allowlist.parse(it.readText()) }
+
+    @Test fun everyEntryRefusesEveryChainingAndInjectionForm() {
+        val a = real() ?: return
+        val samples = listOf("pm set-installer com.diegonmarcos.cloudmail com.diegonmarcos.cloudstore", "getprop", "dumpsys battery", "echo shell-ok",
+            "settings get global x", "pm list packages", "id -u", "screencap -p /sdcard/Download/screencap-20261105-163000.png")
+        val tails = listOf("; id", ";id", " && id", " || id", " | id", " & id", " `id`", " \$(id)", "\nid", "\n id", " > /sdcard/x", " >> /sdcard/x",
+            " 2>/sdcard/x", " < /etc/passwd", "; rm -rf /sdcard", "\\", " #", " {id}", " (id)")
+        var covered = 0
+        for (who in a.callers() + "com.diegonmarcos.cloudwebserver") {
+            val base = samples.firstOrNull { a.decide(who, it) is Decision.Allow } ?: continue
+            covered++
+            for (t in tails) assertTrue("$who accepted '$base$t'", a.decide(who, base + t) is Decision.Deny)
+            assertTrue("$who accepted a leading chain", a.decide(who, "id; $base") is Decision.Deny)
+        }
+        assertTrue("covered $covered entries", covered >= 6)
+    }
+
+    @Test fun aChainedSegmentsEntryOnlyChainsDeclaredRules() {
+        val a = real() ?: return
+        val adopt = "pm set-installer com.diegonmarcos.cloudmail com.diegonmarcos.cloudstore"
+        for (who in listOf("com.diegonmarcos.superapp", "owner")) {
+            // declared Background policy chain: still allowed
+            val bg = "cmd appops set com.example.app RUN_ANY_IN_BACKGROUND allow; cmd appops set com.example.app RUN_IN_BACKGROUND allow; am set-standby-bucket com.example.app active"
+            assertTrue(who, a.decide(who, bg) is Decision.Allow)
+            assertTrue(who, a.decide(who, "echo '@@x'\ncmd appops get com.example.app RUN_ANY_IN_BACKGROUND") is Decision.Allow)
+            for (bad in listOf("$adopt; id", "id; $adopt", "$bg; id", "$bg; $adopt", "$bg\npm uninstall com.example.app", "pm grant com.diegonmarcos.superapp android.permission.WRITE_SECURE_SETTINGS; $bg",
+                "$bg; pm install -S 5", "$bg; logcat -d", "$bg | id", "$bg && id", "$bg; \$(id)", "$bg; `id`"))
+                assertTrue("$who accepted '$bad'", a.decide(who, bad) is Decision.Deny)
+            // each lone command is still allowed
+            assertTrue(who, a.decide(who, adopt) is Decision.Allow)
+            assertTrue(who, a.decide(who, "id") is Decision.Allow)
+        }
     }
 }
