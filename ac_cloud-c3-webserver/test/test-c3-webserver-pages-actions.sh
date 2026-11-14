@@ -62,7 +62,7 @@ for h in HOOKS:
     if h not in used:
         errors.append("A1 the web shell no longer carries %s: the baseline list is stale" % h)
 for h in sorted(set(re.findall(r'\b(data-(?:root|tree|start|copy|rescan|undeclared|toggle|goto|choice|remember|adb)[a-z-]*)=?', web))):
-    if h in ("data-root", "data-root-ext", "data-copy-about", "data-copy-doors") or h in HOOKS: continue   # about and doors are not Pages
+    if h in ("data-root", "data-root-ext", "data-copy-about", "data-copy-doors", "data-copy-ssh") or h in HOOKS: continue   # about and doors are not Pages
     if h.startswith(("data-root-", "data-tree-", "data-copy-", "data-start-")) and h not in HOOKS:
         errors.append("A1 the web shell has action hook %s that HOOKS does not map: map it to a native tag" % h)
 # A2: every tag is drawn
