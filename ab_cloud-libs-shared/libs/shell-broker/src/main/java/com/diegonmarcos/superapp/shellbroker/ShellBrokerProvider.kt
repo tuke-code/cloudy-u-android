@@ -38,8 +38,8 @@ class ShellBrokerProvider : ContentProvider() {
             val who = CallerId.of(ctx, uid, callingPackage) ?: return reply(ShellWire.encode(ShellResult.Denied("unknown caller")))
             if (!ShellBroker.mayAudit(ctx, who)) return reply(ShellWire.encode(ShellResult.Denied("no audit grant")))
             return reply(if (method == ShellWire.M_AUDIT)
-                ShellWire.encodeAudit(ShellBroker.auditEntries(ctx).map { ShellWire.AuditRow(it.ts, it.caller, it.cmd, it.outcome, it.exit, it.ms, it.source) })
-            else ShellWire.encodeCallers(ShellBroker.callerSummaries(ctx)))
+                AuditWire.encodeAudit(ShellBroker.auditEntries(ctx).map { ShellWire.AuditRow(it.ts, it.caller, it.cmd, it.outcome, it.exit, it.ms, it.source) })
+            else AuditWire.encodeCallers(ShellBroker.callerSummaries(ctx)))
         }
         val viaJson = method == ShellWire.M_EXEC_JSON || method == ShellWire.M_STREAM_JSON
         if (method != ShellWire.M_EXEC && method != ShellWire.M_STREAM && !viaJson) return null
