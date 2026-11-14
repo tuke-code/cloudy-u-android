@@ -205,6 +205,9 @@ class StatusStripModel(private val context: Context) {
     /** #1684 WebS / SSHd: the last real loopback round trips (null = not checked yet). */
     @Volatile internal var websProbe: com.diegonmarcos.superapp.network.LocalDoors.Probe? = null
         private set
+    /** #1746 the mesh-address round trips, aligned with [sshdProbes] (null = no wg0 address); [sshdMeshChecked] false until the first check. */
+    @Volatile internal var sshdMesh: List<com.diegonmarcos.superapp.network.LocalDoors.Probe?> = emptyList()
+    @Volatile internal var sshdMeshChecked: Boolean = false
     @Volatile internal var sshdProbes: List<com.diegonmarcos.superapp.network.LocalDoors.Probe> = emptyList()
         private set
     private val doorsChecking = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -528,7 +531,10 @@ class StatusStripModel(private val context: Context) {
                     val d = com.diegonmarcos.superapp.network.LocalDoors.declared
                     val w = runCatching { com.diegonmarcos.superapp.network.LocalDoors.probeHttp(d.webs, d.timeoutMs) }.getOrNull()
                     val ss = d.sshd.mapNotNull { runCatching { com.diegonmarcos.superapp.network.LocalDoors.probeSsh(it, d.timeoutMs) }.getOrNull() }
-                    mainHandler.post { websProbe = w; sshdProbes = ss; applyIconTints() }
+                    // #1746 the same door on the WireGuard mesh address: "reachable from the mesh" means the banner answers there.
+                    val meshIp = com.diegonmarcos.superapp.network.LocalDoors.meshAddress()
+                    val mp = ss.map { p -> meshIp?.let { ip -> runCatching { com.diegonmarcos.superapp.network.LocalDoors.probeSsh(p.door, d.timeoutMs, host = ip) }.getOrNull() } }
+                    mainHandler.post { websProbe = w; sshdProbes = ss; sshdMesh = mp; sshdMeshChecked = true; applyIconTints() }
                 } finally { doorsChecking.set(false) }
             }.apply { name = "strip-doors"; isDaemon = true }.start()
         }.onFailure { doorsChecking.set(false) }
@@ -671,8 +677,8 @@ class StatusStripModel(private val context: Context) {
             // #1684 WebS / SSHd: white only from a real loopback round trip; grey = down; dim = not checked / not declared.
             NetworkSections.WEBS to StripDoors.websState(websProbe).let { st -> StripChip(label.getValue(NetworkSections.WEBS), StripDoors.tint(st, on, off),
                 peerDots = listOf(StripDoors.dot(st)), peerDescription = StripDoors.describe(st, listOfNotNull(websProbe))) },
-            NetworkSections.SSHD to StripDoors.sshdState(sshdProbes).let { st -> StripChip(label.getValue(NetworkSections.SSHD), StripDoors.tint(st, on, off),
-                peerDots = listOf(StripDoors.dot(st)), peerDescription = StripDoors.describe(st, sshdProbes)) },
+            NetworkSections.SSHD to StripDoors.sshdVerdict(sshdProbes, sshdMesh, sshdMeshChecked).let { st -> StripChip(label.getValue(NetworkSections.SSHD), StripDoors.tintV(st, on, off),
+                peerDots = listOf(StripDoors.dotV(st)), peerDescription = StripDoors.describeSshd(st, sshdProbes, sshdMesh, sshdMeshChecked)) },
             NetworkSections.HOTSPOT to StripChip(label.getValue(NetworkSections.HOTSPOT), if (hasHotspot) on else off),
             // GPS: white with location on; dots = the passive / last fix's quality (0 = none).
             NetworkSections.GPS to (if (locationOn) on else off).let { StripChip(label.getValue(NetworkSections.GPS), it, runCatching { gpsWatch.dots(locationOn) }.getOrDefault(0)) },

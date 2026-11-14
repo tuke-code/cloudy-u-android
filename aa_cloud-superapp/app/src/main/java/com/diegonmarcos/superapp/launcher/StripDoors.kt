@@ -23,6 +23,21 @@ internal object StripDoors {
     fun describe(s: LocalDoors.State, ps: List<LocalDoors.Probe>): String =
         s.name.lowercase() + ps.joinToString("") { "; ${it.door.title} :${it.door.port ?: "?"} ${it.detail}" }
 
+    /** #1746 SSHd: green = on, amber (the charge-only amber) = partial, grey = off, dim = not checked. */
+    fun tintV(v: SshdVerdict.V, on: Int, off: Int): Int = when (v) {
+        SshdVerdict.V.GREEN -> on; SshdVerdict.V.AMBER -> CHARGE_TINT; SshdVerdict.V.RED -> off; SshdVerdict.V.GREY -> UNKNOWN_TINT
+    }
+    fun dotV(v: SshdVerdict.V): Int = when (v) {
+        SshdVerdict.V.GREEN -> AdbPeerDots.tint(true); SshdVerdict.V.AMBER -> CHARGE_TINT; SshdVerdict.V.RED -> AdbPeerDots.tint(false); SshdVerdict.V.GREY -> AdbPeerDots.tint(null)
+    }
+    fun sshdVerdict(loops: List<LocalDoors.Probe>, mesh: List<LocalDoors.Probe?>, meshChecked: Boolean): SshdVerdict.V =
+        SshdVerdict.combine(loops.mapIndexed { i, p -> SshdVerdict.ofDoor(p, mesh.getOrNull(i), meshChecked) })
+    fun describeSshd(v: SshdVerdict.V, loops: List<LocalDoors.Probe>, mesh: List<LocalDoors.Probe?>, meshChecked: Boolean): String =
+        SshdVerdict.word(v, emptyList()).substringBefore(" (") + loops.mapIndexed { i, p ->
+            val (dv, failed) = SshdVerdict.verdict(SshdVerdict.checks(p, mesh.getOrNull(i), meshChecked))
+            "; ${p.door.title} :${p.door.port ?: "?"} ${SshdVerdict.word(dv, failed)} (${p.detail}${if (meshChecked) "; mesh " + (mesh.getOrNull(i)?.detail ?: "no mesh address") else ""})"
+        }.joinToString("")
+
     fun cableTint(c: UsbDataModel.Cable, on: Int, off: Int): Int = when (c) {
         UsbDataModel.Cable.DATA -> on; UsbDataModel.Cable.CHARGE -> CHARGE_TINT; UsbDataModel.Cable.NONE -> off
     }

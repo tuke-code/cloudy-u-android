@@ -99,6 +99,39 @@ struct Runner {
 
 static RUN: Mutex<Option<Runner>> = Mutex::new(None);
 
+/// #1746 what the SSHd page shows beyond the live probes: the host key fingerprint, how many keys are authorized, the key and
+/// config paths, and a short in-memory log of connections (nothing is written to disk).
+#[derive(Clone, Default)]
+pub struct Facts {
+    pub fingerprint: Option<String>,
+    pub authorized_keys: usize,
+    pub host_key_path: Option<String>,
+}
+
+static FACTS: Mutex<Option<Facts>> = Mutex::new(None);
+static LOG: Mutex<Vec<(u64, String)>> = Mutex::new(Vec::new());
+const LOG_MAX: usize = 40;
+
+pub fn facts() -> Facts {
+    FACTS.lock().ok().and_then(|f| f.clone()).unwrap_or_default()
+}
+
+/// Record one event ("accepted 10.0.0.2", "dropped 192.168.1.4 (mesh-only)", "started", "stopped").
+pub fn note(event: &str) {
+    if let Ok(mut l) = LOG.lock() {
+        l.push((crate::sshd_status::now_ms(), event.to_string()));
+        let n = l.len();
+        if n > LOG_MAX {
+            l.drain(0..n - LOG_MAX);
+        }
+    }
+}
+
+/// The newest `n` events, newest last.
+pub fn log_tail(n: usize) -> Vec<(u64, String)> {
+    LOG.lock().map(|l| l.iter().rev().take(n).rev().cloned().collect()).unwrap_or_default()
+}
+
 /// Is the listener up (this process's own state; the page also probes the port)?
 pub fn running() -> bool {
     RUN.lock().map(|r| r.is_some()).unwrap_or(false)
@@ -114,6 +147,13 @@ pub fn start(policy: Policy) -> Result<u16, String> {
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     listener.set_nonblocking(true).map_err(|e| e.to_string())?;
     let host_key = load_host_key(&policy.host_key)?;
+    if let Ok(mut f) = FACTS.lock() {
+        *f = Some(Facts {
+            fingerprint: Some(host_key.public_key().fingerprint(russh::keys::ssh_key::HashAlg::Sha256).to_string()),
+            authorized_keys: policy.keys.len(),
+            host_key_path: policy.host_key.as_ref().map(|p| p.display().to_string()),
+        });
+    }
     let mut config = Config::default();
     config.keys = vec![host_key];
     config.methods = MethodSet::from(&[MethodKind::PublicKey][..]);
@@ -137,6 +177,7 @@ pub fn start(policy: Policy) -> Result<u16, String> {
         .map_err(|e| e.to_string())?;
     *run = Some(Runner { stop, thread, port });
     println!("c3-webserver sshd listening on :{} (pubkey only)", port);
+    note(&format!("started on :{}", port));
     Ok(port)
 }
 
@@ -147,6 +188,7 @@ pub fn stop() {
         r.stop.notify_one();
         let _ = r.thread.join();
         println!("c3-webserver sshd stopped");
+        note("stopped");
     }
 }
 
@@ -175,9 +217,11 @@ async fn accept_loop(listener: TcpListener, config: Arc<Config>, policy: Policy,
                 let (sock, peer) = match acc { Ok(x) => x, Err(_) => continue };
                 // THE GATE: judged by source address before any SSH byte is exchanged.
                 if !mesh_gate(peer.ip(), (policy.mesh_only)(), &policy.cidrs) {
+                    note(&format!("dropped {} (outside loopback and the mesh ranges)", peer.ip()));
                     drop(sock);
                     continue;
                 }
+                note(&format!("accepted {}", peer.ip()));
                 let _ = sock.set_nodelay(true);
                 let handler = Conn { keys: keys.clone(), ptys: HashMap::new(), shells: HashMap::new(), rt: tokio::runtime::Handle::current() };
                 let config = config.clone();
@@ -299,7 +343,9 @@ impl Handler for Conn {
     }
 
     async fn auth_publickey(&mut self, _user: &str, key: VerifiedPublicKey<'_>) -> Result<Auth, Self::Error> {
-        Ok(if authorized(&self.keys, key.public_key) { Auth::Accept } else { Auth::reject() })
+        let ok = authorized(&self.keys, key.public_key);
+        note(if ok { "auth: key accepted" } else { "auth: key refused" });
+        Ok(if ok { Auth::Accept } else { Auth::reject() })
     }
 
     async fn channel_open_session(&mut self, _channel: Channel<Msg>, reply: russh::server::ChannelOpenHandle, _session: &mut Session) -> Result<(), Self::Error> {

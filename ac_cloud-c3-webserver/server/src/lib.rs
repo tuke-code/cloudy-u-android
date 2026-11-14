@@ -34,6 +34,7 @@ pub mod roots;
 pub mod served;
 pub mod serving;
 pub mod sshd;
+pub mod sshd_status;
 pub mod sub;
 pub mod topology;
 
