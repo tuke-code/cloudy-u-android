@@ -16,7 +16,7 @@
 #      agents-watchtower are page_aliases of a DECLARED page (never a 404) and agents-watchtower is retired; watchdog alias lands on it
 #   R6 Network = Firewall, DNS, Webserver, Cloud Mesh, Apps Access, ADB Shell, WiFi, Bluetooth; Bluetooth and its seven tabs
 #      belong to the Network group
-#   R7 Connect = Account, Cloudy C3, Peer Control; Apps = Store; Tools holds Watchdog (the c3-watchdog launch page →
+#   R7 Connect = Cloudy C3, Peer Control (Account moved to Configs, #1745); Apps = Store; Tools holds Watchdog (the c3-watchdog launch page →
 #      extapp:c3-watchdog); exactly six groups launcher/network/apps/connect/tools/configs, and no page wears Device/Setup/Fleet
 #   R8 COVERAGE: every config page id of the tree before the restructure is still declared, retired or removed; every alias and
 #      retirement lands on a declared page; every declared page is in exactly one group
@@ -103,7 +103,7 @@ probs = []
 want_tools = [('c3-watchdog', 'Watchdog'), ('tools-sep-1', '|'), ('xray', 'X-Ray Device'), ('logcat-fleet', 'Logcat Fleet'), ('agents-watchdog', 'Agents')]
 if [(p['id'], p['label']) for p in tools] != want_tools:
     probs.append('Tools = %r' % [(p['id'], p['label']) for p in tools])
-want_cfg = [('perms', 'Perms'), ('logcat', 'Logcat'), ('xray-app', 'X-Ray App'), ('app-about', 'About')]
+want_cfg = [('profile', 'Account'), ('configs-sep-a', '|'), ('perms', 'Perms'), ('logcat', 'Logcat'), ('xray-app', 'X-Ray App'), ('app-about', 'About')]
 if [(p['id'], p['label']) for p in cfg] != want_cfg:
     probs.append('Configs = %r' % [(p['id'], p['label']) for p in cfg])
 for sid in ('launcher-sep-1', 'tools-sep-1'):
@@ -113,7 +113,7 @@ if any(p.get('subgroup') == 'Watchtower - Obsv' for p in sec['pages']): probs.ap
 if (by['battery'].get('group'), by['battery'].get('subgroup')) != ('Configs', '') or not by['battery'].get('hidden'): probs.append('battery left the Configs group or stopped being hidden')
 print('; '.join(probs) or 'OK')
 PY
-)" "Tools holds Watchdog, |, X-Ray Device, Logcat Fleet, Agents; Configs holds Perms, Logcat, X-Ray App, About; Battery is hidden in the Configs group; no Watchtower - Obsv subgroup remains"
+)" "Tools holds Watchdog, |, X-Ray Device, Logcat Fleet, Agents; Configs holds Account, |, Perms, Logcat, X-Ray App, About (#1745); Battery is hidden in the Configs group; no Watchtower - Obsv subgroup remains"
 python3 - "$DEV" "$PAGES" <<'PY' && ok "X-Ray Device is DevControlFragment.newInstance(label) with no filter and all 14 macro groups are still declared" || bad "X-Ray Device lost its macro groups or got a filter"
 import re, sys
 dev = open(sys.argv[1]).read(); pages = open(sys.argv[2]).read()
@@ -178,7 +178,7 @@ def run(g):
 probs = []
 gids = [g['id'] for g in sec['groups']]
 if gids != ['launcher', 'network', 'apps', 'connect', 'tools', 'configs']: probs.append('group ids = %r (want the six #1623 groups)' % gids)
-if run('Connect') != ['Account', 'Cloudy C3', 'Peer Control']: probs.append('Connect = %r' % run('Connect'))
+if run('Connect') != ['Cloudy C3', 'Peer Control']: probs.append('Connect = %r' % run('Connect'))
 if run('Apps') != ['Store']: probs.append('Apps = %r' % run('Apps'))
 if 'Watchdog' not in run('Tools'): probs.append('Tools lacks Watchdog: %r' % run('Tools'))
 cw = by.get('c3-watchdog', {})
@@ -188,7 +188,7 @@ for stale in ('Device', 'Setup', 'Agents', 'Cloudy C3', 'Fleet'):
     if any(p.get('group') == stale for p in sec['pages']): probs.append('a page still wears the group %r' % stale)
 print('; '.join(probs) or 'OK')
 PY
-)" "six groups launcher/network/apps/connect/tools/configs; Connect = Account, Cloudy C3, Peer Control; Apps = Store; Tools holds Watchdog (c3-watchdog → extapp:c3-watchdog); no page wears Device/Setup/Fleet as a group"
+)" "six groups launcher/network/apps/connect/tools/configs; Connect = Cloudy C3, Peer Control (Account moved to Configs, #1745); Apps = Store; Tools holds Watchdog (c3-watchdog → extapp:c3-watchdog); no page wears Device/Setup/Fleet as a group"
 
 echo "== R8: coverage — nothing was dropped =="
 check "$(python3 - "$BJ" <<'PY'

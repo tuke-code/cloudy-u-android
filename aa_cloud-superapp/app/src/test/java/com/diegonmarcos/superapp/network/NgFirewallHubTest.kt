@@ -97,7 +97,9 @@ class NgFirewallHubTest {
         assertEquals("Firewall", all.getValue("firewall").getString("label"))
         assertEquals("NG Firewall", all.getValue("ng-firewall").getString("label"))
         assertTrue(pages().none { it.optString("label") == "Cloud Mesh" })
-        assertTrue(buildText.contains("\"id\": \"configs-firewall\",\n                \"label\": \"Firewall\",\n                \"icon\": \"ic_lock\",\n                \"target\": \"page:config/firewall\""))
+        // #1745: the Cloud > Apps > Configs row carries one NG Firewall tile (the hub) instead of Firewall + WiFi tiles.
+        assertTrue(buildText.contains("\"id\": \"configs-ng-firewall\",\n                \"label\": \"NG Firewall\",\n                \"icon\": \"ic_act_shield\",\n                \"target\": \"page:config/ng-firewall\""))
+        assertFalse(buildText.contains("\"id\": \"configs-firewall\""))
     }
 
     @Test fun `N5 the Firewall page owns its screen with its own nav and one Back`() {

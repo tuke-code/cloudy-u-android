@@ -3479,7 +3479,7 @@
             "title": "Configs",
             "_doc_store_apps": "#1704 Store-only members: c3 apps that have no tile on this row (the Cloud tab of the Store files every app by this declaration, never in an Others group). Same group, same category, no tile drawn. Parity: test-store-cloud-categories.sh.",
             "store_apps": ["c3-webserver", "morpheus", "watchtower"],
-            "_doc_row_order": "#1628 OWNER ORDER (2026-11, supersedes #1611): the Cloud > Apps > Configs row reads exactly Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About - six tile groups divided by five '|' separators. Groups: [Quick Actions, UI] [Firewall, WiFi] [Store] [Account, C3] [Watchdog] [About]. Each tile maps to a real existing page/app id (no page invented): Quick Actions=page:config/controls, UI=page:config/panels-ui, Firewall=page:config/firewall, WiFi=page:config/wifi, Store=extapp:cloud-store, Account=extapp:cloud-account, C3=extapp:cloud-c3, Watchdog=extapp:c3-watchdog, About=page:config/app-about. #1611's five tiles (Quick Actions, Watchdog, Account, C3, Store) are all retained; UI, Firewall, WiFi, About added. test-c3-is-an-app.sh finds this group by its CONTENT (a group holding both Store and Quick Actions labels), so the reorder keeps it identifiable. Pinned by test-configs-apps-row.sh.",
+            "_doc_row_order": "#1628 OWNER ORDER (2026-11, supersedes #1611): the Cloud > Apps > Configs row reads exactly Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About (#1745 supersedes the #1628 Firewall, WiFi and Account placement) - seven tile groups divided by six '|' separators. Groups: [Quick Actions, UI] [Firewall, WiFi] [Store] [Account, C3] [Watchdog] [About]. Each tile maps to a real existing page/app id (no page invented): Quick Actions=page:config/controls, UI=page:config/panels-ui, Firewall=page:config/firewall, WiFi=page:config/wifi, Store=extapp:cloud-store, Account=extapp:cloud-account, C3=extapp:cloud-c3, Watchdog=extapp:c3-watchdog, About=page:config/app-about. #1611's five tiles (Quick Actions, Watchdog, Account, C3, Store) are all retained; UI, Firewall, WiFi, About added. test-c3-is-an-app.sh finds this group by its CONTENT (a group holding both Store and Quick Actions labels), so the reorder keeps it identifiable. Pinned by test-configs-apps-row.sh.",
             "tiles": [
               {
                 "_doc": "#1628 Configs row group 1a: Quick Actions -> the merged Controls page (page:config/controls).",
@@ -3496,27 +3496,20 @@
                 "target": "page:config/panels-ui"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-1",
                 "label": "|",
                 "separator": true
               },
               {
-                "_doc": "#1628 Configs row group 2a: Firewall -> the Network firewall page (page:config/firewall).",
-                "id": "configs-firewall",
-                "label": "Firewall",
-                "icon": "ic_lock",
-                "target": "page:config/firewall"
+                "_doc": "#1745 Configs row group 2: NG Firewall -> the NG Firewall hub page (page:config/ng-firewall, #1737), which still reaches Firewall and Wi-Fi (and DNS, VPN, OS Perms, Webserver, Proxy). Replaces the separate Firewall and WiFi tiles; page:config/firewall and page:config/wifi stay reachable from the hub and from the Configs Network group.",
+                "id": "configs-ng-firewall",
+                "label": "NG Firewall",
+                "icon": "ic_act_shield",
+                "target": "page:config/ng-firewall"
               },
               {
-                "_doc": "#1628 Configs row group 2b: WiFi -> the Network WiFi page (page:config/wifi).",
-                "id": "configs-wifi",
-                "label": "WiFi",
-                "icon": "ic_wifi",
-                "target": "page:config/wifi"
-              },
-              {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-2",
                 "label": "|",
                 "separator": true
@@ -3529,17 +3522,10 @@
                 "target": "extapp:cloud-store"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-3",
                 "label": "|",
                 "separator": true
-              },
-              {
-                "_doc": "#1628 Configs row group 4a: Account -> the Cloud Account app (extapp:cloud-account).",
-                "id": "configs-account",
-                "label": "Account",
-                "icon": "ic_p_accounts",
-                "target": "extapp:cloud-account"
               },
               {
                 "_doc": "#1628 (was #663) Configs row group 4b: C3 -> cloud-c3, a published APK, so extapp: (opens the app or offers the install). Resolves through ui.external_apps 'cloud-c3' (no label; caption derives from the id). test-c3-is-an-app.sh fails if this goes back to a page: route.",
@@ -3549,7 +3535,7 @@
                 "target": "extapp:cloud-c3"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-4",
                 "label": "|",
                 "separator": true
@@ -3562,8 +3548,21 @@
                 "target": "extapp:c3-watchdog"
               },
               {
-                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | Firewall, WiFi | Store | Account, C3 | Watchdog | About.",
+                "_doc": "#1628 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
                 "id": "configs-sep-5",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#1628 Configs row group 6: Account -> the Cloud Account app (extapp:cloud-account).",
+                "id": "configs-account",
+                "label": "Account",
+                "icon": "ic_p_accounts",
+                "target": "extapp:cloud-account"
+              },
+              {
+                "_doc": "#1745 Rule between tile groups of the Cloud > Apps Configs row: Quick Actions, UI | NG Firewall | Store | C3 | Watchdog | Account | About.",
+                "id": "configs-sep-6",
                 "label": "|",
                 "separator": true
               },
@@ -5243,7 +5242,6 @@
             "label": "Connect",
             "icon": "ic_settings",
             "pages": [
-              "profile",
               "c3",
               "kde"
             ]
@@ -5265,6 +5263,8 @@
             "label": "Configs",
             "icon": "ic_settings",
             "pages": [
+              "profile",
+              "configs-sep-a",
               "perms",
               "logcat",
               "xray-app",
@@ -5550,17 +5550,6 @@
             "subgroup": ""
           },
           {
-            "_doc": "Profile now owns config import. The old `import` page entry (action:import_configs) was REMOVED from this list and its two entries live inside ProfileFragment instead: 'Import · file · paste' (re-fires action:import_configs through MainActivity, so the launcher shortcut in res/xml/shortcuts.xml and the radial menu still reach ImportConfigsFragment unchanged) and 'OWebAuth Authelia · Auto Import Configs' (paste a bearer, fetch ui.config_source, apply via ConfigAutoImport).",
-            "_doc_label": "#626 RENAMED Profile → Account. This is the ONE declaration of the words: the Configs tile, the Home-Apps Configs row entry and the page title all read `label`, so the rename is this string and nothing else. The `id` deliberately stays `profile` — it is the page's IDENTITY, not a user-visible label (#380/#381/#499 is the rule that an identity string must not sit in a label, not that the two must be spelled the same). Renaming it would break three things that name it and have no reason to change: SectionPages.kt's route, the launcher-shortcut deep link, and ac_cloud-drive/build.json::…personal_auth.target = `page:config/profile`, which is another SHIPPED app's cross-app contract.",
-            "id": "profile",
-            "label": "Account",
-            "icon": "ic_person",
-            "action": "extapp:cloud-account",
-            "_doc_867": "#867 Account is its own app (ac_cloud-account, com.diegonmarcos.cloudaccount). This entry opens it: its action extapp:cloud-account is the tile's target. Not is_action, so the tile keeps its place under Setup > Apps instead of moving to the Actions row, and when it is not installed ui.external_apps[id=cloud-account].install_apk_url is offered. The page itself stays, hidden, for page: routes; AccountHandoff shows Open Cloud Account on it once the app is installed and the page itself (libs:account) until then.",
-            "group": "Connect",
-            "subgroup": ""
-          },
-          {
             "_doc": "C3 — the Cloud Control Center app (ac_cloud-c3), reached from Configs ▸ Fleet (it moved there from Setup ▸ Network; the id `c3` did not change, so page:config/c3 and every existing link still land on it) like Store is from Setup ▸ Apps: action extapp:cloud-c3 opens the app or offers the install through ui.external_apps[id=cloud-c3]. Same target as the C3 tile of the Cloud ▸ Apps Configs group; no second C3.",
             "id": "c3",
             "label": "Cloudy C3",
@@ -5618,6 +5607,25 @@
               "Network"
             ],
             "group": "Tools",
+            "subgroup": ""
+          },
+          {
+            "_doc": "Profile now owns config import. The old `import` page entry (action:import_configs) was REMOVED from this list and its two entries live inside ProfileFragment instead: 'Import · file · paste' (re-fires action:import_configs through MainActivity, so the launcher shortcut in res/xml/shortcuts.xml and the radial menu still reach ImportConfigsFragment unchanged) and 'OWebAuth Authelia · Auto Import Configs' (paste a bearer, fetch ui.config_source, apply via ConfigAutoImport).",
+            "_doc_label": "#626 RENAMED Profile → Account. This is the ONE declaration of the words: the Configs tile, the Home-Apps Configs row entry and the page title all read `label`, so the rename is this string and nothing else. The `id` deliberately stays `profile` — it is the page's IDENTITY, not a user-visible label (#380/#381/#499 is the rule that an identity string must not sit in a label, not that the two must be spelled the same). Renaming it would break three things that name it and have no reason to change: SectionPages.kt's route, the launcher-shortcut deep link, and ac_cloud-drive/build.json::…personal_auth.target = `page:config/profile`, which is another SHIPPED app's cross-app contract.",
+            "id": "profile",
+            "label": "Account",
+            "icon": "ic_person",
+            "action": "extapp:cloud-account",
+            "_doc_867": "#867 Account is its own app (ac_cloud-account, com.diegonmarcos.cloudaccount). This entry opens it: its action extapp:cloud-account is the tile's target. Not is_action, so the tile keeps its place under Setup > Apps instead of moving to the Actions row, and when it is not installed ui.external_apps[id=cloud-account].install_apk_url is offered. The page itself stays, hidden, for page: routes; AccountHandoff shows Open Cloud Account on it once the app is installed and the page itself (libs:account) until then.",
+            "group": "Configs",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1745 The | after Account in the Configs group on the Configs main page: a CHARACTER, not a tile.",
+            "id": "configs-sep-a",
+            "label": "|",
+            "separator": true,
+            "group": "Configs",
             "subgroup": ""
           },
           {

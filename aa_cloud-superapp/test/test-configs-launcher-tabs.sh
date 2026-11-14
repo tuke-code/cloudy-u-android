@@ -52,7 +52,7 @@ def run(g): return [p['id'] for p in pages if p.get('group') == g and not p.get(
 launcher = run('Launcher'); tools = run('Tools'); cfg = run('Configs')
 if launcher != ['controls', 'panels-ui', 'app-folders', 'onehand', 'launcher-sep-1', 'notify']: print('Launcher = %r' % (launcher,)); sys.exit()
 if tools != ['c3-watchdog', 'tools-sep-1', 'xray', 'logcat-fleet', 'agents-watchdog']: print('Tools = %r' % (tools,)); sys.exit()
-if cfg != ['perms', 'logcat', 'xray-app', 'app-about']: print('Configs = %r' % (cfg,)); sys.exit()
+if cfg != ['profile', 'configs-sep-a', 'perms', 'logcat', 'xray-app', 'app-about']: print('Configs = %r' % (cfg,)); sys.exit()
 ids = [p['id'] for p in pages]
 for r in (launcher, tools, cfg):
     first = ids.index(r[0])
@@ -67,7 +67,7 @@ if loose:
     print('tab page(s) missing or drawing a tile of their own: %r' % (loose,)); sys.exit()
 print('OK')
 PY
-)" "Launcher = Quick Actions (#1623 tabs Presets | Panels ▸ All | Battery Hungers | Tools), UI, Folders, One-Hand | Notify — all consecutive direct pages; Tools = Watchdog | X-Ray Device, Logcat Fleet, Agents; Configs = Perms, Logcat, X-Ray App, About (#1623)"
+)" "Launcher = Quick Actions (#1623 tabs Presets | Panels ▸ All | Battery Hungers | Tools), UI, Folders, One-Hand | Notify — all consecutive direct pages; Tools = Watchdog | X-Ray Device, Logcat Fleet, Agents; Configs = Account | Perms, Logcat, X-Ray App, About (#1623)"
 
 echo "== T2: no Configs page is a tab strip any more =="
 # #865 deleted the generic tab-owner rule: its last subject, Store, became a

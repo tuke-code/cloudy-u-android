@@ -79,15 +79,15 @@ want = {
     ('Launcher', ''): ['Quick Actions', 'UI', 'Folders', 'One-Hand', '|', 'Notify'],  # the | separates One-Hand from Notify
     ('Network', ''):  ['NG Firewall', '|', 'Wi-Fi', 'Bluetooth', 'DNS', 'VPN', '|', 'Firewall', 'OS Perms', '|', 'Webserver', 'Proxy'],  # #1737 individual icons again (the #1719 unified Network page is retired into the NG Firewall hub)
     ('Apps', ''):     ['Store'],
-    ('Connect', ''):  ['Account', 'Cloudy C3', 'Peer Control'],
+    ('Connect', ''):  ['Cloudy C3', 'Peer Control'],  # #1745 Account moved to Configs
     ('Tools', ''):    ['Watchdog', '|', 'X-Ray Device', 'Logcat Fleet', 'Agents'],  # Watchdog -> extapp:c3-watchdog; the | before the observability pair; Agents is the in-app hub (the owner's dual listing, kept once here)
-    ('Configs', ''):  ['Perms', 'Logcat', 'X-Ray App', 'About'],
+    ('Configs', ''):  ['Account', '|', 'Perms', 'Logcat', 'X-Ray App', 'About'],  # #1745 Account | Perms, Logcat, X-Ray App, About
 }
 problems = ['%s%s = %r' % (g, ' ▸ ' + s if s else '', members(g, s))
             for (g, s), exp in want.items() if members(g, s) != exp]
 print('; '.join(problems) or 'OK')
 PY
-)" "Launcher = Quick Actions/UI/Folders/One-Hand | Notify; Network = NG Firewall hub/Wi-Fi/Bluetooth/DNS/VPN/Firewall/OS Perms/Webserver/Proxy (#1737); Apps = Store; Connect = Account/Cloudy C3/Peer Control; Tools = Watchdog | X-Ray Device/Logcat Fleet/Agents; Configs = Perms/Logcat/X-Ray App/About (#1623)"
+)" "Launcher = Quick Actions/UI/Folders/One-Hand | Notify; Network = NG Firewall hub/Wi-Fi/Bluetooth/DNS/VPN/Firewall/OS Perms/Webserver/Proxy (#1737); Apps = Store; Connect = Cloudy C3/Peer Control; Tools = Watchdog | X-Ray Device/Logcat Fleet/Agents; Configs = Account | Perms/Logcat/X-Ray App/About (#1623, #1745)"
 
 echo "== T3: Store is the former Constellation, and Cloud Constellation is INSIDE it =="
 # #563 renamed the Constellation page Store; the word survives as the label of
@@ -231,9 +231,9 @@ import json
 print(len(next(s for s in json.load(open('$BJ'))['ui']['sections']
                if s['id'] == 'config')['pages']))
 ")
-[ "$COUNT" = 64 ] \
-  && ok "64 config pages declared (#1737: the #1719 Network page is retired; added the NG Firewall hub, OS Perms, Proxy and three Network separators) (#1623 added the hidden tools-sep-1 | separator for the Tools group; #1596 focus page; #1610's c3-watchdog + sync-clipboard/saving-mode/focus-mode; previous ids unchanged) — the set T5 walks is the whole set" \
-  || bad "$COUNT config pages, expected 64 — a page was added or DELETED, and T5 cannot report a page that is gone"
+[ "$COUNT" = 65 ] \
+  && ok "65 config pages declared (#1745 added the configs-sep-a separator after Account) (#1737: the #1719 Network page is retired; added the NG Firewall hub, OS Perms, Proxy and three Network separators) (#1623 added the hidden tools-sep-1 | separator for the Tools group; #1596 focus page; #1610's c3-watchdog + sync-clipboard/saving-mode/focus-mode; previous ids unchanged) — the set T5 walks is the whole set" \
+  || bad "$COUNT config pages, expected 65 — a page was added or DELETED, and T5 cannot report a page that is gone"
 
 echo "== T6: ACTIONS — the single shared row (#1610) =="
 # #1610 downgraded the ticket's two per-subpage Actions columns to ONE shared row
@@ -339,7 +339,8 @@ BEFORE = {'network', 'bluetooth-analyze', 'bluetooth-locate', 'presets', 'contro
           'sync-clipboard', 'saving-mode', 'focus-mode',  # #1610 added on purpose: the three Actions-row entries (Focus Mode opens the #1596 focus page)
           'focus',  # #1596 added on purpose: the hidden Focus Mode switch page (page:config/focus, FocusModeFragment)
           'tools-sep-1',  # #1623 added on purpose: the Tools group | separator (Watchdog | X-Ray Device, Logcat Fleet, Agents)
-          'ng-firewall', 'os-perms', 'proxy', 'network-sep-a', 'network-sep-b', 'network-sep-c'}  # #1737 added on purpose: the NG Firewall hub, OS Perms (Store Access > Android Perms), Proxy (system network settings) and the three | separators of the Network group
+          'ng-firewall', 'os-perms', 'proxy', 'network-sep-a', 'network-sep-b', 'network-sep-c',
+          'configs-sep-a'}  # #1745 added on purpose: the | after Account in the Configs group; #1737 added on purpose: the NG Firewall hub, OS Perms (Store Access > Android Perms), Proxy (system network settings) and the three | separators of the Network group
 sec     = next(s for s in json.load(open(sys.argv[1]))['ui']['sections']
                if s['id'] == 'config')
 pages   = sec['pages']
@@ -437,11 +438,11 @@ want = ['H:LAUNCHER',
         'H:APPS',
         'Store[ic_storefront]',
         'H:CONNECT',
-        'Account[ic_person]', 'Cloudy C3[ic_cloud_control]', 'Peer Control[ic_hub]',
+        'Cloudy C3[ic_cloud_control]', 'Peer Control[ic_hub]',
         'H:TOOLS',
         'Watchdog[ic_watchtower]', '|[None]', 'X-Ray Device[ic_monitor_heart]', 'Logcat Fleet[ic_p_logs]', 'Agents[ic_p_watchdog]',
         'H:CONFIGS',
-        'Perms[ic_key]', 'Logcat[ic_subject]', 'X-Ray App[ic_p_c3_health]', 'About[ic_info]',
+        'Account[ic_person]', '|[None]', 'Perms[ic_key]', 'Logcat[ic_subject]', 'X-Ray App[ic_p_c3_health]', 'About[ic_info]',
         'H:ACTIONS',
         'Update All[ic_system_update]', 'KDE Connect[ic_devices]', 'Animations[ic_animation]', 'Sync Clipboard[ic_copy]', 'Saving Mode[ic_settings]', 'Focus Mode[ic_nav_dnd]']
 if out == want: print('OK')
@@ -450,7 +451,7 @@ else:
     print('rendered != spec: ' + ' | '.join(l for l in difflib.unified_diff(want, out, lineterm='', n=0)
                                            if l[:1] in '+-' and l[:3] not in ('+++', '---')))
 PY
-)" "grid = LAUNCHER[Quick Actions,UI,Folders,One-Hand | Notify] NETWORK[NG Firewall | Wi-Fi,Bluetooth,DNS,VPN | Firewall,OS Perms | Webserver,Proxy] APPS[Store] CONNECT[Account,Cloudy C3,Peer Control] TOOLS[Watchdog | X-Ray Device,Logcat Fleet,Agents] CONFIGS[Perms,Logcat,X-Ray App,About] ACTIONS[Update All,KDE Connect,Animations,Sync Clipboard,Saving Mode,Focus Mode] (#1623)"
+)" "grid = LAUNCHER[Quick Actions,UI,Folders,One-Hand | Notify] NETWORK[NG Firewall | Wi-Fi,Bluetooth,DNS,VPN | Firewall,OS Perms | Webserver,Proxy] APPS[Store] CONNECT[Cloudy C3,Peer Control] TOOLS[Watchdog | X-Ray Device,Logcat Fleet,Agents] CONFIGS[Account | Perms,Logcat,X-Ray App,About] ACTIONS[Update All,KDE Connect,Animations,Sync Clipboard,Saving Mode,Focus Mode] (#1623)"
 
 echo "== T12: THE AI PAGE IS GONE, not hidden — no route, target or tile names it (#723) =="
 # Deleting a declaration and leaving its door behind is the dead-tile failure:
@@ -503,7 +504,7 @@ tools   = [p['id'] for p in sec['pages'] if p.get('group') == 'Tools' and not p.
 cgrp = [i for i in next(g for g in sec['groups'] if g['id'] == 'configs')['pages'] if i in configs]
 tgrp = [i for i in next(g for g in sec['groups'] if g['id'] == 'tools')['pages'] if i in tools]
 probs = []
-if configs != ['perms', 'logcat', 'xray-app', 'app-about']: probs.append('Configs group = %r' % (configs,))
+if configs != ['profile', 'configs-sep-a', 'perms', 'logcat', 'xray-app', 'app-about']: probs.append('Configs group = %r' % (configs,))
 if tools != ['c3-watchdog', 'tools-sep-1', 'xray', 'logcat-fleet', 'agents-watchdog']: probs.append('Tools group = %r' % (tools,))
 if 'logcat' not in configs: probs.append('the app Logcat left the Configs group')
 if 'logcat-fleet' not in tools: probs.append('Logcat Fleet left the Tools group')
@@ -511,7 +512,7 @@ if cgrp != configs: probs.append('groups[configs] order %r != grid order %r' % (
 if tgrp != tools: probs.append('groups[tools] order %r != grid order %r' % (tgrp, tools))
 print('; '.join(probs) or 'OK')
 PY
-)" "Configs group = Perms, Logcat, X-Ray App, About; Tools = Watchdog | X-Ray Device, Logcat Fleet, Agents; the app Logcat lives in Configs and Logcat Fleet in Tools; same order in build.json groups[]"
+)" "Configs group = Account, |, Perms, Logcat, X-Ray App, About; Tools = Watchdog | X-Ray Device, Logcat Fleet, Agents; the app Logcat lives in Configs and Logcat Fleet in Tools; same order in build.json groups[]"
 grep -qE 'sectionId == "config" && pageId == "logcat" +-> .*LogcatFragment' "$PAGES" \
   && ok "SectionPages routes config/logcat to LogcatFragment" \
   || bad "config/logcat does not resolve to LogcatFragment — the Logcat tab opens a placeholder"
