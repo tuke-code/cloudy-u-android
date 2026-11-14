@@ -146,12 +146,13 @@ object AdbOwnerSide {
     @Composable
     private fun AllTab(palette: KitPalette) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Box(Modifier.fillMaxWidth()) { CloudKitTheme(palette) { AdbShellBrokerPage() } }
+            // #1743 every part that scrolls by itself gets a bounded height: a scroller inside this scroller with unbounded height crashes Compose
+            Box(Modifier.fillMaxWidth().height(560.dp)) { CloudKitTheme(palette) { AdbShellBrokerPage() } }
             // #1743 the previous Status page's full cockpit (mode selector, per-mode cards, keep-alive, logs) lives here now (it scrolls itself)
             Box(Modifier.fillMaxWidth().height(640.dp)) { CloudKitTheme(palette) { AdbStatusTab() } }
             TesterAndLogs()
             // the old Server tab's ADB Shell card: the lib's full page (pairing, modes, connect, server buttons, logs, needs, setup, keep-alive)
-            PageColumn("c3_adb_owner_all") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp).testTag("c3_adb_owner_all")) {
                 Card("ADB Shell", "c3_adb_owner_page") { Column(Modifier.fillMaxWidth()) { AdbShellPage() } }
             }
         }
