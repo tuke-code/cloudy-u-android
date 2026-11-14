@@ -57,6 +57,7 @@
     <string name="store_bar_play_protect_on">Play Protect prompts on every install. Turning it off needs the embedded adb channel (or Shizuku, if you run it); it is device-wide and survives uninstall.</string>
     <string name="store_bar_silent_off">Grant \'Install unknown apps\' for no-tap updates.</string>
     <string name="store_bar_silent_on">Silent installs enabled.</string>
+    <string name="store_retired_uninstall">Uninstall</string>
     <string name="store_bar_update_all">⬆  Update all</string>
     <string name="store_unknown_state">unknown</string>
     <string name="store_bar_wifi_only">Up Wifi Only: %1$s</string>

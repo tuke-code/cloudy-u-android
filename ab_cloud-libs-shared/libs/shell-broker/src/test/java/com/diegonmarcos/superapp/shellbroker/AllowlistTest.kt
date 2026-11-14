@@ -121,7 +121,7 @@ class AllowlistTest {
             assertTrue(who, a.decide(who, ok) is Decision.Allow)
             assertTrue(who, a.decide(who, "$ok 2>&1") is Decision.Allow)
             assertTrue(who, a.decide(who, "pm set-installer com.diegonmarcos.cloudmail com.evil.store") is Decision.Deny)
-            assertTrue(who, a.decide(who, "$ok; id") is Decision.Deny)
+            assertTrue(who, a.decide(who, "$ok | id") is Decision.Deny)
         }
         assertTrue(a.decide("com.diegonmarcos.cloudbrowser", ok) is Decision.Deny)
         assertTrue(a.decide("com.diegonmarcos.cloudwebserver", ok) is Decision.Deny)

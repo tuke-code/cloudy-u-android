@@ -575,12 +575,12 @@ class StoreCloudFragment : KitComposeFragment() {
             val isOpen = open == e.pkg
             StoreRow.Item(e.label, isOpen, { open = if (isOpen) null else e.pkg }, tag = "store-retired:${e.pkg}",
                 dot = "✕", dotColor = cErr, meta = RetiredApps.meta(e), metaColor = cErr,
-                quick = StoreQuick("Uninstall", cBlk) { runCatching { Fleet.uninstall(ctx, e.pkg) } },
+                quick = StoreQuick(ctx.getString(R.string.store_retired_uninstall), cBlk) { runCatching { Fleet.uninstall(ctx, e.pkg) } },
                 headTag = "store-retired-head:${e.pkg}", metaTag = "store-retired-meta:${e.pkg}") {
                 StoreCaption(RetiredApps.explain(e))
                 Text(e.pkg, color = cDim.ink(), fontSize = StoreDensity.T_CAPTION.sp, fontFamily = FontFamily.Monospace)
                 StoreRow.Actions(listOfNotNull(
-                    StoreVerb("Uninstall", cBlk, { runCatching { Fleet.uninstall(ctx, e.pkg) } }, "store-retired-uninstall:${e.pkg}"),
+                    StoreVerb(ctx.getString(R.string.store_retired_uninstall), cBlk, { runCatching { Fleet.uninstall(ctx, e.pkg) } }, "store-retired-uninstall:${e.pkg}"),
                     StoreVerb("Open ${e.replacementLabel.ifBlank { "replacement" }}", cMiss, { openReplacement(ctx, e.replacementPackage) },
                         "store-retired-open:${e.pkg}").takeIf { e.replacementPackage.isNotBlank() },
                 ))
