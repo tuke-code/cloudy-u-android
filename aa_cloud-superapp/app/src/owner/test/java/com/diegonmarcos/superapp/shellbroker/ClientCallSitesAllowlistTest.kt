@@ -60,4 +60,11 @@ class ClientCallSitesAllowlistTest {
         allowed("pm grant com.diegonmarcos.superapp android.permission.DUMP")
         allowed("pm grant com.diegonmarcos.superapp android.permission.WRITE_SECURE_SETTINGS")
     }
+
+    // #1744 the Store (hosted in the SuperApp) adopts fleet packages: the one set-installer command and the read-back are on the entry
+    @Test fun storeAdoptCommandAndReadBackAreAllowed() {
+        allowed("pm set-installer com.diegonmarcos.cloudmail com.diegonmarcos.cloudstore 2>&1")
+        allowed("pm list packages -i 2>&1")
+        assertTrue(list.decide(self, "pm set-installer com.diegonmarcos.cloudmail com.other.store") is Allowlist.Decision.Deny)
+    }
 }

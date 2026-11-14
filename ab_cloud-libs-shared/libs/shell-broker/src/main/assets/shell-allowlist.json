@@ -120,6 +120,11 @@
      "re": "^pm (install|install-create|install-write|install-commit|install-abandon|uninstall)( [\\w.:/=,@+*?-]+)*$"
     },
     {
+     "id": "store-adopt",
+     "why": "#1744 Cloud Store becomes the installer of record of a fleet package installed elsewhere, so its updates stop prompting (read back with pm list packages -i).",
+     "re": "^pm set-installer [a-z][a-z0-9_]*(\\.[a-zA-Z0-9_]+)+ com\\.diegonmarcos\\.cloudstore$"
+    },
+    {
      "id": "selfdiag-1",
      "_doc_1688": "#1688 role writes are never a diagnostic: remove-role-holder is only roles-release-self (own package).",
      "re": "^(?!cmd role (add|remove)-role-holder |cmd notification disallow_listener )(logcat|uptime|id|df|netstat|ip|ss|cmd)( [\\w.:/=,@+*?-]+)*$"
@@ -220,6 +225,11 @@
     {
      "id": "installs-1",
      "re": "^pm (install|install-create|install-write|install-commit|install-abandon|uninstall)( [\\w.:/=,@+*?-]+)*$"
+    },
+    {
+     "id": "store-adopt",
+     "why": "#1744 Cloud Store becomes the installer of record of a fleet package installed elsewhere, so its updates stop prompting (read back with pm list packages -i).",
+     "re": "^pm set-installer [a-z][a-z0-9_]*(\\.[a-zA-Z0-9_]+)+ com\\.diegonmarcos\\.cloudstore$"
     },
     {
      "id": "perms-1",

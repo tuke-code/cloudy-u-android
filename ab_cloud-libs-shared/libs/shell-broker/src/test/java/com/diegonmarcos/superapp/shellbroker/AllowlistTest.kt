@@ -110,4 +110,20 @@ class AllowlistTest {
         for (c in listOf("dumpsys battery", "getprop")) assertEquals(a.decide(sa, c)::class, a.decide("owner", c)::class)
         assertTrue(!a.mayKeeper("com.diegonmarcos.cloudwebserver") && !a.mayAudit("com.diegonmarcos.cloudwebserver") && a.outCap("com.diegonmarcos.cloudwebserver") == 0)   // the relay identity gets none of the owner grants
     }
+
+    // #1744 adopt: Cloud Store becomes the installer of record of a fleet package; only that one command, only to Cloud Store
+    @Test fun adoptCommandIsAllowedForTheStoreAndTheSuperAppAndNothingElse() {
+        val f = listOf("src/main/assets/shell-allowlist.json", "ab_cloud-libs-shared/libs/shell-broker/src/main/assets/shell-allowlist.json")
+            .map { java.io.File(it) }.firstOrNull { it.isFile } ?: return
+        val a = Allowlist.parse(f.readText())
+        val ok = "pm set-installer com.diegonmarcos.cloudmail com.diegonmarcos.cloudstore"
+        for (who in listOf("com.diegonmarcos.cloudstore", "com.diegonmarcos.superapp", "owner")) {
+            assertTrue(who, a.decide(who, ok) is Decision.Allow)
+            assertTrue(who, a.decide(who, "$ok 2>&1") is Decision.Allow)
+            assertTrue(who, a.decide(who, "pm set-installer com.diegonmarcos.cloudmail com.evil.store") is Decision.Deny)
+            assertTrue(who, a.decide(who, "$ok; id") is Decision.Deny)
+        }
+        assertTrue(a.decide("com.diegonmarcos.cloudbrowser", ok) is Decision.Deny)
+        assertTrue(a.decide("com.diegonmarcos.cloudwebserver", ok) is Decision.Deny)
+    }
 }
