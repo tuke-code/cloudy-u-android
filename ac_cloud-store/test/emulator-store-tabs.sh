@@ -27,6 +27,9 @@ read -r W H < <(adb shell wm size | tr -d '\r' | grep -oE '[0-9]+x[0-9]+' | tail
 X=$((W/2)); Y1=$((H*4/5)); Y2=$((H/4))
 shoot start
 rc=0
+# #1744 package rows are one line: no collapsed row (Apps here, Libs below) draws a "Next update" line (it lives in the detail view)
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/apps-top.xml" >/dev/null 2>&1
+if grep -qE 'text="Next update' "$OUT/apps-top.xml"; then echo "::error::an Apps row draws a Next update line"; rc=1; fi
 # #1704 the Cloud > Apps list scrolled to its end: the last category headings are in shot and none is Other/Others
 for i in $(seq 1 25); do adb shell input swipe $X $Y1 $X $Y2 200; sleep 0.4; done
 sleep 2; shoot apps-end
@@ -36,6 +39,8 @@ for i in $(seq 1 25); do adb shell input swipe $X $Y2 $X $Y1 100; done
 for tab in Libs Lite-ML; do
   if tap_text "$tab"; then
     sleep 4; shoot "$tab-top"
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$tab-top.xml" >/dev/null 2>&1
+    if grep -qE 'text="Next update' "$OUT/$tab-top.xml"; then echo "::error::a $tab row draws a Next update line"; rc=1; fi
     for i in 1 2 3 4 5 6 7 8; do adb shell input swipe $X $Y1 $X $Y2 250; sleep 0.6; done
     sleep 2; shoot "$tab-end"
     adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$tab-end.xml" >/dev/null 2>&1

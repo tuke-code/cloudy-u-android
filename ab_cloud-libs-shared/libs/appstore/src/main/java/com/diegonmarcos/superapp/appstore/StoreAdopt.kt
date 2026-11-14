@@ -53,7 +53,7 @@ internal object StoreAdopt {
             "securityexception" in low || "not allowed" in low || "permission denial" in low ->
                 State.FAILED to "refused by Android: ${t.lineSequence().firstOrNull().orEmpty().take(160)}"
             "unknown package" in low || "not installed" in low || "no such package" in low -> State.FAILED to "package not installed"
-            "exception" in low || low.startsWith("error") || low.startsWith("failure") ->
+            "exception" in low || low.startsWith("error") || low.startsWith("fail") ->
                 State.FAILED to t.lineSequence().firstOrNull().orEmpty().take(160)
             else -> null to (t.ifBlank { "ok" })
         }
