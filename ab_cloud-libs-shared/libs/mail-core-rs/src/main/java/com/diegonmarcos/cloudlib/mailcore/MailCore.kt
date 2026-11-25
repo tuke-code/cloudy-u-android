@@ -15,8 +15,22 @@ package com.diegonmarcos.cloudlib.mailcore
  * boundary) is a failure with its reason, never a crash; the caller keeps its previous engine for that pass.
  */
 object MailCore {
+    /**
+     * The feature switch (#1837): false makes every caller take its Kotlin engine (the core reports itself unavailable), without
+     * touching the library. On by default; the Kotlin engine stays until the parity fixtures (fixtures/parity) are green in both.
+     */
+    @Volatile var enabled: Boolean = true
+
+    /**
+     * OUTGOING mail and the network protocol stay on the Kotlin engine until the on-phone check: [composeEnabled] lets the core
+     * build outgoing messages and [imapEnabled] lets it fetch over IMAP. Both default FALSE; [enabled] keeps governing read, parse
+     * and search as before. A call site engages the core only when its own switch AND [enabled] are on.
+     */
+    @Volatile var composeEnabled: Boolean = false
+    @Volatile var imapEnabled: Boolean = false
+
     /** Null when the core is usable in this process, otherwise why not. */
-    fun unavailableReason(): String? = NativeBridge.unavailableReason()
+    fun unavailableReason(): String? = if (!enabled) "the Rust mail core is switched off" else NativeBridge.unavailableReason()
 
     fun version(): String? = if (unavailableReason() == null) runCatching { NativeBridge.nativeVersion() }.getOrNull() else null
 
@@ -31,6 +45,13 @@ object MailCore {
      */
     fun fetchRaw(db: String, argsJson: String, transport: MailCoreTransport): Result<String> =
         call { NativeBridge.nativeFetchRaw(db, argsJson, transport) }
+
+    /**
+     * #1837 phase 3: IMAP fetch through the core over the caller's own socket [io] (TLS stays in Kotlin): LOGIN, SELECT, UID SEARCH,
+     * UID FETCH of [argsJson] (`{"user","password","mailbox","uids":[..]|"newest":n,"timeoutMs"}`). Answers the report JSON
+     * (`exists`, `uidValidity`, `uidNext`, `messages[{uid,flags,internalDate,raw(base64),kind,text}]`).
+     */
+    fun imapFetch(argsJson: String, io: MailCoreImapIo): Result<String> = call { NativeBridge.nativeImapFetch(argsJson, io) }
 
     /** Proves the boundary: answers a failure whose reason starts with "panic:". */
     fun panicProbe(): Result<String> = call { NativeBridge.nativePanicProbe() }

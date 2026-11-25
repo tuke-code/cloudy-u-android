@@ -20,12 +20,14 @@ permissions:
 jobs:
   socials:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 80
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          sparse-checkout: ac_cloud-me/test
+          sparse-checkout: |
+            ac_cloud-me/test
+            ac_cloud-me/data/web
 
       - name: Fetch the APKs
         env:
@@ -56,7 +58,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Boot emulator + walk the pages
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34

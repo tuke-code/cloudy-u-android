@@ -2047,6 +2047,21 @@ class MailRepository(
             .map { it.toEmail() }
     }
 
+    /**
+     * #1837 phase 3: [searchIndex], and when the Room index finds nothing, the core's FTS5 store (JMAP mail it has synced and the
+     * Room index has not reached), through MailCore.enabled. Any core failure keeps [searchIndex]'s answer.
+     */
+    suspend fun searchIndexOrCore(query: String, limit: Int = LOCAL_SEARCH_LIMIT): List<Email> {
+        val hits = searchIndex(query, limit)
+        if (hits.isNotEmpty()) return hits
+        val core = mailCore?.takeIf { it.unavailableReason() == null } ?: return hits
+        return searchWithCoreFallback(
+            hits, accountStore.accounts().map { it.id }, limit,
+            coreIds = { acc -> core.searchIds(acc, query, limit) },
+            load = { acc, chunk -> emailDao.emailsByIds(acc, chunk).map { it.toEmail() } },
+        )
+    }
+
     private fun ftsMatch(query: String): String? {
         val tokens = query.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotBlank() }
         if (tokens.isEmpty()) return null

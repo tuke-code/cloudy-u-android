@@ -24,30 +24,30 @@ class BuroLlcDeclTest {
     }
     private fun page(s: String, p: String) = JSONArray(BuroLlcTestData.text("data/ui/$s/$p.json"))
 
-    @Test fun `the bar is Health Experiences Socials Lnktree Inventory Buro LLC and House, Work, RoadMap and Duties are gone`() {
+    @Test fun `the bar is Pers Prof Proj Inventory Buro LLC and House, Work, RoadMap, Duties and the Lnktree section are gone`() {
         val ui = JSONObject(BuroLlcTestData.text("build.json")).getJSONObject("ui")
         val bar = ui.getJSONArray("bottom_nav").let { a -> (0 until a.length()).map { a.getString(it) } }
-        assertEquals(listOf("health", "experiences", "socials", "lnktree", "inventory", "buro", "llc"), bar)
-        assertEquals(listOf("Health", "Experiences", "Socials", "Lnktree", "Inventory", "Buro", "LLC"), bar.map { sections.getValue(it).getString("label") })
+        assertEquals(listOf("pers", "prof", "proj", "lnktree", "inventory", "buro", "llc"), bar)
+        assertEquals(listOf("Pers", "Prof", "Proj", "Lnktree", "Inventory", "Buro", "LLC"), bar.map { sections.getValue(it).getString("label") })
         assertFalse("house" in sections); assertFalse("work" in sections); assertFalse("roadmap" in sections); assertFalse("duties" in sections)
-        assertEquals(listOf("professional", "leafy", "nexus", "stark", "personal", "social", "health", "dd", "astro", "lnktree-site", "area-unix", "area-cg", "area-capital", "area-hardtech", "area-lecole42", "area-front"), ids(sections.getValue("lnktree").getJSONArray("pages")))
+        for (gone in listOf("health", "experiences", "socials")) assertFalse("$gone is a section of the layout before #1901", gone in sections)
+        assertEquals("lnktree", ui.getString("default_section"))   // #1901 correction: the app opens on the restored Lnktree entry
+        assertEquals(listOf("pj-home", "pj-unix", "pj-cg", "pj-capital", "pj-hardtech", "pj-wiki", "pj-projects", "pj-lecole42", "pj-repos"), ids(sections.getValue("proj").getJSONArray("pages")))
         assertEquals(listOf("roadmaps", "backlogs"), ids(sections.getValue("tasks").getJSONArray("pages")))
         assertEquals("tasks", page("tasks", "backlogs").getJSONObject(0).getString("id"))
     }
 
-    @Test fun `#1771 Socials shows both tabs Professional and Personal on the mysocials pages, and Tasks stays declared off the bar`() {
+    @Test fun `#1901 the Socials tabs live on in Prof and Pers on the mysocials pages, and Tasks stays declared off the bar`() {
         val ui = JSONObject(BuroLlcTestData.text("build.json")).getJSONObject("ui")
         val bar = ui.getJSONArray("bottom_nav").let { a -> (0 until a.length()).map { a.getString(it) } }
         assertFalse("tasks" in bar)
-        val socials = sections.getValue("socials")
-        assertEquals("Socials", socials.getString("label"))
-        assertEquals(listOf("socials-professional", "socials-personal"), ids(socials.getJSONArray("pages")))
-        assertEquals(listOf("Professional", "Personal"), socials.getJSONArray("pages").let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("label") } })
-        assertEquals("mysocials/linkedin.html", page("socials", "socials-professional").getJSONObject(0).getString("url"))
-        assertEquals("mysocials/instagram-diegocnmarcos_.html", page("socials", "socials-personal").getJSONObject(0).getString("url"))
-        for (p in listOf("socials-professional", "socials-personal")) assertEquals("web", page("socials", p).getJSONObject(0).getString("id"))
-        // nothing dropped: Lnktree keeps both pages, Tasks keeps Tree and Due with their groups
-        assertTrue(listOf("professional", "personal").all { it in ids(sections.getValue("lnktree").getJSONArray("pages")) })
+        assertEquals("https://linkedin.com/in/diegonmarcos", page("prof/prof-profiles", "professional").getJSONObject(0).getString("url"))
+        assertEquals("https://diegonmarcos.github.io/mySocials/instagram-diegocnmarcos_.html", page("pers/pers-profiles", "ig0").getJSONObject(0).getString("url"))
+        for ((d, p) in listOf("prof/prof-profiles" to "professional", "pers/pers-profiles" to "ig0")) assertEquals("web", page(d, p).getJSONObject(0).getString("id"))
+        // nothing dropped: Prof keeps Professional, Pers keeps Personal, Tasks keeps Tree and Due with their groups
+        val profiles = { s: String -> sections.getValue(s).getJSONArray("pages").getJSONObject(if (s == "prof") 1 else 0).getJSONArray("pages") }
+        assertTrue("professional" in ids(profiles("prof")))
+        assertTrue("personal" in ids(profiles("pers")))
         assertEquals(listOf("roadmaps", "backlogs"), ids(sections.getValue("tasks").getJSONArray("pages")))
         assertEquals(setOf("backlogs", "roadmaps"), groups("tasks").keys)
     }
@@ -147,7 +147,7 @@ class BuroLlcDeclTest {
     }
 
     @Test fun `the user data stores are declared in fleet-config so the backup carries them`() {
-        val stores = JSONObject(BuroLlcTestData.text("../ab_cloud-libs-shared/libs/fleetconfig-model/src/main/assets/fleet-config.json")).getJSONObject("stores")
+        val stores = JSONObject(BuroLlcTestData.text("../fleet-private-data/fleet-config.json")).getJSONObject("stores")
         for (s in listOf(LedgerStore.BURO, LedgerStore.LLC)) {
             val st = stores.getJSONObject(s)
             assertEquals("config", st.getString("class")); assertEquals("prefs", st.getString("kind"))
@@ -164,29 +164,29 @@ class BuroLlcDeclTest {
         assertTrue("the own ventures are still there", cards(side) >= 1)
     }
 
-    @Test fun `Lnktree is three rows Prof, Pers and Proj with the declared separators`() {
-        val me = sections.getValue("lnktree")
-        assertEquals("horizontal_two_rows", me.getString("nav_mode"))
-        assertEquals(mapOf("prof" to listOf("professional", "leafy", "nexus", "stark"),
-            "pers" to listOf("personal", "social", "health", "dd", "astro", "lnktree-site"),
-            "proj" to listOf("area-unix", "area-cg", "area-capital", "area-hardtech", "area-lecole42", "area-front")), groups("lnktree"))
-        val pages = me.getJSONArray("pages")
-        val sep = (0 until pages.length()).map { pages.getJSONObject(it) }.filter { it.optBoolean("separator_before") }.map { it.getString("id") }
-        assertEquals(listOf("leafy", "health", "lnktree-site"), sep)
+    @Test fun `Proj is two rows, Lnktree then the areas, and Prof is Profiles then the three company sites`() {
+        val proj = sections.getValue("proj")
+        // #1914 Proj is one row: Home | Unix, CG, Capital, Hardtech, Wiki, Projects, 42; the Lnktree bottom-nav section holds the Lnktree row, first and default
+        assertEquals("pj-home", ids(proj.getJSONArray("pages")).first())
+        assertEquals(mapOf("lnktree" to listOf("lt-lnktree-site")), groups("lnktree").filterKeys { it == "lnktree" })
+        assertEquals("lt-lnktree-site", ids(sections.getValue("lnktree").getJSONArray("pages")).first())
+        assertEquals(mapOf("profiles" to listOf("prof-web", "prof-profiles"), "companies" to listOf("leafy", "nexus", "stark")), groups("prof"))
+        assertEquals(listOf("prof-web", "prof-profiles", "leafy", "nexus", "stark"), ids(sections.getValue("prof").getJSONArray("pages")))
     }
 
-    @Test fun `the five published sites are embedded by their https URL`() {
-        val want = mapOf("leafy" to "https://diegonmarcos.github.io/leafy/", "nexus" to "https://diegonmarcos.github.io/nexus/",
-            "stark" to "https://diegonmarcos.github.io/stark/", "astro" to "https://diegonmarcos.github.io/myAstro/",
-            "lnktree-site" to "https://linktree.diegonmarcos.com/")
-        for ((p, url) in want) {
-            val b = page("lnktree", p).getJSONObject(0)
+    @Test fun `the six embedded sites open by their https URL, each declared in its own page file`() {
+        val want = mapOf("prof" to "leafy" to "https://diegonmarcos.github.io/leafy/", "prof" to "nexus" to "https://diegonmarcos.github.io/nexus/",
+            "prof" to "stark" to "https://diegonmarcos.github.io/stark/", "pers" to "astro" to "https://diegonmarcos.github.io/myAstro/",
+            "pers/pers-profiles" to "personal" to "https://diegonmarcos.com/", "lnktree" to "lt-lnktree-site" to "https://linktree.diegonmarcos.com/")
+        for (entry in want) {
+            val (loc, url) = entry.key to entry.value
+            val b = page(loc.first, loc.second).getJSONObject(0)
             assertEquals("fragment", b.getString("kind")); assertEquals("web", b.getString("id")); assertEquals(url, b.getString("url"))
         }
     }
 
     @Test fun `the Achieves store experiences_user is a declared config store, so the backup carries every tab`() {
-        val fc = JSONObject(BuroLlcTestData.text("../ab_cloud-libs-shared/libs/fleetconfig-model/src/main/assets/fleet-config.json"))
+        val fc = JSONObject(BuroLlcTestData.text("../fleet-private-data/fleet-config.json"))
         assertEquals("config", fc.getJSONObject("stores").getJSONObject(LedgerStore.EXP).getString("class"))
     }
 }

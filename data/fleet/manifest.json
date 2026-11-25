@@ -82,6 +82,30 @@
         "*"
       ]
     },
+    "appstore-controls": {
+      "tier": 3,
+      "consumers": [
+        "*"
+      ]
+    },
+    "appstore-fleet-actions": {
+      "tier": 3,
+      "consumers": [
+        "*"
+      ]
+    },
+    "appstore-priority": {
+      "tier": 3,
+      "consumers": [
+        "*"
+      ]
+    },
+    "appstore-install-watch": {
+      "tier": 3,
+      "consumers": [
+        "*"
+      ]
+    },
     "packs/hyg-stars": {
       "tier": 4,
       "consumers": [
@@ -130,11 +154,40 @@
       "consumers": [
         "*"
       ]
+    },
+    "wifi-config": {
+      "tier": 3,
+      "consumers": [
+        "*"
+      ]
+    },
+    "channel-plans": {
+      "tier": 4,
+      "consumers": [
+        "*"
+      ]
+    },
+    "geo-capitals": {
+      "tier": 4,
+      "consumers": [
+        "*"
+      ]
+    },
+    "geo-region-members": {
+      "tier": 4,
+      "consumers": [
+        "*"
+      ]
     }
   },
   "apps": {
     "com.diegonmarcos.cloudsuperintel": [
-      "composer"
+      "composer",
+      "notebook",
+      "personas",
+      "pages",
+      "mcp",
+      "plugins"
     ],
     "com.diegonmarcos.cloudsearch": [
       "composer"

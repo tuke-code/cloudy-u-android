@@ -9,9 +9,12 @@
   "ac_cloud-canvas/app/src/main/assets/painter/vendor/": "Not app data: #1808 the pinned offline copy of three.js r128, its OrbitControls and the Inter font for Cloud Canvas > Painter, and their pin manifest PIN.json (tools/vendor-painter.py). They are code and resources of a vendored web page, byte-pinned by PIN.json, and must be in the APK for the page to work with no network.",
   "ac_cloud-canvas/app/src/main/assets/soundfont/soundfont.json": "Tier-4 static reference bound to a bundled binary: #1809 the SoundFont engine's configuration for the GeneralUser GS bank shipped beside it in the same directory (the bank's identity, each Play instrument's General MIDI preset in that bank, the GM drum keys, the FluidSynth settings tuned on it). It changes only with the bank file and the engine build, which ship in the APK, so it ships with them; SoundFontTest checks every preset against the bank.",
   "ac_cloud-tasks/app/src/main/assets/projects.json": "Tier-4 static reference seed (#1757): the sample project Traveling (lodging, transport, events, deletable, flagged sample, seeded once) and the per-project calendar config (mode, lane order). It must be there on first run offline; the user deletes the sample and it is never given back.",
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/store-catalogue.json": "Tier-4 static reference seed (#1791): the Store's own app list (one row per package, each with category, licence, Play Integrity tier, game dimension, source and icon) that every Search > Phone page filters. The pages must list apps offline and on first run, not stay empty while a runtime dataset is unserved (the bug it fixes); the list holds public app metadata and no secret, and the dispatchable icon check keeps its URLs live."
+  "ac_cloud-superintel/app/src/main/assets/si/seed/pages.json": "Cold-start seed (#1562): a byte copy of the served tier-3 dataset pages of Cloud SuperIntel (public page and row declarations, no secret). The pages must not be empty on first run or while Cloud Store has not served the dataset yet; the served dataset always overrides it and ColdStartSeedTest pins the copy to data/fleet so it cannot drift.",
+ "ac_cloud-superintel/app/src/main/assets/si/seed/mcp.json": "Cold-start seed (#1562): a byte copy of the served tier-3 dataset mcp of Cloud SuperIntel (public page and row declarations, no secret). The pages must not be empty on first run or while Cloud Store has not served the dataset yet; the served dataset always overrides it and ColdStartSeedTest pins the copy to data/fleet so it cannot drift.",
+ "ac_cloud-superintel/app/src/main/assets/si/seed/plugins.json": "Cold-start seed (#1562): a byte copy of the served tier-3 dataset plugins of Cloud SuperIntel (public page and row declarations, no secret). The pages must not be empty on first run or while Cloud Store has not served the dataset yet; the served dataset always overrides it and ColdStartSeedTest pins the copy to data/fleet so it cannot drift.",
+ "ab_cloud-libs-shared/libs/appstore/src/main/assets/store-catalogue.json": "Tier-4 static reference seed (#1791): the Store's own app list (one row per package, each with category, licence, Play Integrity tier, game dimension, source and icon) that every Search > Phone page filters. The pages must list apps offline and on first run, not stay empty while a runtime dataset is unserved (the bug it fixes); the list holds public app metadata and no secret, and the dispatchable icon check keeps its URLs live."
  },
- "json_max": 94,
+ "json_max": 68,
  "gradle_max": 22,
  "b64_max": 304,
  "mock_files": [
@@ -19,17 +22,9 @@
   "mock-tasks.json"
  ],
  "json": {
-  "aa_cloud-superapp/app/src/main/assets/bg-policy.json": {
-   "tier": 2,
-   "target": "account fleet/bg-policy"
-  },
   "aa_cloud-superapp/app/src/main/assets/qrcodes/qrcodes.json": {
    "tier": 1,
    "target": "account personal/qrcodes"
-  },
-  "aa_cloud-superapp/app/src/main/assets/super-saving.json": {
-   "tier": 2,
-   "target": "account fleet/super-saving"
   },
   "ab_cloud-libs-shared/libs/ai/src/main/assets/ai/ai-catalogue.json": {
    "tier": 3,
@@ -43,10 +38,6 @@
    "tier": 3,
    "target": "store app/<pkg>/ai-tasks"
   },
-  "ab_cloud-libs-shared/libs/ai/src/main/assets/ai/ai.json": {
-   "tier": 2,
-   "target": "account fleet/ai"
-  },
   "ab_cloud-libs-shared/libs/ai/src/main/assets/ai/model-tabs.json": {
    "tier": 3,
    "target": "store app/<pkg>/model-tabs"
@@ -59,34 +50,6 @@
    "tier": 3,
    "target": "store app/<pkg>/protocol-cases"
   },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/apps-mcp-api.json": {
-   "tier": 2,
-   "target": "account fleet/apps-mcp-api"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-controls.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/appstore-controls"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-feeds.json": {
-   "tier": 2,
-   "target": "account fleet/appstore-feeds"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-fleet-actions.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/appstore-fleet-actions"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-install-sources.json": {
-   "tier": 2,
-   "target": "account fleet/appstore-install-sources"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-install-watch.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/appstore-install-watch"
-  },
-  "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-priority.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/appstore-priority"
-  },
   "ab_cloud-libs-shared/libs/appstore/src/main/assets/appstore-ventoy.json": {
    "tier": 3,
    "target": "store app/<pkg>/appstore-ventoy"
@@ -94,14 +57,6 @@
   "ab_cloud-libs-shared/libs/cgc-3d/src/main/assets/cgc/clips.json": {
    "tier": 4,
    "target": "store pack/clips (downloadable data pack or seed)"
-  },
-  "ab_cloud-libs-shared/libs/decisions-engine/src/main/assets/decisions.json": {
-   "tier": 2,
-   "target": "account fleet/decisions"
-  },
-  "ab_cloud-libs-shared/libs/fleetconfig-model/src/main/assets/fleet-config.json": {
-   "tier": 2,
-   "target": "account fleet/fleet-config"
   },
   "ab_cloud-libs-shared/libs/keyboard/src/main/assets/layouts/clipboard_bottom/clip_bottom_row.json": {
    "tier": 4,
@@ -291,14 +246,6 @@
    "tier": 4,
    "target": "store pack/phone_symbols (downloadable data pack or seed)"
   },
-  "ab_cloud-libs-shared/libs/maps/src/main/assets/geo/capitals.json": {
-   "tier": 4,
-   "target": "store pack/capitals (downloadable data pack or seed)"
-  },
-  "ab_cloud-libs-shared/libs/maps/src/main/assets/geo/region-members.json": {
-   "tier": 4,
-   "target": "store pack/region-members (downloadable data pack or seed)"
-  },
   "ab_cloud-libs-shared/libs/media/src/main/assets/stickers/index.json": {
    "tier": 4,
    "target": "store pack/index (downloadable data pack or seed)"
@@ -311,26 +258,6 @@
    "tier": 3,
    "target": "store app/<pkg>/catalogue"
   },
-  "ab_cloud-libs-shared/libs/perms/src/main/assets/perms-catalogue.json": {
-   "tier": 2,
-   "target": "account fleet/perms-catalogue"
-  },
-  "ab_cloud-libs-shared/libs/shell-broker/src/main/assets/shell-allowlist.json": {
-   "tier": 2,
-   "target": "account fleet/shell-allowlist"
-  },
-  "ab_cloud-libs-shared/libs/wifi/src/main/assets/wifi/channel-plans.json": {
-   "tier": 4,
-   "target": "store pack/channel-plans (downloadable data pack or seed)"
-  },
-  "ab_cloud-libs-shared/libs/wifi/src/main/assets/wifi/wifi-config.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/wifi-config"
-  },
-  "ac_c3-morpheus/app/src/main/assets/probes.json": {
-   "tier": 2,
-   "target": "account fleet/probes"
-  },
   "ac_cloud-browser/app/src/main/assets/favourites_catalog.json": {
    "tier": 1,
    "target": "account personal/favourites_catalog"
@@ -339,37 +266,9 @@
    "tier": "mock",
    "target": "remove from release builds (phase 1)"
   },
-  "ac_cloud-superintel/app/src/main/assets/ai/apis.json": {
-   "tier": 2,
-   "target": "account fleet/apis"
-  },
-  "ac_cloud-superintel/app/src/main/assets/ai/cost.json": {
-   "tier": 2,
-   "target": "account fleet/cost"
-  },
   "ac_cloud-superintel/app/src/main/assets/ai/dotfiles.json": {
    "tier": 1,
    "target": "account personal/dotfiles"
-  },
-  "ac_cloud-superintel/app/src/main/assets/ai/mcp.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/mcp"
-  },
-  "ac_cloud-superintel/app/src/main/assets/ai/pages.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/pages"
-  },
-  "ac_cloud-superintel/app/src/main/assets/ai/plugins.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/plugins"
-  },
-  "ac_cloud-superintel/app/src/main/assets/si/notebook.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/notebook"
-  },
-  "ac_cloud-superintel/app/src/main/assets/si/personas.json": {
-   "tier": 3,
-   "target": "store app/<pkg>/personas"
   },
   "ac_cloud-tasks/app/src/debug/assets/mock-tasks.json": {
    "tier": "mock",

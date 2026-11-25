@@ -1944,7 +1944,7 @@
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -2227,7 +2227,7 @@
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -2343,7 +2343,7 @@
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -2459,7 +2459,7 @@
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -2568,14 +2568,14 @@
           {
             "id": "services",
             "label": "Source · Services",
-            "default": "+",
+            "default": "+%",
             "options": [
               {
                 "id": "all",
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -2691,7 +2691,7 @@
                 "label": "All"
               },
               {
-                "id": "+",
+                "id": "+%",
                 "label": "Services"
               }
             ]
@@ -3074,8 +3074,9 @@
         ],
         "tile_groups": [
           {
-            "_doc": "#1627 Primary (renamed from 'Tools Primary'). Order: Drive, Browser | Calc, Navigation, Camera, Keyboard || Wallet. Single '|' after Browser, DOUBLE '||' after Keyboard (#1736: the Writer tile is gone, Writer is an Action of the Keyboard app menu, ui.external_apps[cloud-keyboard].actions). Drive moved in from Data; Vault moved out to Data. Pinned by test-primary-tools-order.sh, test-calc-tile.sh, test-camera-tiles.sh, test-writer-tile.sh, test-me-account-tile.sh and test-quickmarks-field-parity.sh.",
-            "title": "Primary",
+            "_doc": "#1916 Data: Drive, Browser, Gallery, Notes | Me, Tasks, Vault, Wallet | Office ('|' = single separator tile). Drive, Browser and Wallet MOVED in from Primary; Notes, Tasks, Office, Gallery, Me and Vault keep their tiles and ids. Pinned by test-quickmarks-field-parity.sh and test-group-glyphs-1916.sh.",
+            "title": "Data",
+            "glyph": "△",
             "tiles": [
               {
                 "_doc": "#1627 Drive leads the Primary group (moved here from Data). Drive, the leading tile of Data Apps. It used to be a `page:drive/connections` deep link into an in-app section; task 302/304 lifted those four tabs out into the standalone Cloud Drive APK (ac_cloud-drive, com.diegonmarcos.clouddrive), whose Files tab is a full native local file manager rather than a list of remote back ends. The tile now LAUNCHES that app through the `extapp:` resolver and ui.external_apps.cloud-drive. The tile id is unchanged because the Home tile rows address it by id. ICON — THIS TILE IS THE ONE PLACE THE DRIVE GLYPH IS DECLARED. The one-hand left-edge `down` sector carries no icon field of its own: libs/launcher-onehand/build.gradle derives action_catalogue from these tiles, canonicalising `extapp:cloud-drive` and `app:com.diegonmarcos.clouddrive` onto one key through ui.external_apps, and OneHandAccessibilityService.declaredIcon draws whatever this field names when the APK is not installed. Changing it here therefore changes the tile AND the edge sector, and there is deliberately no second field anywhere to disagree with it. It was ic_p_sol_cloud, a shared palette glyph four other entries also use and the mark the in-app Drive PAGE wore; task 404 made it ic_drive, which now holds Cloud Drive OWN launcher foreground copied verbatim from ac_cloud-drive/app/src/main/res/drawable/ic_launcher_foreground.xml — the same thing Writer, Camera and Nav already do for their extracted apps. Sections.iconResFor falls back to ic_link_tile in silence when a name resolves to nothing, so both the existence of that drawable and its provenance are pinned by test-onehand-app-sector-icon.sh rather than trusted.",
@@ -3092,52 +3093,45 @@
                 "target": "extapp:cloud-browser"
               },
               {
-                "_doc": "#1627 Single divider ('|'): `separator:true`; GroupedTilesFragment draws a thin TileDivider on the previous tile's edge. Not clickable, not focusable, no target, dropped by TileGroup.destinations.",
-                "id": "primary-sep-1",
+                "_doc": "Gallery — the Data Apps tile for cloud-gallery (ac_cloud-gallery, applicationId com.diegonmarcos.mediacenter), our Google-Photos/Samsung-Gallery replacement (local gallery + PhotoPrism cloud library + backup). Registered in ui.external_apps[cloud-gallery]; this tile is what makes it VISIBLE in the launcher — an external_apps entry alone only makes an app installable/openable BY ID and shows nothing. The app was called cloud-media-center until 2026-10 and this tile's id was mediacenter; both were renamed to gallery so that the name cloud-media-center could go to the new Tauri media app (ac_cloud-media-center, com.diegonmarcos.cloudmediacenter). The applicationId did NOT change, because the app is installed on phones and a new package id would be a different app to Android. The former sibling 'photos' tile (app://com.google.android.apps.photos) was removed 2026-08-30 — Gallery is the sole photo entry point.",
+                "id": "gallery",
+                "label": "Gallery",
+                "icon": "ic_photos",
+                "target": "extapp:cloud-gallery"
+              },
+              {
+                "_doc": "Cloud Notes (ac_cloud-notes, com.diegonmarcos.cloudnotes) — our own signed build of Cloud Notes, a local-first notes/whiteboard app. Formerly a Markor build in this same directory; #495 flipped the Cloud Notes build (vendored alongside it by #469 under com.diegonmarcos.cloud-notes) onto this identity and deleted the Markor tree. #522 put the DIRECTORY and the NAME back: the product is cloud-notes, Cloud Notes is only the upstream it is built from. Replaces the `obsidian://open` deep link this tile used to carry, back when it was added. Two things were wrong with that target and only one of them was about branding: it is a bare scheme URI, so ShellActivity.launchUri turns it into a plain ACTION_VIEW and it raises ActivityNotFoundException on any phone without Obsidian installed — the exact hazard test-drive-page-sections.sh T9 exists to contain, and a tile that fails AFTER the tap. `extapp:cloud-notes` resolves through ui.external_apps instead: installed → launches, absent → offers the install from the Constellation store. Obsidian itself is NOT removed from the phone or from this file — md.obsidian keeps its ui.phone_folders keyword and its place in the favourites picker (a favourite is what you can pick, not what you get), so nothing dangles.",
+                "id": "notes",
+                "label": "Notes",
+                "icon": "ic_notes",
+                "target": "extapp:cloud-notes"
+              },
+              {
+                "id": "data-sep-1",
                 "label": "|",
                 "separator": true
               },
               {
-                "_doc": "Calc — hands off to the standalone Cloud Calc app (ac_cloud-calc, com.diegonmarcos.cloudcalc, read from ITS android.application_id and app/build.gradle namespace). #772: the owner asked for it IMMEDIATELY BEFORE Writer in this row, and GroupedTilesFragment walks group.tiles in declared order with no sort, so array position is that placement and test-calc-tile.sh pins it as 'the tile right after calc is writer'. Same shape as Writer: target=extapp:cloud-calc → launchExternalApp opens the package if installed, else installs ui.external_apps[id=cloud-calc].install_apk_url (ABI-resolved through the fleet assets map). icon ic_calc is Cloud Calc's own launcher foreground, cropped to its art like ic_writer.",
-                "id": "calc",
-                "label": "Calc",
-                "icon": "ic_calc",
-                "target": "extapp:cloud-calc"
+                "_doc": "#1627 Me — launches the Cloud-Me app (ac_cloud-me, extapp:cloud-me). Added to the Data group after the || divider, beside Vault, by owner order. A SECOND entry point for the same app that heads the separate 'Me' row below (an app on two surfaces is the normal case); own id 'data-me' because tile ids are unique.",
+                "id": "data-me",
+                "label": "Me",
+                "icon": "ic_vcard",
+                "target": "extapp:cloud-me",
+                "category_skip": true
               },
               {
-                "_doc": "Navigation — hands off to the dedicated Cloud-Nav app (ac_cloud-nav). libs:maps (MapLibre tracker + timeline + MyTrips) was MOVED out of the SuperApp into Cloud-Nav, so this tile no longer routes to an in-app section. target=extapp:cloud-nav → MainActivity.launchExternalApp opens com.diegonmarcos.cloudnav if installed, else downloads + installs ui.external_apps[id=cloud-nav].install_apk_url (Cloud-Nav.apk). icon ic_nav (ic_maps left with libs:maps). For the system Google Maps launcher use action:app://com.google.android.apps.maps from anywhere else.",
-                "id": "maps",
-                "label": "Navigation",
-                "icon": "ic_nav",
-                "target": "extapp:cloud-nav"
+                "_doc": "Cloud Tasks (ac_cloud-tasks, com.diegonmarcos.cloudagenda): tasks first, with the calendar, events and invites one tab away. Captioned by function, Tasks, since cloud-calendar became cloud-agenda (#315) and then cloud-tasks. The tile id stays `calendar` because the Home tile rows address tiles by id.",
+                "id": "calendar",
+                "label": "Tasks",
+                "icon": "ic_calendar",
+                "target": "extapp:cloud-tasks"
               },
               {
-                "_doc": "Camera — the fleet's OWN camera (ac_cloud-camera, applicationId cld.camera, our signed build of GrapheneOS Camera), not a third-party one. The owner asked for it 'as last' in this row on 2026-09-10, and LAST HERE IS ARRAY POSITION: GroupedTilesFragment walks group.tiles in declared order and applies no sort of any kind, so appending is what makes it last and reordering this array is the only way to move it. There is no `order` field to set and none is wanted — a second way to express position is a second thing to disagree with the first. target=extapp:cloud-camera → MainActivity.launchExternalApp opens cld.camera if installed, else downloads + installs ui.external_apps[id=cloud-camera].install_apk_url. icon ic_camera is its own drawable rather than ic_photos, which the Gallery tile already carries; Sections.iconResFor falls back to ic_link_tile without complaining when a name resolves to nothing, so a shared or misspelt icon is a silent defect and test-camera-tiles.sh pins the file's existence.",
-                "id": "camera",
-                "label": "Camera",
-                "icon": "ic_camera",
-                "target": "extapp:cloud-camera"
-              },
-              {
-                "_doc": "Canvas — hands off to the standalone Cloud Canvas app (ac_cloud-canvas, com.diegonmarcos.cloudcanvas, #1780): a paint app (Draw) and a music mixer (Play). The owner placed it IMMEDIATELY AFTER Camera in this row; array position is render position (GroupedTilesFragment applies no sort). Opens its own app through ui.external_apps (extapp:cloud-canvas); the glyph ic_canvas is generated from ac_cloud-canvas/build.json::launcher_icon.",
-                "id": "canvas",
-                "label": "Canvas",
-                "icon": "ic_canvas",
-                "target": "extapp:cloud-canvas"
-              },
-              {
-                "_doc": "Keyboard — hands off to the standalone Cloud-Keyboard app (ac_cloud-keyboard, com.diegonmarcos.cloudkeyboard). Same target as the Configs ▸ Keyboard entry: extapp:cloud-keyboard → MainActivity.launchExternalApp opens Cloud-Keyboard's SettingsActivity if installed, else downloads + installs ui.external_apps[id=cloud-keyboard].install_apk_url. The keyboard is a first-class Cloud app like Browser/Wallet/Vault, so it belongs in Tools Primary and not only behind Configs.",
-                "id": "keyboard",
-                "label": "Keyboard",
-                "icon": "ic_keyboard",
-                "target": "extapp:cloud-keyboard"
-              },
-              {
-                "_doc": "#1627 DOUBLE divider ('||'): a stronger group rule than the single '|'. `separator:true` + `double:true`; GroupedTilesFragment draws a bolder TileDivider on the previous tile's edge. Not clickable, not focusable, no target, dropped by TileGroup.destinations.",
-                "id": "primary-sep-2",
-                "label": "||",
-                "separator": true,
-                "double": true
+                "_doc": "#1627 Vault moved to the Data group (after the || divider, before none; last of Data). Cloud-Vault — the dedicated Vaultwarden client app (ac_cloud-vault). libs:vault (KeePassDX stub) was replaced by Cloud-Vault, a standalone constellation APK hosting vault.diegonmarcos.com (self-hosted Vaultwarden). target=extapp:cloud-vault → MainActivity.launchExternalApp opens com.diegonmarcos.cloudvault if installed, else downloads + installs ui.external_apps[id=cloud-vault].install_apk_url. Lives in Tools Primary (moved there from Data Apps by owner order, #1092).",
+                "id": "vault",
+                "label": "Vault",
+                "icon": "ic_vault",
+                "target": "extapp:cloud-vault"
               },
               {
                 "_doc": "Cloud-Wallet — the dedicated cards/passes/tickets app (ac_cloud-wallet). libs:wallet (Compose deck) was MOVED out of the SuperApp into Cloud-Wallet, so this tile no longer routes to an in-app section. target=extapp:cloud-wallet → MainActivity.launchExternalApp opens com.diegonmarcos.cloudwallet if installed, else downloads + installs ui.external_apps[id=cloud-wallet].install_apk_url. For the system Google Wallet launcher use action:app://com.google.android.apps.walletnfcrel from anywhere else.",
@@ -3145,11 +3139,24 @@
                 "label": "Wallet",
                 "icon": "ic_wallet",
                 "target": "extapp:cloud-wallet"
+              },
+              {
+                "id": "data-sep-2",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#380. This tile is the Data Apps entry for the application whose IDENTITY is cloud-office (ac_cloud-office, com.diegonmarcos.cloudoffice) and its label is \"Office\" — a caption for the tap target, not a name for the app. It printed the identity string \"cloud-office\" until #380; identity now lives only in `target`/ui.external_apps[cloud-office].id and the app's own build.json::name, and nothing about the package, the Cloud-Office.apk asset or the folder changed with this label. THE PREVIOUS _doc HERE WAS WRONG TWICE AND IS CORRECTED RATHER THAN KEPT. It said \"this tile label and ui.external_apps[cloud-office].label are the two names the fleet owns\": ui.external_apps carries NO label key on any of its 23 entries, and test-app-names-pattern.sh T3 forbids one outright (\"ui.external_apps shows the id and restates no name\") — so that sentence pointed a future editor at a second copy that does not exist and would have reddened the guard the moment they created it. It also said the rebrand waits on build.json::build.host \"and it is null\"; ac_cloud-office/build.json::build.host is ubuntu-latest and the source build has published Cloud-Office.apk. Android's own home screen is a SEPARATE surface from this tile and takes its label from the APK manifest, via --with-app-name = that app's build.json::name, which test-app-name-reaches-the-user.sh pins to the cloud-<x> pattern — deliberately NOT to this caption.",
+                "id": "sheets",
+                "label": "Office",
+                "icon": "ic_sheets",
+                "target": "extapp:cloud-office"
               }
             ]
           },
           {
             "title": "Communication",
+            "glyph": "○",
             "tiles": [
               {
                 "id": "mail",
@@ -3194,69 +3201,49 @@
             ]
           },
           {
-            "_doc": "#1627 Data (renamed from 'Data Apps'). Order: Note, Tasks, Office | Gallery || Me, Vault (Media Center moved to Services, #1764). Single '|' after Office, DOUBLE '||' after Media Center. Drive moved out to Primary; Me (data-me) and Vault moved in. Pinned by test-drive-page-sections.sh, test-services-row.sh and test-quickmarks-field-parity.sh.",
-            "title": "Data",
+            "_doc": "#1916 Primary: Navigation, Camera, Canvas, Keyboard, Calc (no dividers). Drive, Browser and Wallet MOVED to Data; the two Primary dividers dissolved with them. Glyph is declared data (`glyph`, drawn before the title by GroupedTilesFragment.GroupTitle). Pinned by test-primary-tools-order.sh, test-quickmarks-field-parity.sh and test-group-glyphs-1916.sh.",
+            "title": "Primary",
+            "glyph": "□",
             "tiles": [
               {
-                "_doc": "Cloud Notes (ac_cloud-notes, com.diegonmarcos.cloudnotes) — our own signed build of Cloud Notes, a local-first notes/whiteboard app. Formerly a Markor build in this same directory; #495 flipped the Cloud Notes build (vendored alongside it by #469 under com.diegonmarcos.cloud-notes) onto this identity and deleted the Markor tree. #522 put the DIRECTORY and the NAME back: the product is cloud-notes, Cloud Notes is only the upstream it is built from. Replaces the `obsidian://open` deep link this tile used to carry, back when it was added. Two things were wrong with that target and only one of them was about branding: it is a bare scheme URI, so ShellActivity.launchUri turns it into a plain ACTION_VIEW and it raises ActivityNotFoundException on any phone without Obsidian installed — the exact hazard test-drive-page-sections.sh T9 exists to contain, and a tile that fails AFTER the tap. `extapp:cloud-notes` resolves through ui.external_apps instead: installed → launches, absent → offers the install from the Constellation store. Obsidian itself is NOT removed from the phone or from this file — md.obsidian keeps its ui.phone_folders keyword and its place in the favourites picker (a favourite is what you can pick, not what you get), so nothing dangles.",
-                "id": "notes",
-                "label": "Notes",
-                "icon": "ic_notes",
-                "target": "extapp:cloud-notes"
+                "_doc": "Navigation — hands off to the dedicated Cloud-Nav app (ac_cloud-nav). libs:maps (MapLibre tracker + timeline + MyTrips) was MOVED out of the SuperApp into Cloud-Nav, so this tile no longer routes to an in-app section. target=extapp:cloud-nav → MainActivity.launchExternalApp opens com.diegonmarcos.cloudnav if installed, else downloads + installs ui.external_apps[id=cloud-nav].install_apk_url (Cloud-Nav.apk). icon ic_nav (ic_maps left with libs:maps). For the system Google Maps launcher use action:app://com.google.android.apps.maps from anywhere else.",
+                "id": "maps",
+                "label": "Navigation",
+                "icon": "ic_nav",
+                "target": "extapp:cloud-nav"
               },
               {
-                "_doc": "Cloud Tasks (ac_cloud-tasks, com.diegonmarcos.cloudagenda): tasks first, with the calendar, events and invites one tab away. Captioned by function, Tasks, since cloud-calendar became cloud-agenda (#315) and then cloud-tasks. The tile id stays `calendar` because the Home tile rows address tiles by id.",
-                "id": "calendar",
-                "label": "Tasks",
-                "icon": "ic_calendar",
-                "target": "extapp:cloud-tasks"
+                "_doc": "Camera — the fleet's OWN camera (ac_cloud-camera, applicationId cld.camera, our signed build of GrapheneOS Camera), not a third-party one. The owner asked for it 'as last' in this row on 2026-09-10, and LAST HERE IS ARRAY POSITION: GroupedTilesFragment walks group.tiles in declared order and applies no sort of any kind, so appending is what makes it last and reordering this array is the only way to move it. There is no `order` field to set and none is wanted — a second way to express position is a second thing to disagree with the first. target=extapp:cloud-camera → MainActivity.launchExternalApp opens cld.camera if installed, else downloads + installs ui.external_apps[id=cloud-camera].install_apk_url. icon ic_camera is its own drawable rather than ic_photos, which the Gallery tile already carries; Sections.iconResFor falls back to ic_link_tile without complaining when a name resolves to nothing, so a shared or misspelt icon is a silent defect and test-camera-tiles.sh pins the file's existence.",
+                "id": "camera",
+                "label": "Camera",
+                "icon": "ic_camera",
+                "target": "extapp:cloud-camera"
               },
               {
-                "_doc": "#380. This tile is the Data Apps entry for the application whose IDENTITY is cloud-office (ac_cloud-office, com.diegonmarcos.cloudoffice) and its label is \"Office\" — a caption for the tap target, not a name for the app. It printed the identity string \"cloud-office\" until #380; identity now lives only in `target`/ui.external_apps[cloud-office].id and the app's own build.json::name, and nothing about the package, the Cloud-Office.apk asset or the folder changed with this label. THE PREVIOUS _doc HERE WAS WRONG TWICE AND IS CORRECTED RATHER THAN KEPT. It said \"this tile label and ui.external_apps[cloud-office].label are the two names the fleet owns\": ui.external_apps carries NO label key on any of its 23 entries, and test-app-names-pattern.sh T3 forbids one outright (\"ui.external_apps shows the id and restates no name\") — so that sentence pointed a future editor at a second copy that does not exist and would have reddened the guard the moment they created it. It also said the rebrand waits on build.json::build.host \"and it is null\"; ac_cloud-office/build.json::build.host is ubuntu-latest and the source build has published Cloud-Office.apk. Android's own home screen is a SEPARATE surface from this tile and takes its label from the APK manifest, via --with-app-name = that app's build.json::name, which test-app-name-reaches-the-user.sh pins to the cloud-<x> pattern — deliberately NOT to this caption.",
-                "id": "sheets",
-                "label": "Office",
-                "icon": "ic_sheets",
-                "target": "extapp:cloud-office"
+                "_doc": "Canvas — hands off to the standalone Cloud Canvas app (ac_cloud-canvas, com.diegonmarcos.cloudcanvas, #1780): a paint app (Draw) and a music mixer (Play). The owner placed it IMMEDIATELY AFTER Camera in this row; array position is render position (GroupedTilesFragment applies no sort). Opens its own app through ui.external_apps (extapp:cloud-canvas); the glyph ic_canvas is generated from ac_cloud-canvas/build.json::launcher_icon.",
+                "id": "canvas",
+                "label": "Canvas",
+                "icon": "ic_canvas",
+                "target": "extapp:cloud-canvas"
               },
               {
-                "_doc": "#1627 Single divider ('|'): `separator:true`; GroupedTilesFragment draws a thin TileDivider on the previous tile's edge. Not clickable, not focusable, no target, dropped by TileGroup.destinations.",
-                "id": "data-sep-1",
-                "label": "|",
-                "separator": true
+                "_doc": "Keyboard — hands off to the standalone Cloud-Keyboard app (ac_cloud-keyboard, com.diegonmarcos.cloudkeyboard). Same target as the Configs ▸ Keyboard entry: extapp:cloud-keyboard → MainActivity.launchExternalApp opens Cloud-Keyboard's SettingsActivity if installed, else downloads + installs ui.external_apps[id=cloud-keyboard].install_apk_url. The keyboard is a first-class Cloud app like Browser/Wallet/Vault, so it belongs in Tools Primary and not only behind Configs.",
+                "id": "keyboard",
+                "label": "Keyboard",
+                "icon": "ic_keyboard",
+                "target": "extapp:cloud-keyboard"
               },
               {
-                "_doc": "Gallery — the Data Apps tile for cloud-gallery (ac_cloud-gallery, applicationId com.diegonmarcos.mediacenter), our Google-Photos/Samsung-Gallery replacement (local gallery + PhotoPrism cloud library + backup). Registered in ui.external_apps[cloud-gallery]; this tile is what makes it VISIBLE in the launcher — an external_apps entry alone only makes an app installable/openable BY ID and shows nothing. The app was called cloud-media-center until 2026-10 and this tile's id was mediacenter; both were renamed to gallery so that the name cloud-media-center could go to the new Tauri media app (ac_cloud-media-center, com.diegonmarcos.cloudmediacenter). The applicationId did NOT change, because the app is installed on phones and a new package id would be a different app to Android. The former sibling 'photos' tile (app://com.google.android.apps.photos) was removed 2026-08-30 — Gallery is the sole photo entry point.",
-                "id": "gallery",
-                "label": "Gallery",
-                "icon": "ic_photos",
-                "target": "extapp:cloud-gallery"
-              },
-              {
-                "_doc": "#1627 DOUBLE divider ('||'): a stronger group rule than the single '|'. `separator:true` + `double:true`; GroupedTilesFragment draws a bolder TileDivider on the previous tile's edge. Not clickable, not focusable, no target, dropped by TileGroup.destinations.",
-                "id": "data-sep-2",
-                "label": "||",
-                "separator": true,
-                "double": true
-              },
-              {
-                "_doc": "#1627 Me — launches the Cloud-Me app (ac_cloud-me, extapp:cloud-me). Added to the Data group after the || divider, beside Vault, by owner order. A SECOND entry point for the same app that heads the separate 'Me' row below (an app on two surfaces is the normal case); own id 'data-me' because tile ids are unique.",
-                "id": "data-me",
-                "label": "Me",
-                "icon": "ic_vcard",
-                "target": "extapp:cloud-me",
-                "category_skip": true
-              },
-              {
-                "_doc": "#1627 Vault moved to the Data group (after the || divider, before none; last of Data). Cloud-Vault — the dedicated Vaultwarden client app (ac_cloud-vault). libs:vault (KeePassDX stub) was replaced by Cloud-Vault, a standalone constellation APK hosting vault.diegonmarcos.com (self-hosted Vaultwarden). target=extapp:cloud-vault → MainActivity.launchExternalApp opens com.diegonmarcos.cloudvault if installed, else downloads + installs ui.external_apps[id=cloud-vault].install_apk_url. Lives in Tools Primary (moved there from Data Apps by owner order, #1092).",
-                "id": "vault",
-                "label": "Vault",
-                "icon": "ic_vault",
-                "target": "extapp:cloud-vault"
+                "_doc": "Calc — hands off to the standalone Cloud Calc app (ac_cloud-calc, com.diegonmarcos.cloudcalc, read from ITS android.application_id and app/build.gradle namespace). #772: the owner asked for it IMMEDIATELY BEFORE Writer in this row, and GroupedTilesFragment walks group.tiles in declared order with no sort, so array position is that placement and test-calc-tile.sh pins it as 'the tile right after calc is writer'. Same shape as Writer: target=extapp:cloud-calc → launchExternalApp opens the package if installed, else installs ui.external_apps[id=cloud-calc].install_apk_url (ABI-resolved through the fleet assets map). icon ic_calc is Cloud Calc's own launcher foreground, cropped to its art like ic_writer.",
+                "id": "calc",
+                "label": "Calc",
+                "icon": "ic_calc",
+                "target": "extapp:cloud-calc"
               }
             ]
           },
           {
-            "_doc": "Me — the personal-administration row, in the owner's order: Me | Me-Health Experiences Tasks | Me-Inventory Me-Buro Me-LLC | Profile ('|' = group separators, like the AGI row). Account moved to the end behind a third rule (#1362, was first since #1167); the Me app leads; each Me-* tile deep-links into the matching Cloud-Me section. MySocials and MyTrips left the row; Me-Study and Me-Achieves became Experiences and RoadMap. Pinned by test-me-account-tile.sh.",
+            "_doc": "#1903 Me row, reading exactly Lnktree | Me-Pers Me-Prof Me-Prj | Me-Invent. Me-Buro Me-LLC (Me-Health became Me-Pers and opens Cloud Me Pers, Experienc. became Me-Prof and opens Prof, Socials became Me-Prj and opens Proj; tile ids unchanged; the Profile tile left the row and stays in Setup, tile configs-profile). Earlier: Me — the personal-administration row, in the owner's order: Me | Me-Health Experiences Tasks | Me-Inventory Me-Buro Me-LLC | Profile ('|' = group separators, like the AGI row). Account moved to the end behind a third rule (#1362, was first since #1167); the Me app leads; each Me-* tile deep-links into the matching Cloud-Me section. MySocials and MyTrips left the row; Me-Study and Me-Achieves became Experiences and RoadMap. Pinned by test-me-account-tile.sh.",
             "title": "Me",
             "tiles": [
               {
@@ -3274,23 +3261,23 @@
               {
                 "_doc": "Me-Health — Cloud-Me's Health section, entered at its Index page (the MyHealth tile, renamed). Same `extapp:<appId>#<target>` hand-off as the tiles beside it: launchExternalApp opens Cloud-Me and passes everything after the '#' as the `shortcut_action` extra, which Cloud-Me's MainActivity resolves through the `page:<section>/<page>` grammar; not installed, the same download-and-install path every other extapp tile uses. The fragment names declared section/page ids of ac_cloud-me/build.json (test-dashboard-cross-app-deeplink.sh T3 proves they resolve).",
                 "id": "myhealth",
-                "label": "Me-Health",
+                "label": "Me-Pers",
                 "icon": "ic_heart",
-                "target": "extapp:cloud-me#page:health/home"
+                "target": "extapp:cloud-me#page:pers/pers-profiles"
               },
               {
                 "_doc": "Experiences — Cloud-Me's top-level Experiences page (Work, Study, Personal Achieves), entered at its first tab Work; replaced the Me-Study and Me-Achieves tiles once Experiences and Tasks became top-level Cloud-Me pages. Same `extapp:<appId>#<target>` hand-off as the tiles beside it: launchExternalApp opens Cloud-Me and passes everything after the '#' as the `shortcut_action` extra, which Cloud-Me's MainActivity resolves through the `page:<section>/<page>` grammar; not installed, the same download-and-install path every other extapp tile uses. The fragment names declared section/page ids of ac_cloud-me/build.json (test-dashboard-cross-app-deeplink.sh T3 proves they resolve).",
                 "id": "myexperiences",
-                "label": "Experienc.",
+                "label": "Me-Prof",
                 "icon": "ic_file_stack",
-                "target": "extapp:cloud-me#page:experiences/work"
+                "target": "extapp:cloud-me#page:prof/prof-profiles"
               },
               {
                 "_doc": "Socials (#1771, was Tasks, before that RoadMap) — Cloud-Me's Socials tab, entered at Professional (Professional | Personal, the mysocials pages); Cloud-Me's Tasks section (Tree, Due, vault rows) left the bar and stays reachable from the title dropdown. The tile id stays myroadmap: it is the tile's identity, pinned by the cross-app deep-link tester. Same `extapp:<appId>#<target>` hand-off as the tiles beside it: launchExternalApp opens Cloud-Me and passes everything after the '#' as the `shortcut_action` extra, which Cloud-Me's MainActivity resolves through the `page:<section>/<page>` grammar; not installed, the same download-and-install path every other extapp tile uses. The fragment names declared section/page ids of ac_cloud-me/build.json (test-dashboard-cross-app-deeplink.sh T3 proves they resolve).",
                 "id": "myroadmap",
-                "label": "Socials",
+                "label": "Me-Prj",
                 "icon": "ic_tree",
-                "target": "extapp:cloud-me#page:socials/socials-professional"
+                "target": "extapp:cloud-me#page:proj/lnktree-site"
               },
               {
                 "_doc": "Second rule of the Me row, between Me-Health Experiences Tasks and Me-Inventory Me-Buro Me-LLC, like the AGI row. NOT a tile: declares no target; GroupedTilesFragment draws it as a bare non-clickable '|'. test-me-account-tile.sh pins the row.",
@@ -3318,119 +3305,99 @@
                 "label": "Me-LLC",
                 "icon": "ic_p_llc",
                 "target": "extapp:cloud-me#page:llc/employed"
-              },
-              {
-                "_doc": "Third rule of the Me row, between Me-LLC and Account (#1362). NOT a tile: declares no target; GroupedTilesFragment draws it as a bare non-clickable '|'. test-me-account-tile.sh pins the row.",
-                "id": "me-sep-3",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "#1440 Profile: Cloud Me's profile page (the top-right avatar there; libs:account-ui's Personal Info + Configs, the same page as Cloud Account's). The id stays tools-account: it is the tile's identity, pinned by the cross-app deep-link tester. Earlier: Cloud Account, moved from Tools Primary into the Me row; it closes the row, after Me-LLC and a '|' rule (#1362). Same page as the Configs ▸ Account tile (id configs-account), which stays: the duplicate is intentional, under its own plain icon (the launcher-icons guard wants Cloud page icons unique). Own id because tile ids are unique. Pinned by test-me-account-tile.sh.",
-                "id": "tools-account",
-                "label": "Profile",
-                "icon": "ic_p_identities",
-                "target": "extapp:cloud-me#page:profile/profile",
-                "fleet_app": "me"
               }
             ]
           },
           {
-            "_doc": "Lnktree (was 'Projects W'; owner 2026-10-30), reshaped by #1778 to Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse. Wiki (ac_cloud-wiki, com.diegonmarcos.cloudwiki, the encyclopedia with a graph) leads; then the SuperApp tile (app://com.diegonmarcos.superapp, moved here from Configs 2026-10-30) with Omniverse; then FinTerm, BioMed and CAD; Circusverse closes the row as a greyed-out coming_soon tile (no app yet). Each live tile LAUNCHES a real app (#1335, extapp:cg-omniverse, capital-stack-finterminal, hardtech-biomed, hardtech-cad, cloud-wiki; folders ad_* for the Lnktree family, 1_cicd/src/data/app-families.json, ac_* for Wiki). The pages live in the apps (their build.json::ui), no in-app page is left here. The three '|' rules group the row: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse. The row id stays 'Lnktree' = the title; the old project tiles (Lf.y/Nx.z/St.x repos) are gone. Pinned by test-lnktree-row.sh and test-projects-row-1778.sh.",
-            "title": "Projects",
+            "title": "Services · City",
+            "glyph": "○",
+            "_doc": "#1902 Services · City (was the first half of Services): Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels. #1473/#1476 Weby Services & Markets (was Services): the row after Me and before AGI. News moved here from Data Apps; Shopping (ac_cloud-shopping, com.diegonmarcos.cloudshopping, a deals and listings browser over mock data) joined it. Both open their own app through ui.external_apps; the Shopping glyph ic_shopping is generated from ac_cloud-shopping/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable). Events, Mobility and Jobs are coming_soon placeholders (no app yet). Search moved in before News Shopping and KG Store after them, with a declared separator between the sub-groups (#1476). Pinned by test-agi-tiles.sh (AGI follows Services) and test-services-row.sh. #1806 the row now reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store, in the order declared once in ui.services_order (Games, Health, Hotels and City Mobility are new coming_soon placeholders; Mobility & Travel became Transports and its in-city and accommodation entries moved to City Mobility and Hotels). Pinned by test-services-order-1806.sh.",
             "tiles": [
               {
-                "_doc": "#1778 Wiki: Cloud Wiki (ac_cloud-wiki, com.diegonmarcos.cloudwiki), the new Library-Wiki app: Markdown pages in thirteen topics with tag chips and an Obsidian-style graph. Opens its own app through ui.external_apps (extapp:cloud-wiki); the glyph ic_wiki is generated from ac_cloud-wiki/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable).",
-                "id": "wiki",
-                "label": "Wiki",
-                "icon": "ic_wiki",
-                "target": "extapp:cloud-wiki"
-              },
-              {
-                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
-                "id": "lnktree-sep-0",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "Owner 2026-10-30: moved out of Configs into the Lnktree row (test-lnktree-row.sh); #803 had earlier moved it out of AGI into Configs. app:// resolves MAIN/LAUNCHER for the package and adds FLAG_ACTIVITY_NEW_TASK (see ShellActivity.handleTarget), which lands on .MainActivity — the app door, own taskAffinity, own Overview card. .HomeActivity (the launcher door) is a different task and is not reachable this way, which is the point. #1153 supersedes #1095: the tile launches the real app as its OWN task (app:// with NEW_TASK | LAUNCH_ADJACENT, ShellActivity.handleTarget; MainActivity is resizeableActivity), so split screen keeps this Cloud ▸ Apps page open beside it, instead of embedding a page in the launcher. test-dashboard-cross-app-deeplink.sh T7 and ConfigsTileDeepLinkTest pin it.",
-                "id": "cloud-superapp",
-                "label": "SuperApp",
-                "icon": "ic_superapp_d",
-                "target": "app://com.diegonmarcos.superapp"
-              },
-              {
-                "_doc": "Omniverse: page:cloud/omniverse (Galaxy, Game Store, VR Store).",
-                "id": "omniverse",
-                "label": "Omniverse",
-                "icon": "ic_p_sol_other",
-                "target": "extapp:cg-omniverse"
-              },
-              {
-                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
-                "id": "lnktree-sep-1",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "FinTerm: section:finterm, the FI | EQ | EX | NW | PM | MY-PM tab strip.",
-                "id": "finterm",
-                "label": "FinTerm",
-                "icon": "ic_p_markets_terminal",
-                "target": "extapp:capital-stack-finterminal"
-              },
-              {
-                "_doc": "BioMed: Hardtech-BioMed (Physiology, BioChem, BioMech, Anatomy, Genetic, Neuro, Immuno); its former SAP2000, MATLAB and Ansys pages are under Hardtech-CAD > Sim2Real. It points at the package the app declares TODAY (ad_Hardtech-BioMed/build.json::android.application_id, com.diegonmarcos.hardtechbiomed). TODO after the Sim2Real to BioMed rename (#1777) lands: re-check this tile's extapp id, the ui.external_apps entry and the fleet package against the renamed app, and update them if they moved.",
-                "id": "biomed",
-                "label": "BioMed",
-                "icon": "ic_p_sol_tools",
-                "target": "extapp:hardtech-biomed"
-              },
-              {
-                "_doc": "CAD: page:cloud/cad (MCAD, BIM, SolWrk).",
-                "id": "cad",
-                "label": "CAD",
-                "icon": "ic_p_sol_pro",
-                "target": "extapp:hardtech-cad"
-              },
-              {
-                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
-                "id": "lnktree-sep-2",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "#1778 declared placeholder (coming_soon): Circusverse is not an app yet. Drawn gray and disabled, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists. Its icon is its own (unique on the Cloud page; the Circus lab tile keeps ic_solutions).",
-                "id": "circusverse",
-                "label": "Circusverse",
-                "icon": "ic_p_sol_cloud",
+                "_doc": "#1476 declared placeholder (coming_soon): Money is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "money",
+                "label": "Money",
+                "icon": "ic_storefront",
                 "coming_soon": true
-              }
-            ]
-          },
-          {
-            "_doc": "#1473/#1476 Weby Services & Markets (was Services): the row after Me and before AGI. News moved here from Data Apps; Shopping (ac_cloud-shopping, com.diegonmarcos.cloudshopping, a deals and listings browser over mock data) joined it. Both open their own app through ui.external_apps; the Shopping glyph ic_shopping is generated from ac_cloud-shopping/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable). Events, Mobility and Jobs are coming_soon placeholders (no app yet). Search moved in before News Shopping and KG Store after them, with a declared separator between the sub-groups (#1476). Pinned by test-agi-tiles.sh (AGI follows Services) and test-services-row.sh. #1806 the row now reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store, in the order declared once in ui.services_order (Games, Health, Hotels and City Mobility are new coming_soon placeholders; Mobility & Travel became Transports and its in-city and accommodation entries moved to City Mobility and Hotels). Pinned by test-services-order-1806.sh.",
-            "title": "Services",
-            "tiles": [
-              {
-                "_doc": "#1162 the caption was Research (Cloud Search renamed Cloud Research); the caption is Search again (renamed back to Cloud Search); id, package and extapp target stay search / cloud-search so installed copies update). #779 Search — hands off to the standalone Cloud Search app (ac_cloud-search, com.diegonmarcos.cloudsearch, read from ITS android.application_id and app/build.gradle namespace). #803: the owner moved SuperApp to the Configs row, so AGI now STARTS with Search: Search, AI Chat, Code, Tools, MyTerminal, Terminal (B-LLM and S-LLM removed, Tools in S-LLM's place, 2026-10-13). GroupedTilesFragment walks group.tiles in declared order with no sort, so array position is that placement, and test-agi-tiles.sh T1 pins the row. target=extapp:cloud-search → launchExternalApp opens the package if installed, else installs ui.external_apps[id=cloud-search].install_apk_url (ABI-resolved through the fleet assets map). icon ic_cloud_search is Cloud Search's own launcher foreground, byte for byte (test-agi-tiles.sh T3) — #803 the Phosphor shooting-star in the mockup's .ai-nav-icon gradient (Cloud Search's app/tools/phosphor.json::launcher generates it; Phosphor is MIT, recorded in ac_cloud-search/NOTICE.md). `tint: false` keeps that gradient: every other tile glyph is drawn white, which would flatten this one to a silhouette (test-agi-tiles.sh T6).",
-                "id": "search",
-                "label": "Search",
-                "icon": "ic_cloud_search",
-                "tint": false,
-                "target": "extapp:cloud-search"
               },
               {
-                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1806 Services reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store; the groups come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
+                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1902 Services · City reads Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels, Services · Leisure reads News | Events Media Center Social Games, and AGI ends | Search KG Store; the sections come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
                 "id": "weby-sep-1",
                 "label": "|",
                 "separator": true
               },
               {
+                "id": "shopping",
+                "label": "Shopping",
+                "icon": "ic_shopping",
+                "target": "extapp:cloud-shopping"
+              },
+              {
+                "_doc": "#1806 declared placeholder (coming_soon): Health (NEW Services category) is not an app yet: service-type health apps - gyms, medical care, classes (yoga, indoor cycling). Personal trackers stay under Me > Health Trackers. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "svc-health",
+                "label": "Health",
+                "icon": "ic_monitor_heart",
+                "coming_soon": true
+              },
+              {
+                "_doc": "#1476 declared placeholder (coming_soon): Real Estate is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "real-estate",
+                "label": "Real Estate",
+                "icon": "ic_map_pin",
+                "coming_soon": true
+              },
+              {
+                "_doc": "#1476 declared placeholder (coming_soon): Jobs & Business is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "jobs",
+                "label": "Jobs & Business",
+                "icon": "ic_suite",
+                "coming_soon": true
+              },
+              {
+                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1902 Services · City reads Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels, Services · Leisure reads News | Events Media Center Social Games, and AGI ends | Search KG Store; the sections come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
+                "id": "weby-sep-2",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#1806 declared placeholder (coming_soon): City Mobility (NEW) is not an app yet: in-city transport - city buses and metro, bike rental, scooters, taxis and ride hailing, re-homed from Mobility & Travel. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "city-mobility",
+                "label": "City Mobility",
+                "icon": "ic_city_bus",
+                "coming_soon": true
+              },
+              {
+                "_doc": "#1806 Transports (was Mobility & Travel; id `mobility` and its icon kept, so a saved pin and the pinned icon stay): intercity travel - trains, long-distance buses, flights. In-city transport moved to City Mobility, accommodation to Hotels. #1476 declared placeholder (coming_soon): not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "mobility",
+                "label": "Transports",
+                "icon": "ic_ctl_airplane",
+                "coming_soon": true
+              },
+              {
+                "_doc": "#1806 declared placeholder (coming_soon): Hotels is not an app yet: accommodation (hotels, hostels, rentals, camping), re-homed from Mobility & Travel. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
+                "id": "hotels",
+                "label": "Hotels",
+                "icon": "ic_hotel",
+                "coming_soon": true
+              }
+            ]
+          },
+          {
+            "title": "Services · Leisure",
+            "glyph": "○",
+            "_doc": "#1902 Services · Leisure (was the second half of Services, plus the new Social entry): News | Events Media Center Social Games. Order and dividers come from ui.services_order (services-order.gradle).",
+            "tiles": [
+              {
                 "id": "news",
                 "label": "News",
                 "icon": "ic_rss",
                 "target": "extapp:cloud-news"
+              },
+              {
+                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1902 Services · City reads Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels, Services · Leisure reads News | Events Media Center Social Games, and AGI ends | Search KG Store; the sections come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
+                "id": "weby-sep-3",
+                "label": "|",
+                "separator": true
               },
               {
                 "_doc": "#1476 declared placeholder (coming_soon): Events is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
@@ -3447,102 +3414,24 @@
                 "target": "extapp:cloud-media-center"
               },
               {
+                "_doc": "#1904 Social (Services · Leisure): a web link to the mySocials page, opened through the standard in-app web page mechanism (an https target goes to WebPageFragment via ShellActivity.openEmbeddedBrowser; github.io is a public host). The URL is declared here, not in Kotlin. Before #1904 (#1902) it opened the phone social-apps folder; the Phone quickmark Social (phone_app_groups, opens_folder media_social) is unchanged. Me > Socials (myroadmap) is the Cloud Me page and stays in Me.",
+                "id": "social",
+                "label": "Social",
+                "icon": "ic_sparkles",
+                "target": "https://diegonmarcos.github.io/mySocials/"
+              },
+              {
                 "_doc": "#1806 declared placeholder (coming_soon): Games is not an app yet (the All Apps Games folder media_games holds the phone games). Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
                 "id": "games",
                 "label": "Games",
                 "icon": "ic_device_gamepad",
                 "coming_soon": true
-              },
-              {
-                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1806 Services reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store; the groups come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
-                "id": "weby-sep-2",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "id": "shopping",
-                "label": "Shopping",
-                "icon": "ic_shopping",
-                "target": "extapp:cloud-shopping"
-              },
-              {
-                "_doc": "#1476 declared placeholder (coming_soon): Jobs & Business is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "jobs",
-                "label": "Jobs & Business",
-                "icon": "ic_suite",
-                "coming_soon": true
-              },
-              {
-                "_doc": "#1476 declared placeholder (coming_soon): Real Estate is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "real-estate",
-                "label": "Real Estate",
-                "icon": "ic_map_pin",
-                "coming_soon": true
-              },
-              {
-                "_doc": "#1806 declared placeholder (coming_soon): Health (NEW Services category) is not an app yet: service-type health apps - gyms, medical care, classes (yoga, indoor cycling). Personal trackers stay under Me > Health Trackers. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "svc-health",
-                "label": "Health",
-                "icon": "ic_monitor_heart",
-                "coming_soon": true
-              },
-              {
-                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1806 Services reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store; the groups come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
-                "id": "weby-sep-3",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "#1476 declared placeholder (coming_soon): Money is not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "money",
-                "label": "Money",
-                "icon": "ic_storefront",
-                "coming_soon": true
-              },
-              {
-                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1806 Services reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store; the groups come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
-                "id": "weby-sep-4",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "#1806 declared placeholder (coming_soon): Hotels is not an app yet: accommodation (hotels, hostels, rentals, camping), re-homed from Mobility & Travel. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "hotels",
-                "label": "Hotels",
-                "icon": "ic_hotel",
-                "coming_soon": true
-              },
-              {
-                "_doc": "#1806 Transports (was Mobility & Travel; id `mobility` and its icon kept, so a saved pin and the pinned icon stay): intercity travel - trains, long-distance buses, flights. In-city transport moved to City Mobility, accommodation to Hotels. #1476 declared placeholder (coming_soon): not an app yet. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "mobility",
-                "label": "Transports",
-                "icon": "ic_ctl_airplane",
-                "coming_soon": true
-              },
-              {
-                "_doc": "#1806 declared placeholder (coming_soon): City Mobility (NEW) is not an app yet: in-city transport - city buses and metro, bike rental, scooters, taxis and ride hailing, re-homed from Mobility & Travel. Drawn gray, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists.",
-                "id": "city-mobility",
-                "label": "City Mobility",
-                "icon": "ic_city_bus",
-                "coming_soon": true
-              },
-              {
-                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): #1806 Services reads Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store; the groups come from ui.services_order (declared once) and the build re-applies that order (services-order.gradle). test-services-order-1806.sh pins it.",
-                "id": "weby-sep-5",
-                "label": "|",
-                "separator": true
-              },
-              {
-                "_doc": "#1207 KG Store, Cloud KG Store (ac_cloud-kg-store, com.diegonmarcos.cloudkgstore): the fleet's knowledge-graph store and browser (Cloud: applications and repositories over the fleet's API, MCP and code-graph services; Phone: the installed apps index; Web: news, media, shopping, real estate, jobs, business on Cloud Search's sources). Placed right after the '| Search Code |' group, as the owner asked, so the AGI row reads SI AI | Search Code | KG Store Tools | MyTerminal Terminal. Opened through ui.external_apps[cloud-kg-store]; the glyph ic_kgs is generated from ac_cloud-kg-store/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable).",
-                "id": "kg-store",
-                "label": "KG Store",
-                "icon": "ic_kgs",
-                "target": "extapp:cloud-kg-store"
               }
             ]
           },
           {
             "title": "AGI",
+            "glyph": "⬡",
             "_doc_store_apps": "#1704 Store-only members: apps with no tile on this row (Termux) that the Store files under AGI. Same group, no tile drawn.",
             "store_apps": [
               "termux"
@@ -3601,6 +3490,27 @@
                 "label": "Terminal",
                 "icon": "ic_terminal",
                 "target": "extapp:cloud-terminal-nix"
+              },
+              {
+                "_doc": "Group divider (declared separator tile, drawn as a bare '|'): the AGI row reads SI AI | Code Tools | MyTerm. Terminal | Search KG Store (#1902: Search and KG Store moved here from Services; ui.services_order names the tail).",
+                "id": "agi-sep-3",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#1162 the caption was Research (Cloud Search renamed Cloud Research); the caption is Search again (renamed back to Cloud Search); id, package and extapp target stay search / cloud-search so installed copies update). #779 Search — hands off to the standalone Cloud Search app (ac_cloud-search, com.diegonmarcos.cloudsearch, read from ITS android.application_id and app/build.gradle namespace). #803: the owner moved SuperApp to the Configs row, so AGI now STARTS with Search: Search, AI Chat, Code, Tools, MyTerminal, Terminal (B-LLM and S-LLM removed, Tools in S-LLM's place, 2026-10-13). GroupedTilesFragment walks group.tiles in declared order with no sort, so array position is that placement, and test-agi-tiles.sh T1 pins the row. target=extapp:cloud-search → launchExternalApp opens the package if installed, else installs ui.external_apps[id=cloud-search].install_apk_url (ABI-resolved through the fleet assets map). icon ic_cloud_search is Cloud Search's own launcher foreground, byte for byte (test-agi-tiles.sh T3) — #803 the Phosphor shooting-star in the mockup's .ai-nav-icon gradient (Cloud Search's app/tools/phosphor.json::launcher generates it; Phosphor is MIT, recorded in ac_cloud-search/NOTICE.md). `tint: false` keeps that gradient: every other tile glyph is drawn white, which would flatten this one to a silhouette (test-agi-tiles.sh T6).",
+                "id": "search",
+                "label": "Search",
+                "icon": "ic_cloud_search",
+                "tint": false,
+                "target": "extapp:cloud-search"
+              },
+              {
+                "_doc": "#1207 KG Store, Cloud KG Store (ac_cloud-kg-store, com.diegonmarcos.cloudkgstore): the fleet's knowledge-graph store and browser (Cloud: applications and repositories over the fleet's API, MCP and code-graph services; Phone: the installed apps index; Web: news, media, shopping, real estate, jobs, business on Cloud Search's sources). Placed right after the '| Search Code |' group, as the owner asked, so the AGI row reads SI AI | Search Code | KG Store Tools | MyTerminal Terminal. Opened through ui.external_apps[cloud-kg-store]; the glyph ic_kgs is generated from ac_cloud-kg-store/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable).",
+                "id": "kg-store",
+                "label": "KG Store",
+                "icon": "ic_kgs",
+                "target": "extapp:cloud-kg-store"
               }
             ]
           },
@@ -3697,6 +3607,79 @@
                 "target": "page:config/app-about"
               }
             ]
+          },
+          {
+            "_doc": "Lnktree (was 'Projects W'; owner 2026-10-30), reshaped by #1778 to Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse. Wiki (ac_cloud-wiki, com.diegonmarcos.cloudwiki, the encyclopedia with a graph) leads; then the SuperApp tile (app://com.diegonmarcos.superapp, moved here from Configs 2026-10-30) with Omniverse; then FinTerm, BioMed and CAD; Circusverse closes the row as a greyed-out coming_soon tile (no app yet). Each live tile LAUNCHES a real app (#1335, extapp:cg-omniverse, capital-stack-finterminal, hardtech-biomed, hardtech-cad, cloud-wiki; folders ad_* for the Lnktree family, 1_cicd/src/data/app-families.json, ac_* for Wiki). The pages live in the apps (their build.json::ui), no in-app page is left here. The three '|' rules group the row: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse. The row id stays 'Lnktree' = the title; the old project tiles (Lf.y/Nx.z/St.x repos) are gone. Pinned by test-lnktree-row.sh and test-projects-row-1778.sh.",
+            "title": "Projects",
+            "tiles": [
+              {
+                "_doc": "#1778 Wiki: Cloud Wiki (ac_cloud-wiki, com.diegonmarcos.cloudwiki), the new Library-Wiki app: Markdown pages in thirteen topics with tag chips and an Obsidian-style graph. Opens its own app through ui.external_apps (extapp:cloud-wiki); the glyph ic_wiki is generated from ac_cloud-wiki/build.json::launcher_icon by cloud-android-launcher-icons.py (never edit the drawable).",
+                "id": "wiki",
+                "label": "Wiki",
+                "icon": "ic_wiki",
+                "target": "extapp:cloud-wiki"
+              },
+              {
+                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
+                "id": "lnktree-sep-0",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "Owner 2026-10-30: moved out of Configs into the Lnktree row (test-lnktree-row.sh); #803 had earlier moved it out of AGI into Configs. app:// resolves MAIN/LAUNCHER for the package and adds FLAG_ACTIVITY_NEW_TASK (see ShellActivity.handleTarget), which lands on .MainActivity — the app door, own taskAffinity, own Overview card. .HomeActivity (the launcher door) is a different task and is not reachable this way, which is the point. #1153 supersedes #1095: the tile launches the real app as its OWN task (app:// with NEW_TASK | LAUNCH_ADJACENT, ShellActivity.handleTarget; MainActivity is resizeableActivity), so split screen keeps this Cloud ▸ Apps page open beside it, instead of embedding a page in the launcher. test-dashboard-cross-app-deeplink.sh T7 and ConfigsTileDeepLinkTest pin it.",
+                "id": "cloud-superapp",
+                "label": "SuperApp",
+                "icon": "ic_superapp_d",
+                "target": "app://com.diegonmarcos.superapp"
+              },
+              {
+                "_doc": "Omniverse: page:cloud/omniverse (Galaxy, Game Store, VR Store).",
+                "id": "omniverse",
+                "label": "Omniverse",
+                "icon": "ic_p_sol_other",
+                "target": "extapp:cg-omniverse"
+              },
+              {
+                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
+                "id": "lnktree-sep-1",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "FinTerm: section:finterm, the FI | EQ | EX | NW | PM | MY-PM tab strip.",
+                "id": "finterm",
+                "label": "FinTerm",
+                "icon": "ic_p_markets_terminal",
+                "target": "extapp:capital-stack-finterminal"
+              },
+              {
+                "_doc": "BioMed: Hardtech-BioMed (Physiology, BioChem, BioMech, Anatomy, Genetic, Neuro, Immuno); its former SAP2000, MATLAB and Ansys pages are under Hardtech-CAD > Sim2Real. It points at the package the app declares TODAY (ad_Hardtech-BioMed/build.json::android.application_id, com.diegonmarcos.hardtechbiomed). TODO after the Sim2Real to BioMed rename (#1777) lands: re-check this tile's extapp id, the ui.external_apps entry and the fleet package against the renamed app, and update them if they moved.",
+                "id": "biomed",
+                "label": "BioMed",
+                "icon": "ic_p_sol_tools",
+                "target": "extapp:hardtech-biomed"
+              },
+              {
+                "_doc": "CAD: page:cloud/cad (MCAD, BIM, SolWrk).",
+                "id": "cad",
+                "label": "CAD",
+                "icon": "ic_p_sol_pro",
+                "target": "extapp:hardtech-cad"
+              },
+              {
+                "_doc": "Group divider (#1778: Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse): a bare character, not a control.",
+                "id": "lnktree-sep-2",
+                "label": "|",
+                "separator": true
+              },
+              {
+                "_doc": "#1778 declared placeholder (coming_soon): Circusverse is not an app yet. Drawn gray and disabled, no target, no tap, no fleet package or ui.external_apps entry; becomes a real extapp tile when the app exists. Its icon is its own (unique on the Cloud page; the Circus lab tile keeps ic_solutions).",
+                "id": "circusverse",
+                "label": "Circusverse",
+                "icon": "ic_p_sol_cloud",
+                "coming_soon": true
+              }
+            ]
           }
         ],
         "_doc_tiles_labs": "Master Lab index — 6 icon tiles, one per subject Lab. Read by home_groups[title=Labs] via tiles_from_section='cloud/labs'. The key keeps the name `labs` on purpose: it is the SUBJECT labs, which is not what the Linktree tab became. No page `labs` exists, so this list is the Home face only — each icon opens page:cloud/<lab-id>.",
@@ -3785,9 +3768,11 @@
         ],
         "phone_app_groups": [
         {
-          "title": "Primary",
-          "_doc_samsung_camera": "com.sec.android.app.camera is a QUICKMARK, which is what the owner asked for on 2026-09-10 and what two earlier attempts missed. Both of them read 'phone/apps/Tools Primary' as the identically-named grouping on the OTHER phone page: ui.phone_sections[prefix='='] 'Tools · Primary', the auto-classified All-apps taxonomy, whose members are ui.phone_folders and which no hand-written list feeds. This list is the curated one, read by SuitePhoneAppsFragment out of BuildConfig.UI_SUITE_PHONE_GROUPS_B64, and it is the only one an owner can add a shortcut to. Nothing is shared between the two, so a package in one says nothing about the other and a test that only asks 'is the string in build.json' cannot tell them apart. THIS IS AN ADDITION, NOT A MOVE: the same package is also a keyword of ui.phone_folders[prod_utils] and stays there, because All-apps classifies everything installed and Quickmarks is a shortlist — an app on both pages is the normal case, exactly as _doc_acode_is_in_two_places already records for Acode. APPENDED because the owner named no position: SuitePhoneAppsFragment maps this array in declared order and chunks it into rows with no sort anywhere, so array position IS render position. It is last of eight rather than last of seven because miDNI landed in this same list first, from a different request; with UI_PHONE_GRID_COLUMNS = 6 that puts the camera in row two, second tile, and moving it is a one-line reorder here.",
-          "_doc_subtypes_1756": "#1756 Phone quickmarks hold ONE tile per All Apps subtype (subtype = the Cloud app the phone app competes with), in the All Apps subtype order of the group's section. The tile is the app already in the previous quickmarks for that role, else the most obvious installed app; a subtype with no phone app is skipped. When two of the previous quickmark apps fall in one subtype both are kept (Mail, Chat, Messenger, Drive, Notes, AI, Terminal, Code, Store, News). The Projects group is unchanged. The full per-subtype lists live in All Apps. Pinned by test-quickmarks-categories-1756.sh.",
+          "_doc_1916": "#1916 Data quickmarks: Drive, Browser, Gallery, Notes, Agenda (Tasks), Vault, Wallet, Office. Drive, Browser and Wallet MOVED in from Primary; the Me tile is a Cloud tile with no phone folder.",
+          "title": "Data",
+          "_doc_readings": "Three of the owner's names needed resolving to a package. 'MS Notes' is Microsoft OneNote (com.microsoft.office.onenote, already classified in phone_folders[prod_docs]). 'Xplorer' is X-plore File Manager (com.lonelycatgames.Xplore, already in phone_folders[prod_storage]). 'Google Password' RESOLVES TO NO PACKAGE AT ALL and is recorded in sections[id=phone].quickmark_never_installable — see _doc_google_password below.",
+          "_doc_google_password": "'Google Password' has NO TILE, and that is now a RESOLVED decision rather than an open question. Google Password Manager is not an installable Android application: it is a surface inside Google Play services, reached through Settings or through a shortcut Chrome creates, and it has no package id of its own to put in this list. Its host package com.google.android.gms is preinstalled and exposes no launch intent, so naming it here would produce a tile that never shows the placeholder and does nothing when tapped — which is why it is listed in sections[id=phone].quickmark_never_installable instead, together with the honest target (https://passwords.google.com) and what it would take to wire that up. The earlier note here asked the owner to 'name the app you meant, or say drop it'; #249 answered it by naming the deep link, so the question is closed and the entry is documented rather than silently absent.",
+          "_doc_dropped": "com.sec.android.gallery3d (Samsung Gallery) and com.samsung.android.app.contacts (Samsung Contacts) were visible tiles here and are not in the owner's list — he named the Google equivalents (Google Photos, Google Contacts) instead. Both keep their All-apps classification. The old folder 'Files Editor (IDE)' is gone as a folder: the owner replaced it with 'Others', and its two editors (Acode, QuickEdit) moved to the AI group's Others folder.",
           "packages": [],
           "folders": [
             {
@@ -3825,75 +3810,64 @@
               "icon_res": "ic_world"
             },
             {
-              "label": "Calc",
-              "icon_pkg": "com.diegonmarcos.cloudcalc",
+              "label": "Gallery",
+              "icon_pkg": "com.diegonmarcos.mediacenter",
               "packages": [
                 {
-                  "pkg": "com.sec.android.app.popupcalculator",
-                  "label": "Calculator"
-                },
-                {
-                  "pkg": "com.sec.android.app.clockpackage",
-                  "label": "Clock"
-                },
-                {
-                  "pkg": "com.google.android.apps.translate",
-                  "label": "Translate"
+                  "pkg": "com.google.android.apps.photos",
+                  "label": "Google Photos"
                 }
               ],
-              "icon_res": "ic_calc"
+              "icon_res": "ic_photos"
             },
             {
-              "label": "Nav",
-              "icon_pkg": "com.diegonmarcos.cloudnav",
+              "label": "Notes",
+              "icon_pkg": "com.diegonmarcos.cloudnotes",
               "packages": [
                 {
-                  "pkg": "com.google.android.apps.maps",
-                  "label": "Maps"
+                  "pkg": "md.obsidian",
+                  "label": "Obsidian"
                 },
                 {
-                  "pkg": "app.organicmaps",
-                  "label": "Organic Maps"
+                  "pkg": "com.rhmsoft.edit",
+                  "label": "QuickEdit"
                 }
               ],
-              "icon_res": "ic_nav"
+              "icon_res": "ic_notes"
             },
             {
-              "label": "Camera",
-              "icon_pkg": "cld.camera",
+              "label": "Agenda",
+              "icon_pkg": "com.diegonmarcos.cloudagenda",
               "packages": [
                 {
-                  "pkg": "com.sec.android.app.camera",
-                  "label": "Camera"
-                }
-              ],
-              "icon_res": "ic_camera"
-            },
-            {
-              "label": "Canvas",
-              "icon_pkg": "com.diegonmarcos.cloudcanvas",
-              "packages": [
-                {
-                  "pkg": "com.adsk.sketchbook",
-                  "label": "SketchBook"
+                  "pkg": "com.google.android.calendar",
+                  "label": "Google Calendar"
                 },
                 {
-                  "pkg": "com.imageline.FLM",
-                  "label": "FL Studio Mobile"
+                  "pkg": "com.google.android.apps.tasks",
+                  "label": "Google Tasks"
+                },
+                {
+                  "pkg": "co.mangotechnologies.clickup",
+                  "label": "ClickUp"
                 }
               ],
-              "icon_res": "ic_canvas"
+              "icon_res": "ic_calendar"
             },
             {
-              "label": "Keyboard",
-              "icon_pkg": "com.diegonmarcos.cloudkeyboard",
+              "label": "Vault",
+              "icon_pkg": "com.diegonmarcos.cloudvault",
               "packages": [
                 {
-                  "pkg": "com.google.android.inputmethod.latin",
-                  "label": "Gboard"
+                  "pkg": "com.x8bit.bitwarden",
+                  "label": "Bitwarden"
+                },
+                {
+                  "pkg": "com.beemdevelopment.aegis",
+                  "label": "Aegis"
                 }
               ],
-              "icon_res": "ic_keyboard"
+              "icon_res": "ic_vault"
             },
             {
               "label": "Wallet",
@@ -3905,6 +3879,29 @@
                 }
               ],
               "icon_res": "ic_wallet"
+            },
+            {
+              "label": "Office",
+              "icon_pkg": "com.diegonmarcos.cloudoffice",
+              "packages": [
+                {
+                  "pkg": "com.google.android.apps.docs.editors.docs",
+                  "label": "Google Docs"
+                },
+                {
+                  "pkg": "com.google.android.apps.docs.editors.sheets",
+                  "label": "Google Sheets"
+                },
+                {
+                  "pkg": "com.google.android.apps.docs.editors.slides",
+                  "label": "Google Slides"
+                },
+                {
+                  "pkg": "com.adobe.reader",
+                  "label": "Adobe Acrobat"
+                }
+              ],
+              "icon_res": "ic_sheets"
             }
           ]
         },
@@ -3985,94 +3982,82 @@
           ]
         },
         {
-          "title": "Data",
-          "_doc_readings": "Three of the owner's names needed resolving to a package. 'MS Notes' is Microsoft OneNote (com.microsoft.office.onenote, already classified in phone_folders[prod_docs]). 'Xplorer' is X-plore File Manager (com.lonelycatgames.Xplore, already in phone_folders[prod_storage]). 'Google Password' RESOLVES TO NO PACKAGE AT ALL and is recorded in sections[id=phone].quickmark_never_installable — see _doc_google_password below.",
-          "_doc_google_password": "'Google Password' has NO TILE, and that is now a RESOLVED decision rather than an open question. Google Password Manager is not an installable Android application: it is a surface inside Google Play services, reached through Settings or through a shortcut Chrome creates, and it has no package id of its own to put in this list. Its host package com.google.android.gms is preinstalled and exposes no launch intent, so naming it here would produce a tile that never shows the placeholder and does nothing when tapped — which is why it is listed in sections[id=phone].quickmark_never_installable instead, together with the honest target (https://passwords.google.com) and what it would take to wire that up. The earlier note here asked the owner to 'name the app you meant, or say drop it'; #249 answered it by naming the deep link, so the question is closed and the entry is documented rather than silently absent.",
-          "_doc_dropped": "com.sec.android.gallery3d (Samsung Gallery) and com.samsung.android.app.contacts (Samsung Contacts) were visible tiles here and are not in the owner's list — he named the Google equivalents (Google Photos, Google Contacts) instead. Both keep their All-apps classification. The old folder 'Files Editor (IDE)' is gone as a folder: the owner replaced it with 'Others', and its two editors (Acode, QuickEdit) moved to the AI group's Others folder.",
+          "_doc_1916": "#1916 Primary quickmarks: Nav, Camera, Canvas, Keyboard, Calc. Drive, Browser and Wallet MOVED to Data (same folders, same packages). Group order: Data, Communication, Primary, Me, Services City, Services Leisure, AGI, Setup, Projects.",
+          "title": "Primary",
+          "_doc_samsung_camera": "com.sec.android.app.camera is a QUICKMARK, which is what the owner asked for on 2026-09-10 and what two earlier attempts missed. Both of them read 'phone/apps/Tools Primary' as the identically-named grouping on the OTHER phone page: ui.phone_sections[prefix='='] 'Tools · Primary', the auto-classified All-apps taxonomy, whose members are ui.phone_folders and which no hand-written list feeds. This list is the curated one, read by SuitePhoneAppsFragment out of BuildConfig.UI_SUITE_PHONE_GROUPS_B64, and it is the only one an owner can add a shortcut to. Nothing is shared between the two, so a package in one says nothing about the other and a test that only asks 'is the string in build.json' cannot tell them apart. THIS IS AN ADDITION, NOT A MOVE: the same package is also a keyword of ui.phone_folders[prod_utils] and stays there, because All-apps classifies everything installed and Quickmarks is a shortlist — an app on both pages is the normal case, exactly as _doc_acode_is_in_two_places already records for Acode. APPENDED because the owner named no position: SuitePhoneAppsFragment maps this array in declared order and chunks it into rows with no sort anywhere, so array position IS render position. It is last of eight rather than last of seven because miDNI landed in this same list first, from a different request; with UI_PHONE_GRID_COLUMNS = 6 that puts the camera in row two, second tile, and moving it is a one-line reorder here.",
+          "_doc_subtypes_1756": "#1756 Phone quickmarks hold ONE tile per All Apps subtype (subtype = the Cloud app the phone app competes with), in the All Apps subtype order of the group's section. The tile is the app already in the previous quickmarks for that role, else the most obvious installed app; a subtype with no phone app is skipped. When two of the previous quickmark apps fall in one subtype both are kept (Mail, Chat, Messenger, Drive, Notes, AI, Terminal, Code, Store, News). The Projects group is unchanged. The full per-subtype lists live in All Apps. Pinned by test-quickmarks-categories-1756.sh.",
           "packages": [],
           "folders": [
             {
-              "label": "Notes",
-              "icon_pkg": "com.diegonmarcos.cloudnotes",
+              "label": "Nav",
+              "icon_pkg": "com.diegonmarcos.cloudnav",
               "packages": [
                 {
-                  "pkg": "md.obsidian",
-                  "label": "Obsidian"
+                  "pkg": "com.google.android.apps.maps",
+                  "label": "Maps"
                 },
                 {
-                  "pkg": "com.rhmsoft.edit",
-                  "label": "QuickEdit"
+                  "pkg": "app.organicmaps",
+                  "label": "Organic Maps"
                 }
               ],
-              "icon_res": "ic_notes"
+              "icon_res": "ic_nav"
             },
             {
-              "label": "Agenda",
-              "icon_pkg": "com.diegonmarcos.cloudagenda",
+              "label": "Camera",
+              "icon_pkg": "cld.camera",
               "packages": [
                 {
-                  "pkg": "com.google.android.calendar",
-                  "label": "Google Calendar"
-                },
-                {
-                  "pkg": "com.google.android.apps.tasks",
-                  "label": "Google Tasks"
-                },
-                {
-                  "pkg": "co.mangotechnologies.clickup",
-                  "label": "ClickUp"
+                  "pkg": "com.sec.android.app.camera",
+                  "label": "Camera"
                 }
               ],
-              "icon_res": "ic_calendar"
+              "icon_res": "ic_camera"
             },
             {
-              "label": "Office",
-              "icon_pkg": "com.diegonmarcos.cloudoffice",
+              "label": "Canvas",
+              "icon_pkg": "com.diegonmarcos.cloudcanvas",
               "packages": [
                 {
-                  "pkg": "com.google.android.apps.docs.editors.docs",
-                  "label": "Google Docs"
+                  "pkg": "com.adsk.sketchbook",
+                  "label": "SketchBook"
                 },
                 {
-                  "pkg": "com.google.android.apps.docs.editors.sheets",
-                  "label": "Google Sheets"
-                },
-                {
-                  "pkg": "com.google.android.apps.docs.editors.slides",
-                  "label": "Google Slides"
-                },
-                {
-                  "pkg": "com.adobe.reader",
-                  "label": "Adobe Acrobat"
+                  "pkg": "com.imageline.FLM",
+                  "label": "FL Studio Mobile"
                 }
               ],
-              "icon_res": "ic_sheets"
+              "icon_res": "ic_canvas"
             },
             {
-              "label": "Gallery",
-              "icon_pkg": "com.diegonmarcos.mediacenter",
+              "label": "Keyboard",
+              "icon_pkg": "com.diegonmarcos.cloudkeyboard",
               "packages": [
                 {
-                  "pkg": "com.google.android.apps.photos",
-                  "label": "Google Photos"
+                  "pkg": "com.google.android.inputmethod.latin",
+                  "label": "Gboard"
                 }
               ],
-              "icon_res": "ic_photos"
+              "icon_res": "ic_keyboard"
             },
             {
-              "label": "Vault",
-              "icon_pkg": "com.diegonmarcos.cloudvault",
+              "label": "Calc",
+              "icon_pkg": "com.diegonmarcos.cloudcalc",
               "packages": [
                 {
-                  "pkg": "com.x8bit.bitwarden",
-                  "label": "Bitwarden"
+                  "pkg": "com.sec.android.app.popupcalculator",
+                  "label": "Calculator"
                 },
                 {
-                  "pkg": "com.beemdevelopment.aegis",
-                  "label": "Aegis"
+                  "pkg": "com.sec.android.app.clockpackage",
+                  "label": "Clock"
+                },
+                {
+                  "pkg": "com.google.android.apps.translate",
+                  "label": "Translate"
                 }
               ],
-              "icon_res": "ic_vault"
+              "icon_res": "ic_calc"
             }
           ]
         },
@@ -4081,7 +4066,7 @@
           "packages": [],
           "folders": [
             {
-              "label": "Me-Health",
+              "label": "Me-Pers",
               "icon_pkg": "com.diegonmarcos.cloudme",
               "packages": [
                 {
@@ -4108,7 +4093,7 @@
               "icon_res": "ic_heart"
             },
             {
-              "label": "Experiences",
+              "label": "Me-Prof",
               "icon_pkg": "com.diegonmarcos.cloudme",
               "packages": [
                 {
@@ -4123,7 +4108,7 @@
               "icon_res": "ic_file_stack"
             },
             {
-              "label": "Socials",
+              "label": "Me-Prj",
               "icon_pkg": "com.diegonmarcos.cloudme",
               "icon_res": "ic_file_stack",
               "packages": [
@@ -4179,36 +4164,164 @@
           ]
         },
         {
-          "title": "Projects",
-          "_doc_surface": "QUICKMARKS, and that is the whole point of this group. The owner asked for it 'after Tools Primary and Before Configs', and Configs exists on no other surface — ui.phone_sections (the All Apps taxonomy) has no such section — so the anchor named this array and only this array. It was first built on 2026-09-10 as a '#' section in ui.phone_sections instead, which is the page the owner was not talking about; that section is gone and the folders it held went back where they came from. Position is meaning here: this group sits at index 4, between Tools Primary and Configs, and SuitePhoneAppsFragment.parseGroups preserves array order with no sort anywhere, so the index in this file is the order on the screen.",
-          "_doc_loose_tiles": "#1764 The Projects group holds ONE web-shortcut tile, Linktree (`links`, not `packages`): a link entry {label, url, icon} that opens in Cloud Browser and falls back to the default browser. Every app that used to be listed here moved to its real group, none dropped: ClickUp to Data (Agenda), Google Fit to Me (Health), FatSecret to Me (Nutrition), Todaii German to Me (Learning), NomadMania to Services (Mobility & Travel) and the Money folder to Services. `packages` stays declared and empty so every reader keeps its shape.",
-          "_doc_google_health": "com.google.android.apps.fitness is Google Fit, read as the owner's 'Google Health'. The other reading is Health Connect (com.google.android.apps.healthdata, known to this repo as libs/health HealthConnectGateway.PROVIDER_PACKAGE), which is a data broker with no interface to open rather than an app you work in. Swap the pkg if that was meant.",
-          "_doc_clickup": "ClickUp ships under its parent company, Mango Technologies — co.mangotechnologies.clickup. The guessable com.clickup.android resolves to nothing, and since 149c5b9 an unresolved curated entry renders as a permanent 'Not installed' tile rather than hiding, so a wrong id here is furniture on the owner's screen.",
-          "_doc_folders": "'Folder.\"Money\"(all bank apps)'. This file's own answer to which packages are the bank apps is the -Money folder in ui.phone_folders (svc_money, Services · Buro), so this list is that folder's twelve exact package ids — its thirteenth keyword is the `pkg^com.btg.pactual.` family rule, which is a classifier pattern and not something a tile can launch. Curating them HERE is a copy, not a move: quickmarks and All apps are two pages, and an app appearing on both is how every other group in this array already works. -Money stays in Buro untouched.",
+          "title": "Services · City",
           "packages": [],
-          "links": [
+          "folders": [
             {
-              "label": "Linktree",
-              "url": "https://linktree.diegonmarcos.com",
-              "icon": "ic_link_tile"
+              "label": "Money",
+              "packages": [
+                {
+                  "pkg": "es.bancosantander.apps",
+                  "label": "Santander"
+                },
+                {
+                  "pkg": "com.revolut.revolut",
+                  "label": "Revolut"
+                },
+                {
+                  "pkg": "com.paypal.android.p2pmobile",
+                  "label": "PayPal"
+                },
+                {
+                  "pkg": "com.binance.dev",
+                  "label": "Binance"
+                },
+                {
+                  "pkg": "com.btg.pactual.digital.mobile",
+                  "label": "BTG Pactual"
+                },
+                {
+                  "pkg": "com.fusionmedia.investing",
+                  "label": "Investing.com"
+                },
+                {
+                  "pkg": "com.xe.currency",
+                  "label": "XE Currency"
+                }
+              ],
+              "icon_res": "ic_storefront"
+            },
+            {
+              "label": "Shopping",
+              "icon_pkg": "com.diegonmarcos.cloudshopping",
+              "packages": [
+                {
+                  "pkg": "com.amazon.mShop.android.shopping",
+                  "label": "Amazon"
+                },
+                {
+                  "pkg": "de.dhl.paket",
+                  "label": "DHL Paket"
+                },
+                {
+                  "pkg": "com.ebay.kleinanzeigen",
+                  "label": "Kleinanzeigen"
+                }
+              ],
+              "icon_res": "ic_shopping"
+            },
+            {
+              "label": "Health",
+              "packages": [
+                {
+                  "pkg": "com.urbansportsclub",
+                  "label": "Urban Sports Club"
+                },
+                {
+                  "pkg": "com.medantapatient.app",
+                  "label": "Medanta"
+                },
+                {
+                  "pkg": "com.downdogapp",
+                  "label": "Down Dog"
+                },
+                {
+                  "pkg": "com.motosumo.app",
+                  "label": "Motosumo"
+                }
+              ],
+              "icon_res": "ic_monitor_heart"
+            },
+            {
+              "label": "Real Estate",
+              "packages": [
+                {
+                  "pkg": "de.is24.android",
+                  "label": "ImmoScout24"
+                },
+                {
+                  "pkg": "com.wggesucht.android",
+                  "label": "WG-Gesucht"
+                }
+              ],
+              "icon_res": "ic_map_pin"
+            },
+            {
+              "label": "Jobs & Business",
+              "packages": [
+                {
+                  "pkg": "com.indeed.android.jobsearch",
+                  "label": "Indeed"
+                }
+              ],
+              "icon_res": "ic_suite"
+            },
+            {
+              "label": "City Mobility",
+              "packages": [
+                {
+                  "pkg": "com.ubercab",
+                  "label": "Uber"
+                },
+                {
+                  "pkg": "com.trafi.whitelabel.bvg",
+                  "label": "BVG Fahrinfo"
+                }
+              ],
+              "icon_res": "ic_city_bus"
+            },
+            {
+              "label": "Transports",
+              "packages": [
+                {
+                  "pkg": "com.thetrainline",
+                  "label": "Trainline"
+                },
+                {
+                  "pkg": "com.ryanair.cheapflights",
+                  "label": "Ryanair"
+                },
+                {
+                  "pkg": "com.rome2rio.www.rome2rio",
+                  "label": "Rome2Rio"
+                },
+                {
+                  "pkg": "com.comuto",
+                  "label": "BlaBlaCar"
+                },
+                {
+                  "pkg": "com.nomadmania.presentation",
+                  "label": "NomadMania"
+                }
+              ],
+              "icon_res": "ic_ctl_airplane"
+            },
+            {
+              "label": "Hotels",
+              "packages": [
+                {
+                  "pkg": "com.booking",
+                  "label": "Booking.com"
+                }
+              ],
+              "icon_res": "ic_hotel"
             }
           ]
         },
         {
-          "title": "Services",
+          "title": "Services · Leisure",
           "packages": [],
           "folders": [
-            {
-              "label": "Search",
-              "icon_pkg": "com.diegonmarcos.cloudsearch",
-              "packages": [
-                {
-                  "pkg": "com.google.android.googlequicksearchbox",
-                  "label": "Google"
-                }
-              ],
-              "icon_res": "ic_cloud_search"
-            },
             {
               "label": "News",
               "icon_pkg": "com.diegonmarcos.cloudnews",
@@ -4266,6 +4379,13 @@
               "icon_res": "ic_music"
             },
             {
+              "label": "Social",
+              "_doc": "#1902 Services · Leisure > Social OPENS the All Apps folder media_social (ui.phone_folders, the phone social apps) instead of listing a second copy of them: `opens_folder` is the folder id, the same sheet a tap on that All Apps folder opens (SuitePhoneAppsFragment.openAllAppsFolder). It declares no packages of its own; the face is the same ic_sparkles as the Cloud Social tile at this position.",
+              "icon_res": "ic_sparkles",
+              "opens_folder": "media_social",
+              "packages": []
+            },
+            {
               "label": "Games",
               "packages": [
                 {
@@ -4274,155 +4394,6 @@
                 }
               ],
               "icon_res": "ic_device_gamepad"
-            },
-            {
-              "label": "Shopping",
-              "icon_pkg": "com.diegonmarcos.cloudshopping",
-              "packages": [
-                {
-                  "pkg": "com.amazon.mShop.android.shopping",
-                  "label": "Amazon"
-                },
-                {
-                  "pkg": "de.dhl.paket",
-                  "label": "DHL Paket"
-                },
-                {
-                  "pkg": "com.ebay.kleinanzeigen",
-                  "label": "Kleinanzeigen"
-                }
-              ],
-              "icon_res": "ic_shopping"
-            },
-            {
-              "label": "Jobs & Business",
-              "packages": [
-                {
-                  "pkg": "com.indeed.android.jobsearch",
-                  "label": "Indeed"
-                }
-              ],
-              "icon_res": "ic_suite"
-            },
-            {
-              "label": "Real Estate",
-              "packages": [
-                {
-                  "pkg": "de.is24.android",
-                  "label": "ImmoScout24"
-                },
-                {
-                  "pkg": "com.wggesucht.android",
-                  "label": "WG-Gesucht"
-                }
-              ],
-              "icon_res": "ic_map_pin"
-            },
-            {
-              "label": "Health",
-              "packages": [
-                {
-                  "pkg": "com.urbansportsclub",
-                  "label": "Urban Sports Club"
-                },
-                {
-                  "pkg": "com.medantapatient.app",
-                  "label": "Medanta"
-                },
-                {
-                  "pkg": "com.downdogapp",
-                  "label": "Down Dog"
-                },
-                {
-                  "pkg": "com.motosumo.app",
-                  "label": "Motosumo"
-                }
-              ],
-              "icon_res": "ic_monitor_heart"
-            },
-            {
-              "label": "Money",
-              "packages": [
-                {
-                  "pkg": "es.bancosantander.apps",
-                  "label": "Santander"
-                },
-                {
-                  "pkg": "com.revolut.revolut",
-                  "label": "Revolut"
-                },
-                {
-                  "pkg": "com.paypal.android.p2pmobile",
-                  "label": "PayPal"
-                },
-                {
-                  "pkg": "com.binance.dev",
-                  "label": "Binance"
-                },
-                {
-                  "pkg": "com.btg.pactual.digital.mobile",
-                  "label": "BTG Pactual"
-                },
-                {
-                  "pkg": "com.fusionmedia.investing",
-                  "label": "Investing.com"
-                },
-                {
-                  "pkg": "com.xe.currency",
-                  "label": "XE Currency"
-                }
-              ],
-              "icon_res": "ic_storefront"
-            },
-            {
-              "label": "Hotels",
-              "packages": [
-                {
-                  "pkg": "com.booking",
-                  "label": "Booking.com"
-                }
-              ],
-              "icon_res": "ic_hotel"
-            },
-            {
-              "label": "Transports",
-              "packages": [
-                {
-                  "pkg": "com.thetrainline",
-                  "label": "Trainline"
-                },
-                {
-                  "pkg": "com.ryanair.cheapflights",
-                  "label": "Ryanair"
-                },
-                {
-                  "pkg": "com.rome2rio.www.rome2rio",
-                  "label": "Rome2Rio"
-                },
-                {
-                  "pkg": "com.comuto",
-                  "label": "BlaBlaCar"
-                },
-                {
-                  "pkg": "com.nomadmania.presentation",
-                  "label": "NomadMania"
-                }
-              ],
-              "icon_res": "ic_ctl_airplane"
-            },
-            {
-              "label": "City Mobility",
-              "packages": [
-                {
-                  "pkg": "com.ubercab",
-                  "label": "Uber"
-                },
-                {
-                  "pkg": "com.trafi.whitelabel.bvg",
-                  "label": "BVG Fahrinfo"
-                }
-              ],
-              "icon_res": "ic_city_bus"
             }
           ]
         },
@@ -4472,6 +4443,17 @@
                 }
               ],
               "icon_res": "ic_terminal"
+            },
+            {
+              "label": "Search",
+              "icon_pkg": "com.diegonmarcos.cloudsearch",
+              "packages": [
+                {
+                  "pkg": "com.google.android.googlequicksearchbox",
+                  "label": "Google"
+                }
+              ],
+              "icon_res": "ic_cloud_search"
             }
           ]
         },
@@ -4564,6 +4546,22 @@
                 }
               ],
               "icon_res": "ic_info"
+            }
+          ]
+        },
+        {
+          "title": "Projects",
+          "_doc_surface": "QUICKMARKS, and that is the whole point of this group. The owner asked for it 'after Tools Primary and Before Configs', and Configs exists on no other surface — ui.phone_sections (the All Apps taxonomy) has no such section — so the anchor named this array and only this array. It was first built on 2026-09-10 as a '#' section in ui.phone_sections instead, which is the page the owner was not talking about; that section is gone and the folders it held went back where they came from. Position is meaning here: this group sits at index 4, between Tools Primary and Configs, and SuitePhoneAppsFragment.parseGroups preserves array order with no sort anywhere, so the index in this file is the order on the screen.",
+          "_doc_loose_tiles": "#1764 The Projects group holds ONE web-shortcut tile, Linktree (`links`, not `packages`): a link entry {label, url, icon} that opens in Cloud Browser and falls back to the default browser. Every app that used to be listed here moved to its real group, none dropped: ClickUp to Data (Agenda), Google Fit to Me (Health), FatSecret to Me (Nutrition), Todaii German to Me (Learning), NomadMania to Services (Mobility & Travel) and the Money folder to Services. `packages` stays declared and empty so every reader keeps its shape.",
+          "_doc_google_health": "com.google.android.apps.fitness is Google Fit, read as the owner's 'Google Health'. The other reading is Health Connect (com.google.android.apps.healthdata, known to this repo as libs/health HealthConnectGateway.PROVIDER_PACKAGE), which is a data broker with no interface to open rather than an app you work in. Swap the pkg if that was meant.",
+          "_doc_clickup": "ClickUp ships under its parent company, Mango Technologies — co.mangotechnologies.clickup. The guessable com.clickup.android resolves to nothing, and since 149c5b9 an unresolved curated entry renders as a permanent 'Not installed' tile rather than hiding, so a wrong id here is furniture on the owner's screen.",
+          "_doc_folders": "'Folder.\"Money\"(all bank apps)'. This file's own answer to which packages are the bank apps is the -Money folder in ui.phone_folders (svc_money, Services · Buro), so this list is that folder's twelve exact package ids — its thirteenth keyword is the `pkg^com.btg.pactual.` family rule, which is a classifier pattern and not something a tile can launch. Curating them HERE is a copy, not a move: quickmarks and All apps are two pages, and an app appearing on both is how every other group in this array already works. -Money stays in Buro untouched.",
+          "packages": [],
+          "links": [
+            {
+              "label": "Linktree",
+              "url": "https://linktree.diegonmarcos.com",
+              "icon": "ic_link_tile"
             }
           ]
         }
@@ -5822,6 +5820,9 @@
               "panels-quick-ui",
               "panels-network",
               "panels-tools",
+              "ui-display",
+              "ui-background",
+              "ui-screensaver",
               "focus"
             ]
           },
@@ -6020,6 +6021,7 @@
             "id": "panels-ui",
             "label": "UI",
             "icon": "ic_ctl_brightness",
+            "tabs": ["ui-display", "ui-background", "ui-screensaver"],
             "hidden": false,
             "group": "Launcher",
             "subgroup": ""
@@ -6546,6 +6548,33 @@
             "_doc": "Panels ▸ Tools — everything that is not UI or a battery effect: the device switch board (ui.control_panel: Device, Network and Tools groups — Torch, DND, Wi-Fi, Firewall, Wireless debugging …), the Connectivity, Notifications and Others switch groups (incl. the in-app Scale slider) and the Set-as-default-launcher action. LauncherConfigFragment scope tools.",
             "id": "panels-tools",
             "label": "Others",
+            "icon": "ic_settings",
+            "hidden": true,
+            "group": "Launcher",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1915 Launcher ▸ UI ▸ Display: Icons per row, Screen brightness and the three display controls (Cloud-superapp Scale, Font Size, Zoom Size). One of the three subpages UI is now a strip over; LauncherConfigFragment scope ui_display. hidden = reached through the UI strip.",
+            "id": "ui-display",
+            "label": "Display",
+            "icon": "ic_ctl_brightness",
+            "hidden": true,
+            "group": "Launcher",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1915 Launcher ▸ UI ▸ Background: the animated background (enable, auto-rotate, star animation), the shape picker grouped 3D Polyhedra / 4D Polytopes by face type, and the auto-cycle. LauncherConfigFragment scope ui_background. hidden = reached through the UI strip.",
+            "id": "ui-background",
+            "label": "Background",
+            "icon": "ic_home",
+            "hidden": true,
+            "group": "Launcher",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1915 Launcher ▸ UI ▸ Screen Saver: which screensaver the floating-nav action shows and the idle auto-start timer. LauncherConfigFragment scope ui_screensaver. hidden = reached through the UI strip.",
+            "id": "ui-screensaver",
+            "label": "Screen Saver",
             "icon": "ic_settings",
             "hidden": true,
             "group": "Launcher",
@@ -7162,35 +7191,55 @@
         "catch_all": true
       }
     ],
-    "_doc_services_order": "#1806 THE Services order, declared once. `groups` is the order and the grouping (a '|' divider between groups on the Cloud row): Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store. `categories` names each category's entry on every surface: `cloud_tile` = the tile id in sections[cloud].tile_groups[Services], `quickmark` = the folder label in sections[phone].phone_app_groups[Services] (null = no phone quickmark), `folder` = the All Apps folder id in ui.phone_folders (its +Label). Every consumer reads it: services-order.gradle re-applies it when app/build.gradle bakes ui.sections (Cloud row, Phone quickmarks) and when libs:appstore bakes ui.phone_folders (the + folder orders are reassigned in this order), and ac_cloud-browser/tools/gen-favourites-catalog.py lists the Services favourites in it. A surface entry no category names fails the build. Health is a NEW category (gyms, medical care, classes); Transports = intercity travel (trains, buses, flights); City Mobility is NEW (city buses, bike rental, scooters); Hotels = accommodation. KG Store is not in the owner's list; it keeps its own last group so nothing is lost (rule 16). Pinned by test-services-order-1806.sh.",
+    "_doc_services_order": "#1806/#1902 THE Services order, declared once. `sections` is the order and the grouping: Services · City = Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels; Services · Leisure = News | Events Media Center Social Games; and the AGI tail (`tail`: the entries follow the AGI tiles already there) = Search KG Store. Each section names its All Apps label `prefix` (+ City, % Leisure, * AGI) and its `groups` (a '|' divider between groups on the Cloud row). `categories` names each entry on every surface: `cloud_tile` = the tile id in sections[cloud].tile_groups (the group titled like the section), `quickmark` = the folder label in sections[phone].phone_app_groups (null = no phone quickmark), `folder` = the All Apps folder id in ui.phone_folders (its label starts with the section prefix). Social (#1902) is the Services · Leisure entry that opens the phone social-apps folder (media_social): the Cloud tile targets page:phone/apps#folder:media_social, the Phone quickmark is a Social folder holding the same apps. Every consumer reads it: services-order.gradle re-applies it when app/build.gradle bakes ui.sections (Cloud rows, Phone quickmarks) and when libs:appstore bakes ui.phone_folders (the folder orders are reassigned in this order), and ac_cloud-browser/tools/gen-favourites-catalog.py lists the Services favourites in it. Pinned by aa_cloud-superapp/test/test-services-order-1806.sh; nothing is dropped, only the sequence and the section change (test-launcher-surfaces-parity-1902.sh).",
     "services_order": {
-      "groups": [
-        [
-          "search"
-        ],
-        [
-          "news",
-          "events",
-          "mediacenter",
-          "games"
-        ],
-        [
-          "shopping",
-          "jobs",
-          "real-estate",
-          "health"
-        ],
-        [
-          "money"
-        ],
-        [
-          "hotels",
-          "transports",
-          "city-mobility"
-        ],
-        [
-          "kg-store"
-        ]
+      "sections": [
+        {
+          "title": "Services · City",
+          "prefix": "+",
+          "groups": [
+            [
+              "money"
+            ],
+            [
+              "shopping",
+              "health",
+              "real-estate",
+              "jobs"
+            ],
+            [
+              "city-mobility",
+              "transports",
+              "hotels"
+            ]
+          ]
+        },
+        {
+          "title": "Services · Leisure",
+          "prefix": "%",
+          "groups": [
+            [
+              "news"
+            ],
+            [
+              "events",
+              "mediacenter",
+              "social",
+              "games"
+            ]
+          ]
+        },
+        {
+          "title": "AGI",
+          "prefix": "*",
+          "tail": true,
+          "groups": [
+            [
+              "search",
+              "kg-store"
+            ]
+          ]
+        }
       ],
       "categories": {
         "search": {
@@ -7276,15 +7325,51 @@
           "cloud_tile": "kg-store",
           "quickmark": null,
           "folder": "svc_kgstore"
+        },
+        "social": {
+          "label": "Social",
+          "cloud_tile": "social",
+          "quickmark": "Social",
+          "folder": "media_social"
         }
       }
     },
-    "_doc_phone_folders": "Every launchable app is routed to exactly one folder by PhoneAppClassifier: folders are walked in `order`, and the first keyword that matches wins, so a lower order beats a higher one. Keyword forms: (1) `pkg:com.foo.bar` exact packageName; (2) `pkg^com.foo.` packageName.startsWith; (3) `lbl:name` exact case-insensitive label; (4) `lbl~frag` label contains (min 3 chars); (5) a bare string matches anywhere in \"packageName label\" (min 4 chars) — sweeping and collision-prone, so it is used sparingly. Every app installed at the 2026-09-07 rebuild is pinned with an exact `pkg:` rule, which is why the folder lists read as inventories; `pkg^` rules only cover families that will keep growing (our own com.diegonmarcos.cloudlib.*, com.termux.*, VPN vendors). An app no keyword claimed then goes through the METADATA pass before any sink: `match_metadata`, declared beside `match_keywords`, routes on what Android itself publishes about the package, so a newly installed app is placed without a keyword edit. Three rule forms: `cat:game` matches ApplicationInfo.category by the platform constant name lowercased (game, audio, video, image, social, news, maps, productivity, accessibility); `intent:android.intent.category.APP_EMAIL` matches a launcher intent category the package resolves for, i.e. a role the platform grants it; `perm:android.permission.BODY_SENSORS` matches a permission declared in its manifest. Precedence inside the pass is by SIGNAL STRENGTH, not by `order` — category (the app states its own genre) beats intent (the platform grants it a role) beats permission (we infer from what it asks for), and `order` only breaks ties within one signal; otherwise a storage permission on a game would beat cat:game purely because Storage sorts earlier. Keywords always win over metadata: the keyword lists are curated and correct, metadata only keeps an un-curated app off the sink pile. Two sinks, neither with any rules: `others` (order 930, sink=true) catches everything both passes missed and is the triage queue — an app landing there means it needs a rule; `misc` (order 910) is the manual exile, give it explicit keywords to push something there on purpose. Neither carries a section prefix, so both render last under the Other subhead. The `match_keywords` lists cover THIRD-PARTY packages only: a keyword for one of our own constellation apps is derived at load time from ui.external_apps[].folder and must not be written here as well, or the identity would have two copies again and they could disagree. Manufacturer (Google / Samsung / non-Play-Store) is metadata for Smart Folders (see phone_smart_folders below) — NOT a primary grouping criterion. Order is a three-digit string, one hundred-block per section in phone_sections order, folders alphabetical by label inside the block (110, 120, ...); it drives both render order and match precedence, so a new folder takes the next free number in its block. #1756 REORGANISED: folders were re-blocked per the new sections in hundred-blocks (Primary 1xx, Communication 2xx, Data 3xx, Me 4xx, Services 5xx, AGI 6xx, Projects 7xx, Setup 8xx). Merges: svc_travel into svc_mobility (label Mobility & Travel); svc_jobs is Jobs & Business; svc_home stays Home & Housing and moved to Me, the listing apps (ImmoScout, WG-Gesucht) moved to the new svc_realestate (Services); svc_gov, svc_telecom, svc_health moved to Me. New folders: svc_realestate, svc_search, svc_kgstore (claimed by their Cloud apps through ui.external_apps[].folder) and proj_lnktree. Misfiled and uncategorised packages are pinned with exact pkg: rules (see test-quickmarks-categories-1756.sh and test/data/previous-layout-1756.json for the previous layout this was proven against). #1806: the Services (+) folders follow ui.services_order (orders 610..675 in steps of 5, reassigned from it at build time); svc_mobility is City Mobility, svc_transports and svc_hotels took the intercity and accommodation entries, svc_healthcare is the new +Health; hlth_outdoor merged into svc_health (~Health Trackers).",
+    "_doc_phone_folders": "Every launchable app is routed to exactly one folder by PhoneAppClassifier: folders are walked in `order`, and the first keyword that matches wins, so a lower order beats a higher one. Keyword forms: (1) `pkg:com.foo.bar` exact packageName; (2) `pkg^com.foo.` packageName.startsWith; (3) `lbl:name` exact case-insensitive label; (4) `lbl~frag` label contains (min 3 chars); (5) a bare string matches anywhere in \"packageName label\" (min 4 chars) — sweeping and collision-prone, so it is used sparingly. Every app installed at the 2026-09-07 rebuild is pinned with an exact `pkg:` rule, which is why the folder lists read as inventories; `pkg^` rules only cover families that will keep growing (our own com.diegonmarcos.cloudlib.*, com.termux.*, VPN vendors). An app no keyword claimed then goes through the METADATA pass before any sink: `match_metadata`, declared beside `match_keywords`, routes on what Android itself publishes about the package, so a newly installed app is placed without a keyword edit. Three rule forms: `cat:game` matches ApplicationInfo.category by the platform constant name lowercased (game, audio, video, image, social, news, maps, productivity, accessibility); `intent:android.intent.category.APP_EMAIL` matches a launcher intent category the package resolves for, i.e. a role the platform grants it; `perm:android.permission.BODY_SENSORS` matches a permission declared in its manifest. Precedence inside the pass is by SIGNAL STRENGTH, not by `order` — category (the app states its own genre) beats intent (the platform grants it a role) beats permission (we infer from what it asks for), and `order` only breaks ties within one signal; otherwise a storage permission on a game would beat cat:game purely because Storage sorts earlier. Keywords always win over metadata: the keyword lists are curated and correct, metadata only keeps an un-curated app off the sink pile. Two sinks, neither with any rules: `others` (order 990, sink=true) catches everything both passes missed and is the triage queue — an app landing there means it needs a rule; `misc` (order 980) is the manual exile, give it explicit keywords to push something there on purpose. Neither carries a section prefix, so both render last under the Other subhead. The `match_keywords` lists cover THIRD-PARTY packages only: a keyword for one of our own constellation apps is derived at load time from ui.external_apps[].folder and must not be written here as well, or the identity would have two copies again and they could disagree. Manufacturer (Google / Samsung / non-Play-Store) is metadata for Smart Folders (see phone_smart_folders below) — NOT a primary grouping criterion. Order is a three-digit string, one hundred-block per section in phone_sections order, folders alphabetical by label inside the block (110, 120, ...); it drives both render order and match precedence, so a new folder takes the next free number in its block. #1756 REORGANISED: folders were re-blocked per the new sections in hundred-blocks (Primary 1xx, Communication 2xx, Data 3xx, Me 4xx, Services 5xx, AGI 6xx, Projects 7xx, Setup 8xx). Merges: svc_travel into svc_mobility (label Mobility & Travel); svc_jobs is Jobs & Business; svc_home stays Home & Housing and moved to Me, the listing apps (ImmoScout, WG-Gesucht) moved to the new svc_realestate (Services); svc_gov, svc_telecom, svc_health moved to Me. New folders: svc_realestate, svc_search, svc_kgstore (claimed by their Cloud apps through ui.external_apps[].folder) and proj_lnktree. Misfiled and uncategorised packages are pinned with exact pkg: rules (see test-quickmarks-categories-1756.sh and test/data/previous-layout-1756.json for the previous layout this was proven against). #1902 RE-BLOCKED: one hundred-block per section in phone_sections order, nine sections (Primary 1xx, Communication 2xx, Data 3xx, Me 4xx, Projects 5xx, Services · City 6xx, Services · Leisure 7xx, AGI 8xx, Setup 9xx; the sinks misc 980 and others 990 come after; test-phone-taxonomy-prefixes.sh T7 pins it). Social (media_social) moved from Communication to Leisure, Search and KG Store to the AGI tail. The Services · City (+) and Services · Leisure (%) folders and the AGI tail (*Search, *KG Store) follow ui.services_order (orders 610..645 City, 710..730 Leisure, then Search 840 and KG Store 850, reassigned from it at build time); svc_mobility is City Mobility, svc_transports and svc_hotels took the intercity and accommodation entries, svc_healthcare is the new +Health; hlth_outdoor merged into svc_health (~Health Trackers).",
     "phone_folders": [
       {
-        "id": "prod_web",
+        "id": "prod_storage",
         "order": "110",
-        "label": "=Browser",
+        "label": ".Drive",
+        "match_keywords": [
+          "pkg:com.google.android.apps.docs",
+          "pkg:com.google.android.apps.subscriptions.red",
+          "pkg:com.microsoft.skydrive",
+          "pkg:com.alphainventor.filemanager",
+          "pkg:com.amaze.filemanager",
+          "pkg:com.app.applistbackup",
+          "pkg:com.ghisler.android.TotalCommander",
+          "pkg:com.ghostsq.commander",
+          "pkg:com.lonelycatgames.Xplore",
+          "pkg:com.mobisystems.fileman",
+          "pkg:com.rarlab.rar",
+          "pkg:com.sec.android.app.myfiles",
+          "pkg:com.smlnskgmail.jaman.hashchecker",
+          "pkg:com.viscouspot.gitsync",
+          "pkg:dk.tacit.android.foldersync.lite",
+          "pkg:me.zhanghai.android.files",
+          "pkg:pl.solidexplorer2",
+          "pkg:me.proton.android.drive",
+          "pkg:com.google.android.apps.nbu.files"
+        ],
+        "match_metadata": [
+          "intent:android.intent.category.APP_FILES",
+          "perm:android.permission.MANAGE_EXTERNAL_STORAGE"
+        ]
+      },
+      {
+        "id": "prod_web",
+        "order": "120",
+        "label": ".Browser",
         "match_keywords": [
           "pkg:com.android.chrome",
           "pkg:com.brave.browser",
@@ -7296,85 +7381,94 @@
         ]
       },
       {
-        "id": "prod_maps",
-        "order": "120",
-        "label": "=Nav",
-        "match_keywords": [
-          "pkg:aplicacion.tiempo",
-          "pkg:com.google.android.apps.maps",
-          "pkg:app.organicmaps",
-          "pkg:com.google.earth",
-          "pkg:com.mapswithme.maps.pro",
-          "pkg:cz.ackee.ventusky"
-        ],
-        "match_metadata": [
-          "cat:maps",
-          "intent:android.intent.category.APP_MAPS",
-          "intent:android.intent.category.APP_WEATHER"
-        ]
-      },
-      {
-        "id": "prod_calc",
+        "id": "data_gallery",
         "order": "130",
-        "label": "=Calc",
+        "label": ".Gallery",
         "match_keywords": [
-          "pkg:com.google.android.calculator",
-          "pkg:com.sec.android.app.popupcalculator"
+          "pkg:com.google.android.apps.photos",
+          "pkg:com.sec.android.gallery3d",
+          "pkg:com.musicvideo.photoeditor.squarefit"
         ],
         "match_metadata": [
-          "intent:android.intent.category.APP_CALCULATOR"
+          "cat:image",
+          "intent:android.intent.category.APP_GALLERY"
         ]
       },
       {
-        "id": "prod_camera",
+        "id": "prod_docs",
         "order": "140",
-        "label": "=Camera",
+        "label": ".Notes",
         "match_keywords": [
-          "pkg:com.sec.android.app.camera",
-          "pkg:pl.mobimax.cameraopus"
+          "pkg:com.adeeteya.markdown_editor",
+          "pkg:com.google.android.keep",
+          "pkg:com.journable.app",
+          "pkg:com.microsoft.lists.public",
+          "pkg:com.microsoft.office.onenote",
+          "pkg:com.samsung.android.app.notes",
+          "pkg:jp.sblo.pandora.jota.plus",
+          "pkg:md.obsidian",
+          "pkg:org.chromium.webapk.a64d263d6f7d935c4_v2",
+          "pkg:app.affine.pro"
         ]
       },
       {
-        "id": "prod_canvas",
-        "order": "145",
-        "label": "=Canvas",
-        "match_keywords": [
-          "pkg:com.adsk.sketchbook",
-          "pkg:com.imageline.FLM"
-        ]
-      },
-      {
-        "id": "sys_keyboards",
+        "id": "prod_plan",
         "order": "150",
-        "label": "=Keyboard",
+        "label": ".Agenda",
         "match_keywords": [
-          "pkg:ch.icoaching.typewise",
-          "pkg:com.gingersoftware.android.keyboard",
-          "pkg:com.google.android.inputmethod.latin",
-          "pkg:com.grammarly.android.keyboard",
-          "pkg:juloo.keyboard2"
+          "pkg:co.mangotechnologies.clickup",
+          "pkg:com.gianlu.timeless",
+          "pkg:com.google.android.apps.tasks",
+          "pkg:com.google.android.calendar",
+          "pkg:com.microsoft.todos",
+          "pkg:com.samsung.android.app.reminder",
+          "pkg:com.samsung.android.calendar",
+          "pkg:com.toggl.giskard",
+          "pkg:com.trello",
+          "pkg:me.clockify.android",
+          "pkg:todolist.scheduleplanner.dailyplanner.todo.reminders"
+        ],
+        "match_metadata": [
+          "intent:android.intent.category.APP_CALENDAR"
+        ]
+      },
+      {
+        "id": "data_vault",
+        "order": "160",
+        "label": ".Vault",
+        "match_keywords": [
+          "pkg:com.samsung.android.samsungpass",
+          "pkg:com.x8bit.bitwarden",
+          "pkg:com.beemdevelopment.aegis",
+          "pkg:com.azure.authenticator",
+          "pkg:com.google.android.apps.authenticator2",
+          "pkg:com.google.android.apps.credentialmanager",
+          "pkg:com.samsung.knox.securefolder",
+          "pkg^com.bitwarden.",
+          "pkg^com.kunzisoft.keepass"
         ]
       },
       {
         "id": "prod_wallet",
-        "order": "160",
-        "label": "=Wallet",
+        "order": "170",
+        "label": ".Wallet",
         "match_keywords": [
           "pkg:com.google.android.apps.walletnfcrel"
         ]
       },
       {
-        "id": "prod_utils",
-        "order": "170",
-        "label": "=Utilities",
+        "id": "prod_office",
+        "order": "180",
+        "label": ".Office",
         "match_keywords": [
-          "pkg:com.diotek.sec.lookup.dictionary",
-          "pkg:com.google.android.apps.translate",
-          "pkg:com.google.audio.hearing.visualization.accessibility.scribe",
-          "pkg:com.persapps.multitimer",
-          "pkg:com.samsung.android.ardrawing",
-          "pkg:com.sec.android.app.clockpackage",
-          "pkg:com.sec.android.app.voicenote"
+          "pkg:com.collabora.libreoffice",
+          "pkg:com.google.android.apps.docs.editors.docs",
+          "pkg:com.google.android.apps.docs.editors.sheets",
+          "pkg:com.google.android.apps.docs.editors.slides",
+          "pkg:com.adobe.reader"
+        ],
+        "match_metadata": [
+          "cat:productivity"
         ]
       },
       {
@@ -7455,135 +7549,77 @@
         ]
       },
       {
-        "id": "media_social",
-        "order": "260",
-        "label": "@Social",
-        "match_keywords": [
-          "pkg:com.badoo.mobile",
-          "pkg:com.bereal.ft",
-          "pkg:com.bumble.app",
-          "pkg:com.instagram.android",
-          "pkg:com.instagram.barcelona",
-          "pkg:com.pinterest",
-          "pkg:com.tinder",
-          "pkg:co.hinge.app",
-          "pkg:com.facebook.katana"
-        ],
-        "match_metadata": [
-          "cat:social"
-        ]
-      },
-      {
-        "id": "prod_storage",
+        "id": "prod_maps",
         "order": "310",
-        "label": ".Drive",
+        "label": "=Nav",
         "match_keywords": [
-          "pkg:com.google.android.apps.docs",
-          "pkg:com.google.android.apps.subscriptions.red",
-          "pkg:com.microsoft.skydrive",
-          "pkg:com.alphainventor.filemanager",
-          "pkg:com.amaze.filemanager",
-          "pkg:com.app.applistbackup",
-          "pkg:com.ghisler.android.TotalCommander",
-          "pkg:com.ghostsq.commander",
-          "pkg:com.lonelycatgames.Xplore",
-          "pkg:com.mobisystems.fileman",
-          "pkg:com.rarlab.rar",
-          "pkg:com.sec.android.app.myfiles",
-          "pkg:com.smlnskgmail.jaman.hashchecker",
-          "pkg:com.viscouspot.gitsync",
-          "pkg:dk.tacit.android.foldersync.lite",
-          "pkg:me.zhanghai.android.files",
-          "pkg:pl.solidexplorer2",
-          "pkg:me.proton.android.drive",
-          "pkg:com.google.android.apps.nbu.files"
+          "pkg:aplicacion.tiempo",
+          "pkg:com.google.android.apps.maps",
+          "pkg:app.organicmaps",
+          "pkg:com.google.earth",
+          "pkg:com.mapswithme.maps.pro",
+          "pkg:cz.ackee.ventusky"
         ],
         "match_metadata": [
-          "intent:android.intent.category.APP_FILES",
-          "perm:android.permission.MANAGE_EXTERNAL_STORAGE"
+          "cat:maps",
+          "intent:android.intent.category.APP_MAPS",
+          "intent:android.intent.category.APP_WEATHER"
         ]
       },
       {
-        "id": "prod_docs",
+        "id": "prod_camera",
         "order": "320",
-        "label": ".Notes",
+        "label": "=Camera",
         "match_keywords": [
-          "pkg:com.adeeteya.markdown_editor",
-          "pkg:com.google.android.keep",
-          "pkg:com.journable.app",
-          "pkg:com.microsoft.lists.public",
-          "pkg:com.microsoft.office.onenote",
-          "pkg:com.samsung.android.app.notes",
-          "pkg:jp.sblo.pandora.jota.plus",
-          "pkg:md.obsidian",
-          "pkg:org.chromium.webapk.a64d263d6f7d935c4_v2",
-          "pkg:app.affine.pro"
+          "pkg:com.sec.android.app.camera",
+          "pkg:pl.mobimax.cameraopus"
         ]
       },
       {
-        "id": "prod_plan",
+        "id": "prod_canvas",
         "order": "330",
-        "label": ".Agenda",
+        "label": "=Canvas",
         "match_keywords": [
-          "pkg:co.mangotechnologies.clickup",
-          "pkg:com.gianlu.timeless",
-          "pkg:com.google.android.apps.tasks",
-          "pkg:com.google.android.calendar",
-          "pkg:com.microsoft.todos",
-          "pkg:com.samsung.android.app.reminder",
-          "pkg:com.samsung.android.calendar",
-          "pkg:com.toggl.giskard",
-          "pkg:com.trello",
-          "pkg:me.clockify.android",
-          "pkg:todolist.scheduleplanner.dailyplanner.todo.reminders"
-        ],
-        "match_metadata": [
-          "intent:android.intent.category.APP_CALENDAR"
+          "pkg:com.adsk.sketchbook",
+          "pkg:com.imageline.FLM"
         ]
       },
       {
-        "id": "prod_office",
+        "id": "sys_keyboards",
         "order": "340",
-        "label": ".Office",
+        "label": "=Keyboard",
         "match_keywords": [
-          "pkg:com.collabora.libreoffice",
-          "pkg:com.google.android.apps.docs.editors.docs",
-          "pkg:com.google.android.apps.docs.editors.sheets",
-          "pkg:com.google.android.apps.docs.editors.slides",
-          "pkg:com.adobe.reader"
-        ],
-        "match_metadata": [
-          "cat:productivity"
+          "pkg:ch.icoaching.typewise",
+          "pkg:com.gingersoftware.android.keyboard",
+          "pkg:com.google.android.inputmethod.latin",
+          "pkg:com.grammarly.android.keyboard",
+          "pkg:juloo.keyboard2"
         ]
       },
       {
-        "id": "data_gallery",
+        "id": "prod_calc",
         "order": "350",
-        "label": ".Gallery",
+        "label": "=Calc",
         "match_keywords": [
-          "pkg:com.google.android.apps.photos",
-          "pkg:com.sec.android.gallery3d",
-          "pkg:com.musicvideo.photoeditor.squarefit"
+          "pkg:com.google.android.calculator",
+          "pkg:com.sec.android.app.popupcalculator"
         ],
         "match_metadata": [
-          "cat:image",
-          "intent:android.intent.category.APP_GALLERY"
+          "intent:android.intent.category.APP_CALCULATOR"
         ]
       },
       {
-        "id": "data_vault",
-        "order": "370",
-        "label": ".Vault",
+        "id": "prod_utils",
+        "order": "360",
+        "label": "=Utilities",
         "match_keywords": [
-          "pkg:com.samsung.android.samsungpass",
-          "pkg:com.x8bit.bitwarden",
-          "pkg:com.beemdevelopment.aegis",
-          "pkg:com.azure.authenticator",
-          "pkg:com.google.android.apps.authenticator2",
-          "pkg:com.google.android.apps.credentialmanager",
-          "pkg:com.samsung.knox.securefolder",
-          "pkg^com.bitwarden.",
-          "pkg^com.kunzisoft.keepass"
+          "pkg:com.diotek.sec.lookup.dictionary",
+          "pkg:com.google.android.apps.translate",
+          "pkg:com.google.audio.hearing.visualization.accessibility.scribe",
+          "pkg:com.persapps.multitimer",
+          "pkg:com.samsung.android.ardrawing",
+          "pkg:com.sec.android.app.clockpackage",
+          "pkg:com.sec.android.app.voicenote"
         ]
       },
       {
@@ -7694,49 +7730,141 @@
         ]
       },
       {
-        "id": "proj_superapp",
+        "id": "svc_money",
         "order": "510",
-        "label": "#SuperApp",
+        "label": "+Money",
         "match_keywords": [
-          "pkg:com.diegonmarcos.superapp"
+          "pkg:com.binance.dev",
+          "pkg:com.bitpanda.bitpanda",
+          "pkg:com.btg.pactual.banking",
+          "pkg:com.btg.pactual.digital.mobile",
+          "pkg:com.btg.pactual.homebroker.mobile",
+          "pkg:com.fusionmedia.investing",
+          "pkg:com.paypal.android.p2pmobile",
+          "pkg:com.revolut.revolut",
+          "pkg:com.transferwise.android",
+          "pkg:com.xe.currency",
+          "pkg:es.bancosantander.apps",
+          "pkg^com.btg.pactual.",
+          "pkg:com.imaginecurve.curve.prd",
+          "pkg:com.starfinanz.smob.android.sfinanzstatus",
+          "pkg:de.number26.android"
         ]
       },
       {
-        "id": "proj_omniverse",
-        "order": "520",
-        "label": "#Omniverse",
-        "match_keywords": []
-      },
-      {
-        "id": "proj_finterm",
-        "order": "530",
-        "label": "#FinTerm",
-        "match_keywords": []
-      },
-      {
-        "id": "proj_cad",
-        "order": "540",
-        "label": "#CAD",
-        "match_keywords": []
-      },
-      {
-        "id": "proj_biomed",
-        "order": "550",
-        "label": "#BioMed",
-        "match_keywords": []
-      },
-      {
-        "id": "svc_search",
-        "order": "610",
-        "label": "+Search",
+        "id": "svc_shopping",
+        "order": "515",
+        "label": "+Shopping",
         "match_keywords": [
-          "pkg:com.google.android.googlequicksearchbox"
+          "pkg:com.amazon.mShop.android.shopping",
+          "pkg:com.app.tgtg",
+          "pkg:com.backmarket",
+          "pkg:com.ebay.kleinanzeigen",
+          "pkg:com.wallapop",
+          "pkg:vivino.web.app",
+          "pkg:com.dhl.exp.dhlmobile",
+          "pkg:de.dhl.paket"
+        ]
+      },
+      {
+        "_doc": "#1806 Health (NEW Services category): service-type health apps - gyms, medical care, classes (yoga, indoor cycling). Re-homed from ~Health and ~Outdoor & Sport; the trackers stayed in ~Health Trackers.",
+        "id": "svc_healthcare",
+        "order": "520",
+        "label": "+Health",
+        "match_keywords": [
+          "pkg:com.medantapatient.app",
+          "pkg:com.urbansportsclub",
+          "pkg:com.downdogapp",
+          "pkg:com.motosumo.app",
+          "pkg:com.bodybike.bbsmartplus"
+        ]
+      },
+      {
+        "id": "svc_realestate",
+        "order": "525",
+        "label": "+Real Estate",
+        "match_keywords": [
+          "pkg:de.is24.android",
+          "pkg:com.wggesucht.android"
+        ]
+      },
+      {
+        "id": "svc_jobs",
+        "order": "530",
+        "label": "+Jobs & Business",
+        "match_keywords": [
+          "pkg:com.linkedin.android",
+          "pkg:com.otta.otta",
+          "pkg:com.indeed.android.jobsearch"
+        ]
+      },
+      {
+        "_doc": "#1806 City Mobility (was Mobility & Travel; this id kept): in-city transport - city buses and metro (BVG, TMB, Ruter, T-mobilitat), bike rental, scooters, taxis and ride hailing. Intercity travel moved to +Transports (svc_transports), accommodation to +Hotels (svc_hotels).",
+        "id": "svc_mobility",
+        "order": "535",
+        "label": "+City Mobility",
+        "match_keywords": [
+          "pkg:cat.atm.tmobilitat",
+          "pkg:com.donkeyrepublic.bike.android",
+          "pkg:com.geomobile.tmbmobile",
+          "pkg:com.ridedott.rider",
+          "pkg:com.trafi.android.tr",
+          "pkg:com.trafi.whitelabel.bvg",
+          "pkg:com.ubercab",
+          "pkg:de.eos.uptrade.android.fahrinfo.berlin",
+          "pkg:ee.mtakso.client",
+          "pkg:no.ruter.reise",
+          "pkg:ride.app",
+          "pkg:taxi.android.client",
+          "pkg:de.bvg.ticket"
+        ]
+      },
+      {
+        "_doc": "#1806 Transports (NEW, re-homed from Mobility & Travel): intercity travel - trains, long-distance buses, flights, ferries, carpooling, route planners and the travel log.",
+        "id": "svc_transports",
+        "order": "540",
+        "label": "+Transports",
+        "match_keywords": [
+          "pkg:be.greifmatthias.wakaship",
+          "pkg:com.comuto",
+          "pkg:com.getbybus.mobile",
+          "pkg:com.goeuro.rosie",
+          "pkg:com.kautra.android.autobusubilietai",
+          "pkg:com.mo2o.alsa",
+          "pkg:com.nomadmania.presentation",
+          "pkg:com.rome2rio.www.rome2rio",
+          "pkg:com.ryanair.cheapflights",
+          "pkg:com.skiplagged",
+          "pkg:com.thetrainline",
+          "pkg:com.wizzair.WizzAirApp",
+          "pkg:de.flixbus.app",
+          "pkg:de.hafas.android.db",
+          "pkg:eu.infobus.app",
+          "pkg:net.skyscanner.android.main"
+        ]
+      },
+      {
+        "_doc": "#1806 Hotels (NEW, re-homed from Mobility & Travel): accommodation - hotels, hostels, rentals, camping and work-stays.",
+        "id": "svc_hotels",
+        "order": "545",
+        "label": "+Hotels",
+        "match_keywords": [
+          "pkg:app.campy",
+          "pkg:com.airbnb.android",
+          "pkg:com.alohacamp.release",
+          "pkg:com.booking",
+          "pkg:com.hostel_hop_inc.hostel_hop_mobile",
+          "pkg:com.hostelworld.app",
+          "pkg:com.workaway.app",
+          "pkg:dk.shelter.app",
+          "pkg:fr.tramb.park4night",
+          "pkg:travel.goki.app"
         ]
       },
       {
         "id": "hlth_news",
-        "order": "615",
-        "label": "+News",
+        "order": "610",
+        "label": "%News",
         "match_keywords": [
           "pkg:com.checkitt",
           "pkg:com.devhd.feedly",
@@ -7752,8 +7880,8 @@
       },
       {
         "id": "svc_events",
-        "order": "620",
-        "label": "+Events",
+        "order": "615",
+        "label": "%Events",
         "match_keywords": [
           "pkg:com.codekarussell.rausgegangen",
           "pkg:com.linearshift.broadcastoslo",
@@ -7765,8 +7893,8 @@
       },
       {
         "id": "media_video",
-        "order": "625",
-        "label": "+Media Center",
+        "order": "620",
+        "label": "%Media Center",
         "match_keywords": [
           "pkg:com.amazon.avod.thirdpartyclient",
           "pkg:com.google.android.videos",
@@ -7794,9 +7922,28 @@
         ]
       },
       {
+        "id": "media_social",
+        "order": "625",
+        "label": "%Social",
+        "match_keywords": [
+          "pkg:com.badoo.mobile",
+          "pkg:com.bereal.ft",
+          "pkg:com.bumble.app",
+          "pkg:com.instagram.android",
+          "pkg:com.instagram.barcelona",
+          "pkg:com.pinterest",
+          "pkg:com.tinder",
+          "pkg:co.hinge.app",
+          "pkg:com.facebook.katana"
+        ],
+        "match_metadata": [
+          "cat:social"
+        ]
+      },
+      {
         "id": "media_games",
         "order": "630",
-        "label": "+Games",
+        "label": "%Games",
         "match_keywords": [
           "pkg:com.epicgames.portal",
           "pkg:com.playdead.limbo.egs.full",
@@ -7807,144 +7954,6 @@
         "match_metadata": [
           "cat:game"
         ]
-      },
-      {
-        "id": "svc_shopping",
-        "order": "635",
-        "label": "+Shopping",
-        "match_keywords": [
-          "pkg:com.amazon.mShop.android.shopping",
-          "pkg:com.app.tgtg",
-          "pkg:com.backmarket",
-          "pkg:com.ebay.kleinanzeigen",
-          "pkg:com.wallapop",
-          "pkg:vivino.web.app",
-          "pkg:com.dhl.exp.dhlmobile",
-          "pkg:de.dhl.paket"
-        ]
-      },
-      {
-        "id": "svc_jobs",
-        "order": "640",
-        "label": "+Jobs & Business",
-        "match_keywords": [
-          "pkg:com.linkedin.android",
-          "pkg:com.otta.otta",
-          "pkg:com.indeed.android.jobsearch"
-        ]
-      },
-      {
-        "id": "svc_realestate",
-        "order": "645",
-        "label": "+Real Estate",
-        "match_keywords": [
-          "pkg:de.is24.android",
-          "pkg:com.wggesucht.android"
-        ]
-      },
-      {
-        "_doc": "#1806 Health (NEW Services category): service-type health apps - gyms, medical care, classes (yoga, indoor cycling). Re-homed from ~Health and ~Outdoor & Sport; the trackers stayed in ~Health Trackers.",
-        "id": "svc_healthcare",
-        "order": "650",
-        "label": "+Health",
-        "match_keywords": [
-          "pkg:com.medantapatient.app",
-          "pkg:com.urbansportsclub",
-          "pkg:com.downdogapp",
-          "pkg:com.motosumo.app",
-          "pkg:com.bodybike.bbsmartplus"
-        ]
-      },
-      {
-        "id": "svc_money",
-        "order": "655",
-        "label": "+Money",
-        "match_keywords": [
-          "pkg:com.binance.dev",
-          "pkg:com.bitpanda.bitpanda",
-          "pkg:com.btg.pactual.banking",
-          "pkg:com.btg.pactual.digital.mobile",
-          "pkg:com.btg.pactual.homebroker.mobile",
-          "pkg:com.fusionmedia.investing",
-          "pkg:com.paypal.android.p2pmobile",
-          "pkg:com.revolut.revolut",
-          "pkg:com.transferwise.android",
-          "pkg:com.xe.currency",
-          "pkg:es.bancosantander.apps",
-          "pkg^com.btg.pactual.",
-          "pkg:com.imaginecurve.curve.prd",
-          "pkg:com.starfinanz.smob.android.sfinanzstatus",
-          "pkg:de.number26.android"
-        ]
-      },
-      {
-        "_doc": "#1806 Hotels (NEW, re-homed from Mobility & Travel): accommodation - hotels, hostels, rentals, camping and work-stays.",
-        "id": "svc_hotels",
-        "order": "660",
-        "label": "+Hotels",
-        "match_keywords": [
-          "pkg:app.campy",
-          "pkg:com.airbnb.android",
-          "pkg:com.alohacamp.release",
-          "pkg:com.booking",
-          "pkg:com.hostel_hop_inc.hostel_hop_mobile",
-          "pkg:com.hostelworld.app",
-          "pkg:com.workaway.app",
-          "pkg:dk.shelter.app",
-          "pkg:fr.tramb.park4night",
-          "pkg:travel.goki.app"
-        ]
-      },
-      {
-        "_doc": "#1806 Transports (NEW, re-homed from Mobility & Travel): intercity travel - trains, long-distance buses, flights, ferries, carpooling, route planners and the travel log.",
-        "id": "svc_transports",
-        "order": "665",
-        "label": "+Transports",
-        "match_keywords": [
-          "pkg:be.greifmatthias.wakaship",
-          "pkg:com.comuto",
-          "pkg:com.getbybus.mobile",
-          "pkg:com.goeuro.rosie",
-          "pkg:com.kautra.android.autobusubilietai",
-          "pkg:com.mo2o.alsa",
-          "pkg:com.nomadmania.presentation",
-          "pkg:com.rome2rio.www.rome2rio",
-          "pkg:com.ryanair.cheapflights",
-          "pkg:com.skiplagged",
-          "pkg:com.thetrainline",
-          "pkg:com.wizzair.WizzAirApp",
-          "pkg:de.flixbus.app",
-          "pkg:de.hafas.android.db",
-          "pkg:eu.infobus.app",
-          "pkg:net.skyscanner.android.main"
-        ]
-      },
-      {
-        "_doc": "#1806 City Mobility (was Mobility & Travel; this id kept): in-city transport - city buses and metro (BVG, TMB, Ruter, T-mobilitat), bike rental, scooters, taxis and ride hailing. Intercity travel moved to +Transports (svc_transports), accommodation to +Hotels (svc_hotels).",
-        "id": "svc_mobility",
-        "order": "670",
-        "label": "+City Mobility",
-        "match_keywords": [
-          "pkg:cat.atm.tmobilitat",
-          "pkg:com.donkeyrepublic.bike.android",
-          "pkg:com.geomobile.tmbmobile",
-          "pkg:com.ridedott.rider",
-          "pkg:com.trafi.android.tr",
-          "pkg:com.trafi.whitelabel.bvg",
-          "pkg:com.ubercab",
-          "pkg:de.eos.uptrade.android.fahrinfo.berlin",
-          "pkg:ee.mtakso.client",
-          "pkg:no.ruter.reise",
-          "pkg:ride.app",
-          "pkg:taxi.android.client",
-          "pkg:de.bvg.ticket"
-        ]
-      },
-      {
-        "id": "svc_kgstore",
-        "order": "675",
-        "label": "+KG Store",
-        "match_keywords": []
       },
       {
         "id": "prod_ai",
@@ -7978,6 +7987,12 @@
         ]
       },
       {
+        "id": "agi_tools",
+        "order": "725",
+        "label": "*Tools",
+        "match_keywords": []
+      },
+      {
         "id": "prod_terminals",
         "order": "730",
         "label": "*Terminal",
@@ -7992,9 +8007,17 @@
         ]
       },
       {
-        "id": "agi_tools",
+        "id": "svc_search",
         "order": "740",
-        "label": "*Tools",
+        "label": "*Search",
+        "match_keywords": [
+          "pkg:com.google.android.googlequicksearchbox"
+        ]
+      },
+      {
+        "id": "svc_kgstore",
+        "order": "750",
+        "label": "*KG Store",
         "match_keywords": []
       },
       {
@@ -8116,44 +8139,76 @@
         ]
       },
       {
-        "id": "misc",
+        "id": "proj_superapp",
         "order": "910",
+        "label": "#SuperApp",
+        "match_keywords": [
+          "pkg:com.diegonmarcos.superapp"
+        ]
+      },
+      {
+        "id": "proj_omniverse",
+        "order": "920",
+        "label": "#Omniverse",
+        "match_keywords": []
+      },
+      {
+        "id": "proj_finterm",
+        "order": "930",
+        "label": "#FinTerm",
+        "match_keywords": []
+      },
+      {
+        "id": "proj_cad",
+        "order": "940",
+        "label": "#CAD",
+        "match_keywords": []
+      },
+      {
+        "id": "proj_biomed",
+        "order": "950",
+        "label": "#BioMed",
+        "match_keywords": []
+      },
+      {
+        "id": "misc",
+        "order": "980",
         "label": "Misc",
         "match_keywords": []
       },
       {
         "id": "others",
-        "order": "930",
+        "order": "990",
         "label": "Others",
         "match_keywords": [],
         "sink": true
       }
     ],
-    "_doc_phone_sections": "Top-level section headers in the Home Apps/Phone tab and Cloud apps listing, ONE category system shared with the Quickmarks groups (#1756). Folders are bucketed under a section by their label's first character: Tools · Primary (=), Tools · Communication (@), Tools · Data (.), Tools · Me (~), Services (+), AGI (*), Projects (#), Setup (_). Order = render order = the Quickmarks group order Primary, Communication, Data, Me, Services, AGI, Projects, Setup. A folder whose label starts with none of those prefixes belongs to no section and renders last (the Others and Misc sinks). The split is Service vs Tool: a SERVICE is a client for one external provider you hold an account, contract or booking with (Search, Events, Shopping, Mobility & Travel, Jobs & Business, Real Estate, Money, KG Store, Games). DECISIONS: Games (media_games, was under Me) moved to Services, every app in it stays; Money stays in Services (one folder, no duplicate in Me): a bank or broker app is a client of one provider you hold an account with, and the owner listed Money under Services; Real Estate (housing SEARCH: ImmoScout, WG-Gesucht) stays in Services while Home & Housing (building access, neighbours, self-storage: the paperwork side) goes to Me; a TOOL operates on your own data or device. Tools · Primary: Maps & Weather, Utilities, Web. Tools · Communication: Chat, Mail, Phone & Contacts, Social, News & Reading. Tools · Data: Calendar & Tasks, Docs & Notes, Storage. Tools · Me: Gov & ID, Telecom, Health, Home & Housing (the Buro paperwork: ids, carrier accounts, health admin and trackers, access/neighbours/storage), Outdoor & Sport, Nutrition, Learning, i.e. everything personal. Every section is a set of subtype folders; no app sits loose outside a folder. AGI: AI and Terminals. Projects: Lnktree, our four project apps (Omniverse, FinTerm, CAD, BioMed). Setup absorbs the former System section (Dev, Diagnostics, Keyboards, Network, Security, Settings, Stores). Retired prefixes: '-' Buro and '>' Media and '*' Health ('*' is now AGI); the former Services · Others '+' is now Services. Folder ids are stable keys and did not change when the labels did, except svc_travel, which merged into svc_mobility (Mobility & Travel). Empty sections are silently skipped. PROJECTS IS A SECTION HERE since #1756: the earlier ban (2026-09-10) was about a Projects section holding a folder named Projects; the section now holds the Lnktree folder, and the Projects quickmark group is unchanged.",
+    "_doc_phone_sections": "Top-level section headers in the Home Apps/Phone tab and Cloud apps listing, ONE category system shared with the Quickmarks groups (#1756). Folders are bucketed under a section by their label's first character: Tools · Primary (=), Tools · Communication (@), Tools · Data (.), Tools · Me (~), Projects (#), Services · City (+), Services · Leisure (%), AGI (*), Setup (_). Order = render order = the Quickmarks group order Primary, Communication, Data, Me, Projects, Services · City, Services · Leisure, AGI, Setup. #1902: Services is split in two sections, City and Leisure, and Social (media_social) moved from Tools · Communication to Services · Leisure; Search and KG Store ended AGI (labels *Search, *KG Store, ids unchanged). A folder whose label starts with none of those prefixes belongs to no section and renders last (the Others and Misc sinks). The split is Service vs Tool: a SERVICE is a client for one external provider you hold an account, contract or booking with (Search, Events, Shopping, Mobility & Travel, Jobs & Business, Real Estate, Money, KG Store, Games). DECISIONS: Games (media_games, was under Me) moved to Services, every app in it stays; Money stays in Services (one folder, no duplicate in Me): a bank or broker app is a client of one provider you hold an account with, and the owner listed Money under Services; Real Estate (housing SEARCH: ImmoScout, WG-Gesucht) stays in Services while Home & Housing (building access, neighbours, self-storage: the paperwork side) goes to Me; a TOOL operates on your own data or device. Tools · Primary: Maps & Weather, Utilities, Web. Tools · Communication: Chat, Mail, Phone & Contacts, Social, News & Reading. Tools · Data: Calendar & Tasks, Docs & Notes, Storage. Tools · Me: Gov & ID, Telecom, Health, Home & Housing (the Buro paperwork: ids, carrier accounts, health admin and trackers, access/neighbours/storage), Outdoor & Sport, Nutrition, Learning, i.e. everything personal. Every section is a set of subtype folders; no app sits loose outside a folder. AGI: AI and Terminals. Projects: Lnktree, our four project apps (Omniverse, FinTerm, CAD, BioMed). Setup absorbs the former System section (Dev, Diagnostics, Keyboards, Network, Security, Settings, Stores). Retired prefixes: '-' Buro and '>' Media and '*' Health ('*' is now AGI); the former Services · Others '+' is now Services. Folder ids are stable keys and did not change when the labels did, except svc_travel, which merged into svc_mobility (Mobility & Travel). Empty sections are silently skipped. PROJECTS IS A SECTION HERE since #1756: the earlier ban (2026-09-10) was about a Projects section holding a folder named Projects; the section now holds the Lnktree folder, and the Projects quickmark group is unchanged. #1916 ORDER: Data, Communication, Primary, Me, Services · City, Services · Leisure, AGI, Setup, Projects (Projects moved after Setup); Data = Drive, Browser, Gallery, Notes, Agenda, Vault, Wallet, Office and Primary = Nav, Camera, Canvas, Keyboard, Calc, Utilities (Browser and Wallet changed prefix = to . with ids prod_web and prod_wallet unchanged); folder orders are re-blocked to the new section positions (Data 1xx, Communication 2xx, Primary 3xx, Me 4xx, City 5xx, Leisure 6xx, AGI 7xx, Setup 8xx, Projects 9xx; sinks 980/990).",
     "phone_sections": [
       {
-        "title": "Tools · Primary",
-        "prefix": "="
+        "title": "Tools · Data",
+        "prefix": "."
       },
       {
         "title": "Tools · Communication",
         "prefix": "@"
       },
       {
-        "title": "Tools · Data",
-        "prefix": "."
+        "title": "Tools · Primary",
+        "prefix": "="
       },
       {
         "title": "Tools · Me",
         "prefix": "~"
       },
       {
-        "title": "Projects",
-        "prefix": "#"
+        "title": "Services · City",
+        "prefix": "+"
       },
       {
-        "title": "Services",
-        "prefix": "+"
+        "title": "Services · Leisure",
+        "prefix": "%"
       },
       {
         "title": "AGI",
@@ -8162,6 +8217,10 @@
       {
         "title": "Setup",
         "prefix": "_"
+      },
+      {
+        "title": "Projects",
+        "prefix": "#"
       }
     ],
     "_doc_phone_smart_folders": "Smart Folders rendered at the BOTTOM of the Home Apps/Phone tab — dynamic filters over the same LauncherApps.getActivityList enumeration the page uses. Apps still belong to their topical folder above; Smart Folders are an orthogonal cross-cut view by manufacturer / install-source. Rule types: pkg_prefix (any pkg starts-with one of values); pkg_eq (any pkg equals one of values); fleet_kind (any pkg that is a constellation-fleet member whose kind — 'app' or 'lib', taken from the CENTRAL classification data/regen.sh → constellation-fleet.json → BuildConfig.CONSTELLATION_FLEET_B64 — is one of values; splits OUR OWN APKs from the companion libraries off the registry, never a hand-maintained package list); install_source_in (the app's install-source-of-record — installingPackageName OR initiatingPackageName from PackageManager.getInstallSourceInfo — IS one of values; use this to bucket apps by the store/installer that owns their updates); install_source_not (install source NOT in values — legacy catch-all for 'anything outside the official stores'); recently_installed (ranking rule: newest firstInstallTime first, capped at `limit`); recent_used (ranking: most-recently-used first via UsageStatsManager.lastTimeUsed, capped at `limit`); active_since (ranking: apps used within the last `window_h` hours, most-recent first, optional `limit`); most_opened (ranking: launch count via MOVE_TO_FOREGROUND events over 7d, capped at `limit`); top_network (ranking: total bytes rx+tx via NetworkStatsManager over 7d, capped at `limit`); top_battery (ranking: estimated mAh via libs:battery EnergyWatchdog.perAppEstimate, capped at `limit`). The five usage/network/battery ranking rules read through libs:datamanager (usage+network) / libs:battery (energy) and ALL need the PACKAGE_USAGE_STATS usage-access grant — without it each degrades to an empty (hidden) folder. The install-source values are real installer package names — verified on-device via /api/phone/classify (which dumps installing/initiating/system per app): com.android.vending=Google Play, com.sec.android.app.samsungapps=Galaxy Store, com.uptodown=Uptodown, org.fdroid.fdroid=F-Droid, com.google.android.packageinstaller=manual sideload (raw APK, no store), com.epicgames.portal=Epic, com.facebook.system=Meta's own installer.",
@@ -8618,6 +8677,46 @@
       "mesh_zones": ["app", "db", "diegonmarcos.com"],
       "test_names": { "public": "github.com", "mesh": "maddy.mesh.diegonmarcos.com" },
       "lookup_timeout_ms": 2500,
+      "_doc_reachability": "#1899 The DNS page's reachability test BY IP, under Test lookup: it never resolves a name, so it tells a DNS failure from a network failure. Every `targets` entry is a well-known public site reached at its fixed address `ip` (an IP literal: network/DnsReach.kt refuses a name here, because a name would need the very resolver under test); `tls_name` is the SNI sent and the name the certificate is checked against. Every `checks` entry is run against every target: `tls: true` is a TCP connect followed by a TLS handshake with certificate and hostname verification, `tls: false` is the TCP connect alone (port 53 is opened, no DNS query is sent, so this is not a resolver of the app's own). Each check runs twice: on the normal socket path every fleet app uses (inside the VPN while one is up) and on a socket bound to the non-VPN network (the same bind FleetDnsBridge uses for its underlying routes; VpnService.protect is not available here because the engine app Cloud-Lib-Net-Wg owns the VPN, not this process). `connect_timeout_ms` bounds the connect and the handshake of one check. The verdict (DnsReach.verdict) holds the normal path's result against Android's resolver answering `test_names`: IPs reachable and lookups failing = DNS is the only issue; IPs unreachable = network/VPN issue, not DNS; mixed = partial. No address or name of this block is a Kotlin literal (test-fleet-dns.sh D4, D8).",
+      "reachability": {
+        "connect_timeout_ms": 4000,
+        "checks": [
+          { "id": "tls", "label": "TLS", "port": 443, "tls": true },
+          { "id": "tcp53", "label": "TCP", "port": 53, "tls": false }
+        ],
+        "targets": [
+          { "id": "cloudflare", "label": "Cloudflare", "ip": "1.1.1.1", "tls_name": "one.one.one.one" },
+          { "id": "google", "label": "Google", "ip": "8.8.8.8", "tls_name": "dns.google" },
+          { "id": "quad9", "label": "Quad9", "ip": "9.9.9.9", "tls_name": "dns.quad9.net" }
+        ]
+      },
+      "_doc_page_fields": "#1899 FIELD PARITY of the DNS page (owner rule 16): every header, button, read-out and input network/DnsFragment.kt drew before the reachability test was added, as the exact source text that draws it. test-fleet-dns.sh D8 fails when one of them is gone from the page (mutation-proved), and holds the new section between Test lookup and Bridges. A field removed on purpose is removed here in the same commit, with the reason in the commit message.",
+      "page_fields": [
+        "ConfigHeader(\"Android Private DNS\")",
+        "ConfigCaption(m.androidText)",
+        "ConfigRadioRow(label, selected = m.androidMode == modeId, tag = modeId)",
+        "Modifier.testTag(\"dns:host\")",
+        "ConfigButton(\"Apply to Android\")",
+        "ConfigHeader(\"Fleet DNS\")",
+        "ConfigCaption(\"Applied once, at the VPN every fleet app resolves through",
+        "selected = p.id == m.presetId, enabled = p.available, tag = p.id,",
+        "ConfigCaption(\"Fallbacks, in the order you tick them: \"",
+        "enabled = f.available, tag = fid) { on -> m.toggleFallback(fid, on) }",
+        "ConfigHeader(\"Status\")",
+        "ConfigReadout(m.statusText,",
+        "ConfigButton(\"Allow the VPN for ",
+        "ConfigButton(\"Test lookup\") { m.testLookup() }",
+        "ConfigReadout(m.results)",
+        "ConfigHeader(\"Bridges\")",
+        "ConfigCaption(\"How each fleet app resolves, as that app reports it",
+        "ConfigReadout(m.bridges)",
+        "ConfigHeader(\"DNS servers\")",
+        "ConfigCaption(\"Every server the presets, the mesh and Android name",
+        "ConfigReadout(m.servers)",
+        "ConfigButton(\"Scan bridges and servers\") { m.scan() }",
+        "ConfigButton(\"Copy all\") { m.copyAll() }",
+        "ConfigButton(\"Export to Markdown\") { m.exportMarkdown() }"
+      ],
       "_doc_self_resolvers": "#794 Fleet code that talks DNS ITSELF instead of asking Android's resolver, so the preset in force does not decide where those lookups go. Each entry is inside a tree 1_cicd/src/data/dns-resolver-guard.json allows (that guard fails the build on any other), and the DNS page's Bridges list flags the app `pkg` names with `what` and `how`. Everything else in the fleet resolves through Android: Kotlin/Java code directly, terminal shells through their 127.0.0.1 SystemDnsBridge, bundled binaries through libs:sysdns ResolverProxy.",
       "self_resolvers": [
         {
@@ -8636,7 +8735,7 @@
           "how": "only the mesh's own bootstrap names (the relay host): the pinned answer from data/mesh.json and DoH by IP (ui.mesh_transport.doh) when the system resolver fails or disagrees with the pin; every other name stays on the preset"
         }
       ],
-      "_doc_mesh_up": "#1797 While a mesh tunnel is UP the VPN carries the fleet resolvers ONLY (the profile's DNS field), whatever the preset: FleetDns.vpnServers. #1152 listed them first and the preset's public servers after them, but Android does not ask in list order (Private DNS Automatic sends every lookup over DoT to the servers that validate, i.e. 1.1.1.1 / 8.8.8.8 and never the hubs; Private DNS Off ranks servers by latency), and a public NXDOMAIN for the mesh zone is final, so every *.mesh.diegonmarcos.com name failed with the tunnel up. The hubs forward every other name upstream (hickory-dns root forwarder 1.1.1.1 / 8.8.8.8; unbound-dns64 forwards to hickory), so public names still resolve. A preset's own servers apply while the mesh is down.",
+      "_doc_mesh_up": "#1924 SUPERSEDES the next sentence for PUBLIC presets: Public open / Public encrypted advertise exactly their declared servers (never a mesh address) with the mesh up or down, and a Private preset carries the fleet resolvers while the mesh resolver is healthy and its fallbacks when SERVFAIL / REFUSED / timeout marked it unhealthy (FleetDns.MeshHealth, re-applied after a debounce). #1797 While a mesh tunnel is UP the VPN carries the fleet resolvers ONLY (the profile's DNS field) for Private and Mirror: FleetDns.vpnServers. #1152 listed them first and the preset's public servers after them, but Android does not ask in list order (Private DNS Automatic sends every lookup over DoT to the servers that validate, i.e. 1.1.1.1 / 8.8.8.8 and never the hubs; Private DNS Off ranks servers by latency), and a public NXDOMAIN for the mesh zone is final, so every *.mesh.diegonmarcos.com name failed with the tunnel up. The hubs forward every other name upstream (hickory-dns root forwarder 1.1.1.1 / 8.8.8.8; unbound-dns64 forwards to hickory), so public names still resolve. A preset's own servers apply while the mesh is down.",
       "_doc_mesh_down": "#751 The choice also holds while Cloud Mesh is DOWN. The WireGuard engine (Cloud-Lib-Net-Wg) owns the phone's one VPN slot; when no mesh tunnel is up it carries the choice as a PEERLESS tunnel named `tunnel_name`: these addresses, the preset's DNS servers, no route, so every app's lookups go to the chosen resolver and all other traffic falls through to the underlying network exactly as it does outside a split mesh. The fleet resolver is unreachable without the mesh, so Private with fallbacks uses its fallbacks alone, and Private only keeps the fleet resolver with a route to nowhere: lookups fail, none leaks to the local network. Mirror releases the slot.",
       "mesh_down": {
         "tunnel_name": "fleet-dns",
@@ -8693,6 +8792,33 @@
       ],
       "_doc_mtu_probe_sizes": "#1797 IP packet sizes (bytes) of the profiler's MTU probe: EDNS0-padded DNS queries to the first mesh's resolver through the tunnel; the largest answered size is reported beside the interface MTU.",
       "mtu_probe_sizes": [576, 1200, 1280, 1340, 1380, 1420],
+      "_doc_status_sections": "#1900 The Status page is three sections, so each datum is drawn once: Status (the current state: lights, tunnel, interface, peers with every handshake / traffic / latency field, DNS, Cloudflare), Profiler (measured results: the per-mesh table, Cloud C3's profiler, Reachability, the fallback path) and Prober (the run controls and the raw per-probe detail: the A..F matrix and the complete Log). Every id of the status page's `rows` is in exactly one section (MeshDeclTest, MeshStatusParityTest); `rows` stays the flat declared order the earlier tests hold. A row moves between sections here, never out of the page.",
+      "status_sections": [
+        { "id": "status", "label": "Status", "rows": ["lights", "state", "vpn", "export", "profile", "interface", "pubkey", "endpoint", "peers", "handshake", "traffic", "latency", "dns", "cloudflare"] },
+        { "id": "profiler", "label": "Profiler", "rows": ["meshes", "profiler", "reachability", "transport"] },
+        { "id": "prober", "label": "Prober", "rows": ["prober", "log"] }
+      ],
+      "_doc_prober": "#1900 What the Prober matrix probes (network/mesh/MeshProber.kt; nothing is a Kotlin literal). Each row is profiled first (interface, DNS, route, mesh peer, fallback), then probed, and its status is the probe's. A private_names (mesh namespace, never a public TLD, rules/addressing.md; vault is the vaultwarden container, mail the stalwart one (fleet_endpoints jmap); the `reach_hosts` and each mesh's service are probed too), B public_urls, C every WireGuard peer (handshake, endpoint, allowed IPs, keepalive), D the fallback ladder (Direct UDP, Pinned IP, DoH, TLS-443 relay: the engine's Test fallbacks), E IPv4 and F IPv6 (each mesh hub's :53 through the tunnel, plus `ip_targets`: well-known sites by fixed IP, no DNS; the DNS page's reachability targets join the IPv4 list). Each probe has its own timeout (`timeout_ms`, a hung probe becomes a FAIL row) and runs on its own thread, `parallel` at a time.",
+      "prober": {
+        "timeout_ms": 4000,
+        "parallel": 6,
+        "private_names": [
+          { "id": "vault", "label": "Vault", "host": "vaultwarden.mesh.diegonmarcos.com" },
+          { "id": "caddy", "label": "Caddy", "host": "caddy.mesh.diegonmarcos.com" },
+          { "id": "mail", "label": "Mail", "host": "stalwart.mesh.diegonmarcos.com" },
+          { "id": "c3-infra-mcp", "label": "C3 Infra MCP", "host": "c3-infra-mcp.mesh.diegonmarcos.com" }
+        ],
+        "public_urls": [
+          { "id": "c3-pub", "label": "c3-pub (Cloudflare edge)", "url": "https://c3-pub.diegonmarcos.com/" },
+          { "id": "www", "label": "www", "url": "https://www.diegonmarcos.com/" },
+          { "id": "github", "label": "GitHub", "url": "https://github.com/" }
+        ],
+        "ip_targets": [
+          { "id": "cloudflare-v6", "label": "Cloudflare", "ip": "2606:4700:4700::1111", "port": 443 },
+          { "id": "google-v6", "label": "Google", "ip": "2001:4860:4860::8888", "port": 443 },
+          { "id": "quad9-v6", "label": "Quad9", "ip": "2620:fe::fe", "port": 443 }
+        ]
+      },
       "handshake": {
         "fresh_s": 150,
         "stale_s": 300
@@ -8759,7 +8885,8 @@
             "reachability",
             "cloudflare",
             "profiler",
-            "log"
+            "log",
+            "prober"
           ],
           "controls": [
             { "id": "status_copy_all", "kind": "action", "label": "Copy all", "engine": "clipboard.all" },
@@ -8770,6 +8897,8 @@
             { "id": "status_profiler_copy", "kind": "action", "label": "Copy report", "engine": "profiler.copy" },
             { "id": "status_profiler_export", "kind": "action", "label": "Export report", "engine": "profiler.export" },
             { "id": "status_log_open", "kind": "switch", "label": "Show the full log here", "default": "off", "engine": "view.statusLog" },
+            { "id": "status_prober_run", "kind": "action", "label": "Run all probes", "engine": "prober.run" },
+            { "id": "status_prober_cancel", "kind": "action", "label": "Cancel probes", "engine": "prober.cancel" },
             { "id": "vpn_connect", "kind": "action", "label": "Connect", "engine": "state.connect" },
             { "id": "vpn_disconnect", "kind": "action", "label": "Disconnect", "engine": "state.disconnect" },
             { "id": "vpn_reconnect", "kind": "action", "label": "Reconnect", "engine": "state.reconnect" },
@@ -10893,18 +11022,37 @@
         "stars_toggle": "stars_anim",
         "shape_key": "background_shape",
         "default_shape": "cube",
+        "_doc_catalogue": "#1915 the catalogue is declared data, in display order: `groups` (3D Polyhedra, 4D Polytopes) then `face_groups` inside each, every shape carrying its label \"{name} - {2D face} / {N} faces\", declared vertex / edge / face counts (proven against the generated geometry by PolytopeMathTest) and `new` for the #1915 additions. Ids never changed (the pre-#1915 ids are the same ids; PolytopeMath.ALIASES adds synonyms), so a saved shape and the auto-cycle membership keys keep working.",
+        "groups": ["3D Polyhedra", "4D Polytopes"],
+        "face_groups": ["Triangle", "Square", "Pentagon", "Pentagram", "Hexagon hybrid"],
         "shapes": [
-          { "id": "tetrahedron", "label": "Tetrahedron", "dim": 3, "group": "3D Platonic" },
-          { "id": "cube", "label": "Cube", "dim": 3, "group": "3D Platonic", "default": true },
-          { "id": "octahedron", "label": "Octahedron", "dim": 3, "group": "3D Platonic" },
-          { "id": "dodecahedron", "label": "Dodecahedron", "dim": 3, "group": "3D Platonic" },
-          { "id": "icosahedron", "label": "Icosahedron", "dim": 3, "group": "3D Platonic" },
-          { "id": "cell5", "label": "5-cell (4D simplex)", "dim": 4, "group": "4D polytopes", "dual_of": "tetrahedron" },
-          { "id": "tesseract", "label": "8-cell · Tesseract", "dim": 4, "group": "4D polytopes", "dual_of": "cube" },
-          { "id": "cell16", "label": "16-cell", "dim": 4, "group": "4D polytopes", "dual_of": "octahedron" },
-          { "id": "cell120", "label": "120-cell", "dim": 4, "group": "4D polytopes", "dual_of": "dodecahedron" },
-          { "id": "cell600", "label": "600-cell", "dim": 4, "group": "4D polytopes", "dual_of": "icosahedron" },
-          { "id": "cell24", "label": "24-cell (self-dual)", "dim": 4, "group": "4D polytopes" }
+          { "id": "tetrahedron", "label": "Tetrahedron - Triangle / 4 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Triangle", "face": "Triangle", "faces": 4, "vertices": 4, "edges": 6 },
+          { "id": "octahedron", "label": "Octahedron - Triangle / 8 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Triangle", "face": "Triangle", "faces": 8, "vertices": 6, "edges": 12 },
+          { "id": "icosahedron", "label": "Icosahedron - Triangle / 20 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Triangle", "face": "Triangle", "faces": 20, "vertices": 12, "edges": 30 },
+          { "id": "great_icosahedron", "label": "Great icosahedron - Triangle / 20 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Triangle", "face": "Triangle", "faces": 20, "vertices": 12, "edges": 30, "new": true },
+          { "id": "cube", "label": "Cube - Square / 6 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Square", "face": "Square", "faces": 6, "vertices": 8, "edges": 12, "default": true },
+          { "id": "dodecahedron", "label": "Dodecahedron - Pentagon / 12 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Pentagon", "face": "Pentagon", "faces": 12, "vertices": 20, "edges": 30 },
+          { "id": "great_dodecahedron", "label": "Great dodecahedron - Pentagon / 12 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Pentagon", "face": "Pentagon", "faces": 12, "vertices": 12, "edges": 30, "new": true },
+          { "id": "small_stellated_dodecahedron", "label": "Small stellated dodecahedron - Pentagram / 12 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Pentagram", "face": "Pentagram", "faces": 12, "vertices": 12, "edges": 30, "new": true },
+          { "id": "great_stellated_dodecahedron", "label": "Great stellated dodecahedron - Pentagram / 12 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Pentagram", "face": "Pentagram", "faces": 12, "vertices": 20, "edges": 30, "new": true },
+          { "id": "hexagonal_prism", "label": "Hexagonal prism - Hexagon + Rectangle / 8 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Hexagon hybrid", "face": "Hexagon + Rectangle", "faces": 8, "composition": "2 hexagons + 6 rectangles", "vertices": 12, "edges": 18, "new": true },
+          { "id": "hexagonal_pyramid", "label": "Hexagonal pyramid - Hexagon + Triangle / 7 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Hexagon hybrid", "face": "Hexagon + Triangle", "faces": 7, "composition": "1 hexagon + 6 triangles", "vertices": 7, "edges": 12, "new": true },
+          { "id": "truncated_tetrahedron", "label": "Truncated tetrahedron - Hexagon + Triangle / 8 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Hexagon hybrid", "face": "Hexagon + Triangle", "faces": 8, "composition": "4 hexagons + 4 triangles", "vertices": 12, "edges": 18, "new": true },
+          { "id": "truncated_octahedron", "label": "Truncated octahedron - Hexagon + Square / 14 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Hexagon hybrid", "face": "Hexagon + Square", "faces": 14, "composition": "8 hexagons + 6 squares", "vertices": 24, "edges": 36, "new": true },
+          { "id": "truncated_icosahedron", "label": "Truncated icosahedron (soccer ball) - Hexagon + Pentagon / 32 faces", "dim": 3, "group": "3D Polyhedra", "face_group": "Hexagon hybrid", "face": "Hexagon + Pentagon", "faces": 32, "composition": "20 hexagons + 12 pentagons", "vertices": 60, "edges": 90, "new": true },
+          { "id": "cell5", "label": "5-cell (4D simplex) - Triangle / 10 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Triangle", "face": "Triangle", "faces": 10, "vertices": 5, "edges": 10, "dual_of": "tetrahedron" },
+          { "id": "cell16", "label": "16-cell - Triangle / 32 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Triangle", "face": "Triangle", "faces": 32, "vertices": 8, "edges": 24, "dual_of": "octahedron" },
+          { "id": "cell24", "label": "24-cell (self-dual) - Triangle / 96 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Triangle", "face": "Triangle", "faces": 96, "vertices": 24, "edges": 96 },
+          { "id": "cell600", "label": "600-cell - Triangle / 1200 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Triangle", "face": "Triangle", "faces": 1200, "vertices": 120, "edges": 720, "dual_of": "icosahedron" },
+          { "id": "icosahedral_120_cell", "label": "Icosahedral 120-cell - Triangle / 1200 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Triangle", "face": "Triangle", "faces": 1200, "vertices": 120, "edges": 720, "new": true },
+          { "id": "tesseract", "label": "8-cell · Tesseract - Square / 24 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Square", "face": "Square", "faces": 24, "vertices": 16, "edges": 32, "dual_of": "cube" },
+          { "id": "cell120", "label": "120-cell - Pentagon / 720 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Pentagon", "face": "Pentagon", "faces": 720, "vertices": 600, "edges": 1200, "dual_of": "dodecahedron" },
+          { "id": "great_120_cell", "label": "Great 120-cell - Pentagon / 720 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Pentagon", "face": "Pentagon", "faces": 720, "vertices": 120, "edges": 720, "new": true },
+          { "id": "grand_120_cell", "label": "Grand 120-cell - Pentagon / 720 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Pentagon", "face": "Pentagon", "faces": 720, "vertices": 120, "edges": 720, "new": true },
+          { "id": "small_stellated_120_cell", "label": "Small stellated 120-cell - Pentagram / 720 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Pentagram", "face": "Pentagram", "faces": 720, "vertices": 120, "edges": 720, "new": true },
+          { "id": "great_stellated_120_cell", "label": "Great stellated 120-cell - Pentagram / 720 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Pentagram", "face": "Pentagram", "faces": 720, "vertices": 120, "edges": 720, "new": true },
+          { "id": "truncated_5_cell", "label": "Truncated 5-cell - Hexagon + Triangle / 30 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Hexagon hybrid", "face": "Hexagon + Triangle", "faces": 30, "composition": "10 hexagons + 20 triangles", "vertices": 20, "edges": 40, "new": true },
+          { "id": "truncated_16_cell", "label": "Truncated 16-cell (truncated hexadecachoron) - Hexagon + Triangle / 96 faces", "dim": 4, "group": "4D Polytopes", "face_group": "Hexagon hybrid", "face": "Hexagon + Triangle", "faces": 96, "composition": "32 hexagons + 64 triangles", "vertices": 48, "edges": 120, "new": true }
         ],
         "cycle": {
           "enable_key": "background_cycle_enabled",

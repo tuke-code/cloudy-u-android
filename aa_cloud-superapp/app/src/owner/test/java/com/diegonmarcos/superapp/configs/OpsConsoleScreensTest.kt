@@ -70,7 +70,7 @@ class OpsConsoleScreensTest : KitPageHarness() {
     }
 
     // ── ADB Shell fixture ──
-    private val decl = TerminalModel.parse(File("../../ab_cloud-libs-shared/libs/shell-broker/src/main/assets/shell-allowlist.json").readText())
+    private val decl = TerminalModel.parse(File("../../fleet-private-data/shell-allowlist.json").readText())
 
     private fun termUi(connected: Boolean): TermUi {
         val st = if (connected) ShellStatus(true, true, "embedded-adb", "ok", 1_762_430_000_000, adb = AdbLink.CONNECTED, adbDetail = "192.168.1.23:37123")
@@ -114,7 +114,7 @@ class OpsConsoleScreensTest : KitPageHarness() {
     }
 
     // ── Perms fixture ──
-    private val cat = PermCatalogue.parse(File("../../ab_cloud-libs-shared/libs/perms/src/main/assets/perms-catalogue.json").readText())
+    private val cat = PermCatalogue.parse(File("../../fleet-private-data/perms-catalogue.json").readText())
     private val rows = cat.entries.mapIndexed { i, e ->
         PermRowState(e, PermStatus(when (i % 7) { 0, 1, 2 -> PermState.GRANTED; 3 -> PermState.DENIED; 4 -> PermState.PERMANENTLY_DENIED; 5 -> PermState.NOT_APPLICABLE; else -> PermState.UNKNOWN },
             if (i % 7 == 4) "asked twice" else ""))

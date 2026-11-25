@@ -23,6 +23,7 @@ import com.diegonmarcos.superapp.notificationcenter.NotifyGroups
 import com.diegonmarcos.superapp.notificationcenter.PhoneNotificationListenerService
 import com.diegonmarcos.superapp.R
 import com.diegonmarcos.superapp.media.LastMediaSession
+import com.diegonmarcos.superapp.media.MediaLaunchers
 
 /**
  * "Cloud SuperApp - Notification Center Media Session" — a rich media-control
@@ -110,8 +111,10 @@ class MediaProxy(private val ctx: Context) {
         if (c == null) {
             // Nothing playing: Play restarts the persisted last session (package + track), the rest have nothing to act on.
             if (target == "media:playpause") LastMediaSession.resume(ctx)
+            if (target == PLAY_LAST) playLast()
             return
         }
+        if (target == PLAY_LAST) { playLast(); return }
         when (target) {
             "media:playpause" ->
                 if (c.playbackState?.state == PlaybackState.STATE_PLAYING) c.transportControls.pause()
@@ -121,6 +124,33 @@ class MediaProxy(private val ctx: Context) {
         }
         lastKey = null // force a re-render on the next refresh
         mainHandler.postDelayed({ refresh() }, 500) // the session callbacks usually do it; this covers a silent transport
+    }
+
+    /** #1923 Play last: resume the last player's own session (any active session of that package, via the listener grant), else a
+     *  MEDIA_PLAY key event to its package (LastMediaSession.resume). */
+    private fun playLast() {
+        val sessions = if (listenerEnabled()) runCatching {
+            (ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager)
+                .getActiveSessions(ComponentName(ctx, PhoneNotificationListenerService::class.java))
+        }.getOrDefault(emptyList()) else emptyList()
+        val pkg = MediaLaunchers.lastPlayer(LastMediaSession.load(ctx)?.pkg,
+            sessions.map { it.packageName to (it.playbackState?.state == PlaybackState.STATE_PLAYING) })
+        val c = sessions.firstOrNull { it.packageName == pkg }
+        if (!LastMediaSession.resume(ctx, c) && pkg != null) runCatching { c?.transportControls?.play() }
+        lastKey = null
+        mainHandler.postDelayed({ refresh() }, 500)
+    }
+
+    /** #1923 the launcher actions for the notification: absent apps hidden, Play last only with a known player. */
+    private fun launcherActions(lastPkg: String?): List<BadgeModel.Action> {
+        val pm = ctx.packageManager
+        return MediaLaunchers.visible({ p -> runCatching { pm.getLaunchIntentForPackage(p) != null }.getOrDefault(false) }, lastPkg).map { (e, pkg) ->
+            val intent = if (e.kind == MediaLaunchers.Kind.PLAY_LAST) pi(PLAY_LAST)
+            else PendingIntent.getActivity(ctx, e.id.hashCode(),
+                pm.getLaunchIntentForPackage(pkg)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            BadgeModel.Action(e.id, e.icon, e.label, intent)
+        }
     }
 
     /** The `media_now_playing` entry of build.json::ui.notification_center —
@@ -167,7 +197,7 @@ class MediaProxy(private val ctx: Context) {
             ?: md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST) ?: ""
         val playing = c.playbackState?.state == PlaybackState.STATE_PLAYING
         val key = "$title|$artist|$playing"
-        if (key == lastKey) return // no change → don't re-post (avoid flicker)
+        if (key == lastKey && NotifyGate.inShade(nm(), null, NOTIF_MEDIA)) return // no change → don't re-post (avoid flicker)
         lastKey = key
         val art = md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART)
@@ -182,7 +212,7 @@ class MediaProxy(private val ctx: Context) {
             // #515: declared, not derived from `playing`. See [persistent].
             .setOngoing(persistent() || playing)
             .apply { if (persistent() || playing) setDeleteIntent(pi(REPOST)) }
-            .let { NotifyGroups.attach(ctx, it, BADGE_ID) } // #777 group G3
+            .let { NotifyGroups.attach(ctx, it, BADGE_ID, summary = false) } // #777 group G3; #1923 the summary follows the child
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         if (art != null) b.setLargeIcon(art)
         BadgeModel.add(b, listOf(
@@ -200,7 +230,7 @@ class MediaProxy(private val ctx: Context) {
         b.setStyle(
             androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0, 1, 2),
         )
-        runCatching { NotifyGate.post(nm(), null, NOTIF_MEDIA, b.build()) }
+        postChild(b)
     }
 
     /**
@@ -212,8 +242,9 @@ class MediaProxy(private val ctx: Context) {
     private fun postIdle() {
         ensureChannel()
         val last = LastMediaSession.load(ctx)
-        val key = "idle|${last?.pkg}|${last?.title}"
-        if (key == lastKey) return
+        val actions = launcherActions(last?.pkg)
+        val key = "idle|${last?.pkg}|${last?.title}|${actions.joinToString(",") { it.id }}"
+        if (key == lastKey && NotifyGate.inShade(nm(), null, NOTIF_MEDIA)) return
         lastKey = key
         val b = NotificationCompat.Builder(ctx, MEDIA_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_notify)
@@ -224,13 +255,26 @@ class MediaProxy(private val ctx: Context) {
             .setOnlyAlertOnce(true)
             .setOngoing(persistent())
             .setDeleteIntent(pi(REPOST))
-            .let { NotifyGroups.attach(ctx, it, BADGE_ID) }
+            .let { NotifyGroups.attach(ctx, it, BADGE_ID, summary = false) } // #1923 the summary follows the child
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         last?.art?.let { b.setLargeIcon(it) }
-        // Play is the only transport that means anything with no session; the
-        // other two would be buttons that silently do nothing.
-        BadgeModel.add(b, BadgeModel.Action("play", android.R.drawable.ic_media_play, "Play", pi("media:playpause")))
-        runCatching { NotifyGate.post(nm(), null, NOTIF_MEDIA, b.build()) }
+        // #1923: Play last, Tidal, Spotify and the Buds app (installed ones only); MediaStyle shows up to 5 actions, 3 compact.
+        // Without a known player the plain Play (nothing else to resume) stays, as before.
+        BadgeModel.add(b, if (actions.isEmpty()) listOf(BadgeModel.Action("play", android.R.drawable.ic_media_play, "Play", pi("media:playpause"))) else actions)
+        b.setStyle(androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(*MediaLaunchers.compact(maxOf(actions.size, 1))))
+        postChild(b)
+    }
+
+    /**
+     * #1923 the Media child goes out FIRST and is re-posted whenever it is not in the shade (the plain post dropped an unchanged
+     * card as a duplicate even after the platform lost it); only then does the group summary follow, and a summary left
+     * without a child is cancelled shortly after. Never a bare "Media" summary row with the actions nowhere.
+     */
+    private fun postChild(b: NotificationCompat.Builder) {
+        val posted = runCatching { NotifyGate.postKept(nm(), null, NOTIF_MEDIA, b.build()) }.isSuccess
+        val g = NotifyGroups.groupOf(BADGE_ID)
+        if (posted && g != null) NotifyGroups.postSummary(ctx, g)
+        mainHandler.postDelayed({ NotifyGroups.pruneEmpty(ctx, BADGE_ID) }, 1500)
     }
 
     fun cancel() {
@@ -262,6 +306,7 @@ class MediaProxy(private val ctx: Context) {
         const val NOTIF_MEDIA = 0xF3
         private const val MEDIA_CHANNEL_ID = "floating_nav_media"
         private const val REPOST = "media:repost"
+        private const val PLAY_LAST = "media:playlast"
 
         /** This badge's id in build.json::ui.notification_center.producers.
          *  The declaration is the contract; this is the key into it. */

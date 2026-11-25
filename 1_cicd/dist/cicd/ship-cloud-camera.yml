@@ -66,12 +66,16 @@ on:
       - "ab_cloud-libs-shared/libs/fleetconfigs-logcat/**"
       - "ab_cloud-libs-shared/libs/fleetconfigs-xray/**"
       - "ab_cloud-libs-shared/libs/location-client/**"
+      - "ab_cloud-libs-shared/libs/ml-l-image-ocr/**"
       - "ab_cloud-libs-shared/libs/ml-l-image/**"
       - "ab_cloud-libs-shared/libs/ml-l-sound/**"
       - "ab_cloud-libs-shared/libs/ml-l-vision-mlkit/**"
+      - "ab_cloud-libs-shared/libs/pdf/**"
       - "ab_cloud-libs-shared/libs/perms/**"
+      - "ab_cloud-libs-shared/libs/scanner/**"
       - "ab_cloud-libs-shared/libs/theme-background/**"
       - "ab_cloud-libs-shared/libs/ui-icons/**"
+      - "ab_cloud-libs-shared/libs/ui-kit/**"
       - "ab_cloud-libs-shared/libs/ui-nav-bars/**"
       - "ac_cloud-camera/**"
       - "!ab_cloud-libs-shared/libs/**/*.md"
@@ -95,18 +99,26 @@ on:
       - "ab_cloud-libs-shared/libs/fleetconfigs-xray/**/res/**"
       - "ab_cloud-libs-shared/libs/location-client/**/assets/**"
       - "ab_cloud-libs-shared/libs/location-client/**/res/**"
+      - "ab_cloud-libs-shared/libs/ml-l-image-ocr/**/assets/**"
+      - "ab_cloud-libs-shared/libs/ml-l-image-ocr/**/res/**"
       - "ab_cloud-libs-shared/libs/ml-l-image/**/assets/**"
       - "ab_cloud-libs-shared/libs/ml-l-image/**/res/**"
       - "ab_cloud-libs-shared/libs/ml-l-sound/**/assets/**"
       - "ab_cloud-libs-shared/libs/ml-l-sound/**/res/**"
       - "ab_cloud-libs-shared/libs/ml-l-vision-mlkit/**/assets/**"
       - "ab_cloud-libs-shared/libs/ml-l-vision-mlkit/**/res/**"
+      - "ab_cloud-libs-shared/libs/pdf/**/assets/**"
+      - "ab_cloud-libs-shared/libs/pdf/**/res/**"
       - "ab_cloud-libs-shared/libs/perms/**/assets/**"
       - "ab_cloud-libs-shared/libs/perms/**/res/**"
+      - "ab_cloud-libs-shared/libs/scanner/**/assets/**"
+      - "ab_cloud-libs-shared/libs/scanner/**/res/**"
       - "ab_cloud-libs-shared/libs/theme-background/**/assets/**"
       - "ab_cloud-libs-shared/libs/theme-background/**/res/**"
       - "ab_cloud-libs-shared/libs/ui-icons/**/assets/**"
       - "ab_cloud-libs-shared/libs/ui-icons/**/res/**"
+      - "ab_cloud-libs-shared/libs/ui-kit/**/assets/**"
+      - "ab_cloud-libs-shared/libs/ui-kit/**/res/**"
       - "ab_cloud-libs-shared/libs/ui-nav-bars/**/assets/**"
       - "ab_cloud-libs-shared/libs/ui-nav-bars/**/res/**"
       - "!ac_cloud-camera/web/**"
@@ -130,6 +142,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout private fleet data
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
 
       # Every application's testers, and — for the 24 that have none — the
       # COVERAGE-GAP line naming exactly what this run did NOT check. Until this
@@ -225,6 +241,9 @@ jobs:
           repository: diegonmarcos/cloud-me-pvt-vault
           token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
           path: .vault
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Install jq
         if: steps.gate.outputs.skip != 'true'

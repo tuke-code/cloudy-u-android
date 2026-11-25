@@ -14,7 +14,7 @@ import java.io.File
  * the X-Ray probes (`exact` lines) and every Background policy / Super Saving command shape (`segments`).
  */
 class SelfAllowlistTest {
-    private val list = Allowlist.parse(File("../../ab_cloud-libs-shared/libs/shell-broker/src/main/assets/shell-allowlist.json").readText())
+    private val list = Allowlist.parse(File("../../fleet-private-data/shell-allowlist.json").readText())
     private val self = "com.diegonmarcos.superapp"
 
     private fun allowed(cmd: String) = assertTrue("refused: $cmd -> ${list.decide(self, cmd)}", list.decide(self, cmd) is Allowlist.Decision.Allow)
@@ -39,7 +39,7 @@ class SelfAllowlistTest {
 
     /** #1519 Grant via shell: the SuperApp grants ITSELF each runtime / adb-only permission of the Perms catalogue by an exact rule, and Location on. */
     @Test fun theSuperAppMayGrantItselfEveryCataloguePermissionAndSwitchLocationOn() {
-        val cat = org.json.JSONObject(File("../../ab_cloud-libs-shared/libs/perms/src/main/assets/perms-catalogue.json").readText()).getJSONArray("entries")
+        val cat = org.json.JSONObject(File("../../fleet-private-data/perms-catalogue.json").readText()).getJSONArray("entries")
         val perms = (0 until cat.length()).map { cat.getJSONObject(it) }
             .filter { it.getString("kind") in setOf("runtime", "adb_only") && it.optString("permission").startsWith("android.permission.") }
             .map { it.getString("permission") }

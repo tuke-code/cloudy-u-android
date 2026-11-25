@@ -28,6 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout private fleet data
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
 
       - name: The guard still fails when an app loses the default handler
         run: bash 1_cicd/src/scripts/test/crash-default-guard.test.sh
@@ -39,3 +43,8 @@ jobs:
         run: |
           bash 1_cicd/src/scripts/test/safe-prefs-guard.test.sh
           python3 1_cicd/src/scripts/cloud-android-safe-prefs-guard.py .
+
+      - name: No unbounded Compose drawText(measurer, ...) (the Cloud Wiki maxWidth crash of #1921)
+        run: |
+          bash 1_cicd/src/scripts/test/draw-text-guard.test.sh
+          python3 1_cicd/src/scripts/cloud-android-draw-text-guard.py .

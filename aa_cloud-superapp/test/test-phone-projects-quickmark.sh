@@ -52,30 +52,30 @@ q '.ui.sections | length' >/dev/null
 
 PHONE_GROUPS='.ui.sections[] | select(.id == "phone") | .phone_app_groups'
 
-echo "== Q1: Projects sits at index 4, between Me and Services (#1769 order) =="
+echo "== Q1: Projects sits at index 8, the last group, after Setup (#1916 MOVED from index 4 between Me and Services · City) =="
 # THE ASSERTION THAT WOULD HAVE CAUGHT THE SHIPPED DEFECT. The index is read
 # from the array rather than searched for by title, and both neighbours are
 # named, because the owner specified a POSITION and not an existence: a group
 # that exists at the wrong index is the same page with the wrong answer on it.
 TITLES="$(q "[$PHONE_GROUPS | .[].title] | @tsv")"
 INDEX_OF_PROJECTS="$(q "[$PHONE_GROUPS | .[].title] | index(\"Projects\") // -1")"
-if [ "$INDEX_OF_PROJECTS" = "4" ]; then
-    ok "phone_app_groups[4] is 'Projects'"
+if [ "$INDEX_OF_PROJECTS" = "8" ]; then
+    ok "phone_app_groups[8] is 'Projects'"
 else
-    bad "'Projects' is at phone_app_groups[$INDEX_OF_PROJECTS], expected 4 — groups are: $TITLES"
+    bad "'Projects' is at phone_app_groups[$INDEX_OF_PROJECTS], expected 8 — groups are: $TITLES"
 fi
-BEFORE="$(q "[$PHONE_GROUPS | .[].title] | .[3] // \"\"")"
-AFTER="$(q "[$PHONE_GROUPS | .[].title] | .[5] // \"\"")"
-[ "$BEFORE" = "Me" ] \
-    && ok "the group before Projects is 'Me'" \
-    || bad "the group before Projects is '${BEFORE:-NOTHING}', expected 'Me'"
-[ "$AFTER" = "Services" ] \
-    && ok "the group after Projects is 'Services'" \
-    || bad "the group after Projects is '${AFTER:-NOTHING}', expected 'Services'"
+BEFORE="$(q "[$PHONE_GROUPS | .[].title] | .[7] // \"\"")"
+AFTER="$(q "[$PHONE_GROUPS | .[].title] | .[9] // \"\"")"
+[ "$BEFORE" = "Setup" ] \
+    && ok "the group before Projects is 'Setup'" \
+    || bad "the group before Projects is '${BEFORE:-NOTHING}', expected 'Setup'"
+[ -z "$AFTER" ] \
+    && ok "no group follows Projects" \
+    || bad "the group after Projects is '$AFTER', expected none"
 LAST="$(q "[$PHONE_GROUPS | .[].title] | last")"
-[ "$LAST" = "Setup" ] \
-    && ok "'Setup' is still the last group" \
-    || bad "the last group is '$LAST', expected 'Setup' — Projects was inserted past the end"
+[ "$LAST" = "Projects" ] \
+    && ok "'Projects' is the last group (#1916), right after Setup" \
+    || bad "the last group is '$LAST', expected 'Projects'"
 
 echo "== Q2: Projects is on QUICKMARKS and on no other surface =="
 # The negative half, and the one the shipped defect needed. Guarding only the
@@ -110,7 +110,7 @@ MOVED="$(q "[$PHONE_GROUPS | .[] | (.packages[]?, (.folders[]?.packages[]?)) | s
     && ok "#1764: ClickUp, FatSecret, Todaii German and NomadMania kept in their real groups (#1769: Google Fit is a duplicate of Samsung Health, dropped from Quickmarks, still in All Apps)" \
     || bad "#1764: $MOVED of the five former Projects apps are in a group, expected 4"
 
-echo "== Q4: the Money folder is inside the Services group (#1764, was Projects) and holds the bank apps =="
+echo "== Q4: the Money folder is inside the Services · City group (#1764, was Projects; #1902 split) and holds the bank apps =="
 # DERIVED, never a second hand-written list. This file's own answer to "which
 # packages are the bank apps" is the -Money folder in ui.phone_folders, so the
 # expected set is read from there -- exact `pkg:` rules only, because the
@@ -118,7 +118,7 @@ echo "== Q4: the Money folder is inside the Services group (#1764, was Projects)
 # classifier pattern is not something a tile can launch. Writing the twelve ids
 # out here again would give the assertion its own copy of the answer, and two
 # copies of an answer are two things that can disagree.
-MONEY_TILES="$(q "[$PHONE_GROUPS | .[] | select(.title == \"Services\") | (.folders // [])[] | select(.label == \"Money\") | .packages[] | if type == \"string\" then . else .pkg end] | sort | join(\" \")")"
+MONEY_TILES="$(q "[$PHONE_GROUPS | .[] | select(.title == \"Services · City\") | (.folders // [])[] | select(.label == \"Money\") | .packages[] | if type == \"string\" then . else .pkg end] | sort | join(\" \")")"
 MONEY_DECLARED="$(q '[.ui.phone_folders[] | select(.id == "svc_money" or .id == "prod_wallet") | .match_keywords[] | select(startswith("pkg:")) | .[4:]] | sort | join(" ")')"
 if [ -z "$MONEY_DECLARED" ]; then
     bad "ui.phone_folders has no svc_money folder to derive the bank-app list from"
@@ -159,7 +159,7 @@ done < <(q '
   | ( [ $root.ui.phone_folders[] | . as $f | (.match_keywords // [])[]
         | select(startswith("pkg:")) | { key: .[4:], value: $f.id } ] | from_entries ) as $pins
   | $root.ui.sections[] | select(.id == "phone") | .phone_app_groups[]
-  | select(.title == "Services" or .title == "Primary")
+  | select(.title == "Services · City" or .title == "Services · Leisure" or .title == "Primary")
   | .title as $group
   | ( (.packages[]? | { where: $group, entry: . }),
       ((.folders // [])[] | .label as $folder | .packages[] | { where: ($group + " > " + $folder), entry: . }) )

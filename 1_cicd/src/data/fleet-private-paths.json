@@ -1,0 +1,15 @@
+{
+  "_doc": "#1566 fleet-private tier-2 datasets: the private copy (cloud-me-pvt-configs fleet-data/2/fleet/<dataset>.json) is materialised by CI into the path the build and the testers read. These paths are gitignored: the public repo never holds the content.",
+  "datasets": {
+    "bg-policy": "fleet-private-data/bg-policy.json",
+    "super-saving": "fleet-private-data/super-saving.json",
+    "apps-mcp-api": "fleet-private-data/apps-mcp-api.json",
+    "appstore-feeds": "fleet-private-data/appstore-feeds.json",
+    "appstore-install-sources": "fleet-private-data/appstore-install-sources.json",
+    "shell-allowlist": "fleet-private-data/shell-allowlist.json",
+    "decisions": "fleet-private-data/decisions.json",
+    "ai": "fleet-private-data/ai.json",
+    "perms-catalogue": "fleet-private-data/perms-catalogue.json",
+    "fleet-config": "fleet-private-data/fleet-config.json"
+  }
+}

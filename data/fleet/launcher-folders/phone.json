@@ -1,62 +1,62 @@
 {
   "schemaVersion": 1,
-  "_doc": "#1553 TABLE 1 - Phone-scope folder HIERARCHY for Configs > Launcher > Folders. The ids/labels/order are the launcher's own phone taxonomy (aa_cloud-superapp/build.json::ui.phone_folders, baked into PhoneFolders/PhoneAppClassifier), grouped here into sections so the page reads as sections -> folders. The ids match the grid's folder ids 1:1 so a user re-assignment on this page (a Phone-scope override) moves the app in the launcher grid via FolderGridBridge. The 'others' sink is synthesised at runtime and is never declared. Third-party installed apps that match no folder fall to Others until assigned - by design. #1806: Services (+) folders follow ui.services_order (Search | News Events Media Center Games | Shopping Jobs & Business Real Estate Health | Money | Hotels Transports City Mobility | KG Store); ~Health and ~Outdoor & Sport are one ~Health Trackers (svc_health).",
+  "_doc": "#1553 TABLE 1 - Phone-scope folder HIERARCHY for Configs > Launcher > Folders. The ids/labels/order are the launcher's own phone taxonomy (aa_cloud-superapp/build.json::ui.phone_folders, baked into PhoneFolders/PhoneAppClassifier), grouped here into sections so the page reads as sections -> folders. The ids match the grid's folder ids 1:1 so a user re-assignment on this page (a Phone-scope override) moves the app in the launcher grid via FolderGridBridge. The 'others' sink is synthesised at runtime and is never declared. Third-party installed apps that match no folder fall to Others until assigned - by design. #1902: the Services (+ City, % Leisure) folders and the AGI tail follow ui.services_order (Services · City = Money | Shopping Health Real Estate Jobs & Business | City Mobility Transports Hotels; Services · Leisure = News | Events Media Center Social Games; AGI ends Search KG Store); ~Health and ~Outdoor & Sport are one ~Health Trackers (svc_health).",
   "folders": [
     {
-      "section": "Tools · Primary",
-      "id": "prod_web",
-      "label": "=Browser",
+      "section": "Tools · Data",
+      "id": "prod_storage",
+      "label": ".Drive",
       "icon": "",
       "order": 110
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_maps",
-      "label": "=Nav",
+      "section": "Tools · Data",
+      "id": "prod_web",
+      "label": ".Browser",
       "icon": "",
       "order": 120
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_calc",
-      "label": "=Calc",
+      "section": "Tools · Data",
+      "id": "data_gallery",
+      "label": ".Gallery",
       "icon": "",
       "order": 130
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_camera",
-      "label": "=Camera",
+      "section": "Tools · Data",
+      "id": "prod_docs",
+      "label": ".Notes",
       "icon": "",
       "order": 140
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_canvas",
-      "label": "=Canvas",
-      "icon": "",
-      "order": 145
-    },
-    {
-      "section": "Tools · Primary",
-      "id": "sys_keyboards",
-      "label": "=Keyboard",
+      "section": "Tools · Data",
+      "id": "prod_plan",
+      "label": ".Agenda",
       "icon": "",
       "order": 150
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_wallet",
-      "label": "=Wallet",
+      "section": "Tools · Data",
+      "id": "data_vault",
+      "label": ".Vault",
       "icon": "",
       "order": 160
     },
     {
-      "section": "Tools · Primary",
-      "id": "prod_utils",
-      "label": "=Utilities",
+      "section": "Tools · Data",
+      "id": "prod_wallet",
+      "label": ".Wallet",
       "icon": "",
       "order": 170
+    },
+    {
+      "section": "Tools · Data",
+      "id": "prod_office",
+      "label": ".Office",
+      "icon": "",
+      "order": 180
     },
     {
       "section": "Tools · Communication",
@@ -94,53 +94,46 @@
       "order": 250
     },
     {
-      "section": "Tools · Communication",
-      "id": "media_social",
-      "label": "@Social",
-      "icon": "",
-      "order": 260
-    },
-    {
-      "section": "Tools · Data",
-      "id": "prod_storage",
-      "label": ".Drive",
+      "section": "Tools · Primary",
+      "id": "prod_maps",
+      "label": "=Nav",
       "icon": "",
       "order": 310
     },
     {
-      "section": "Tools · Data",
-      "id": "prod_docs",
-      "label": ".Notes",
+      "section": "Tools · Primary",
+      "id": "prod_camera",
+      "label": "=Camera",
       "icon": "",
       "order": 320
     },
     {
-      "section": "Tools · Data",
-      "id": "prod_plan",
-      "label": ".Agenda",
+      "section": "Tools · Primary",
+      "id": "prod_canvas",
+      "label": "=Canvas",
       "icon": "",
       "order": 330
     },
     {
-      "section": "Tools · Data",
-      "id": "prod_office",
-      "label": ".Office",
+      "section": "Tools · Primary",
+      "id": "sys_keyboards",
+      "label": "=Keyboard",
       "icon": "",
       "order": 340
     },
     {
-      "section": "Tools · Data",
-      "id": "data_gallery",
-      "label": ".Gallery",
+      "section": "Tools · Primary",
+      "id": "prod_calc",
+      "label": "=Calc",
       "icon": "",
       "order": 350
     },
     {
-      "section": "Tools · Data",
-      "id": "data_vault",
-      "label": ".Vault",
+      "section": "Tools · Primary",
+      "id": "prod_utils",
+      "label": "=Utilities",
       "icon": "",
-      "order": 370
+      "order": 360
     },
     {
       "section": "Tools · Me",
@@ -192,137 +185,95 @@
       "order": 480
     },
     {
-      "section": "Projects",
-      "id": "proj_superapp",
-      "label": "#SuperApp",
+      "section": "Services · City",
+      "id": "svc_money",
+      "label": "+Money",
       "icon": "",
       "order": 510
     },
     {
-      "section": "Projects",
-      "id": "proj_omniverse",
-      "label": "#Omniverse",
+      "section": "Services · City",
+      "id": "svc_shopping",
+      "label": "+Shopping",
+      "icon": "",
+      "order": 515
+    },
+    {
+      "section": "Services · City",
+      "id": "svc_healthcare",
+      "label": "+Health",
       "icon": "",
       "order": 520
     },
     {
-      "section": "Projects",
-      "id": "proj_finterm",
-      "label": "#FinTerm",
+      "section": "Services · City",
+      "id": "svc_realestate",
+      "label": "+Real Estate",
+      "icon": "",
+      "order": 525
+    },
+    {
+      "section": "Services · City",
+      "id": "svc_jobs",
+      "label": "+Jobs & Business",
       "icon": "",
       "order": 530
     },
     {
-      "section": "Projects",
-      "id": "proj_cad",
-      "label": "#CAD",
+      "section": "Services · City",
+      "id": "svc_mobility",
+      "label": "+City Mobility",
+      "icon": "",
+      "order": 535
+    },
+    {
+      "section": "Services · City",
+      "id": "svc_transports",
+      "label": "+Transports",
       "icon": "",
       "order": 540
     },
     {
-      "section": "Projects",
-      "id": "proj_biomed",
-      "label": "#BioMed",
+      "section": "Services · City",
+      "id": "svc_hotels",
+      "label": "+Hotels",
       "icon": "",
-      "order": 550
+      "order": 545
     },
     {
-      "section": "Services",
-      "id": "svc_search",
-      "label": "+Search",
+      "section": "Services · Leisure",
+      "id": "hlth_news",
+      "label": "%News",
       "icon": "",
       "order": 610
     },
     {
-      "section": "Services",
-      "id": "hlth_news",
-      "label": "+News",
+      "section": "Services · Leisure",
+      "id": "svc_events",
+      "label": "%Events",
       "icon": "",
       "order": 615
     },
     {
-      "section": "Services",
-      "id": "svc_events",
-      "label": "+Events",
+      "section": "Services · Leisure",
+      "id": "media_video",
+      "label": "%Media Center",
       "icon": "",
       "order": 620
     },
     {
-      "section": "Services",
-      "id": "media_video",
-      "label": "+Media Center",
+      "section": "Services · Leisure",
+      "id": "media_social",
+      "label": "%Social",
       "icon": "",
       "order": 625
     },
     {
-      "section": "Services",
+      "section": "Services · Leisure",
       "id": "media_games",
-      "label": "+Games",
+      "label": "%Games",
       "icon": "",
       "order": 630
-    },
-    {
-      "section": "Services",
-      "id": "svc_shopping",
-      "label": "+Shopping",
-      "icon": "",
-      "order": 635
-    },
-    {
-      "section": "Services",
-      "id": "svc_jobs",
-      "label": "+Jobs & Business",
-      "icon": "",
-      "order": 640
-    },
-    {
-      "section": "Services",
-      "id": "svc_realestate",
-      "label": "+Real Estate",
-      "icon": "",
-      "order": 645
-    },
-    {
-      "section": "Services",
-      "id": "svc_healthcare",
-      "label": "+Health",
-      "icon": "",
-      "order": 650
-    },
-    {
-      "section": "Services",
-      "id": "svc_money",
-      "label": "+Money",
-      "icon": "",
-      "order": 655
-    },
-    {
-      "section": "Services",
-      "id": "svc_hotels",
-      "label": "+Hotels",
-      "icon": "",
-      "order": 660
-    },
-    {
-      "section": "Services",
-      "id": "svc_transports",
-      "label": "+Transports",
-      "icon": "",
-      "order": 665
-    },
-    {
-      "section": "Services",
-      "id": "svc_mobility",
-      "label": "+City Mobility",
-      "icon": "",
-      "order": 670
-    },
-    {
-      "section": "Services",
-      "id": "svc_kgstore",
-      "label": "+KG Store",
-      "icon": "",
-      "order": 675
     },
     {
       "section": "AGI",
@@ -340,6 +291,13 @@
     },
     {
       "section": "AGI",
+      "id": "agi_tools",
+      "label": "*Tools",
+      "icon": "",
+      "order": 725
+    },
+    {
+      "section": "AGI",
       "id": "prod_terminals",
       "label": "*Terminal",
       "icon": "",
@@ -347,10 +305,17 @@
     },
     {
       "section": "AGI",
-      "id": "agi_tools",
-      "label": "*Tools",
+      "id": "svc_search",
+      "label": "*Search",
       "icon": "",
       "order": 740
+    },
+    {
+      "section": "AGI",
+      "id": "svc_kgstore",
+      "label": "*KG Store",
+      "icon": "",
+      "order": 750
     },
     {
       "section": "Setup",
@@ -402,11 +367,46 @@
       "order": 870
     },
     {
+      "section": "Projects",
+      "id": "proj_superapp",
+      "label": "#SuperApp",
+      "icon": "",
+      "order": 910
+    },
+    {
+      "section": "Projects",
+      "id": "proj_omniverse",
+      "label": "#Omniverse",
+      "icon": "",
+      "order": 920
+    },
+    {
+      "section": "Projects",
+      "id": "proj_finterm",
+      "label": "#FinTerm",
+      "icon": "",
+      "order": 930
+    },
+    {
+      "section": "Projects",
+      "id": "proj_cad",
+      "label": "#CAD",
+      "icon": "",
+      "order": 940
+    },
+    {
+      "section": "Projects",
+      "id": "proj_biomed",
+      "label": "#BioMed",
+      "icon": "",
+      "order": 950
+    },
+    {
       "section": "Others",
       "id": "misc",
       "label": "Misc",
       "icon": "",
-      "order": 910
+      "order": 980
     }
   ]
 }

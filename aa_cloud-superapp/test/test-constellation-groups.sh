@@ -302,7 +302,7 @@ echo "== T9: #660 a tab that is not a TYPE OF APK is not on the type line =="
 # CI-CD and Perms narrow nothing: the feeds' declared endpoints carry no type,
 # and the Perms tab walks the whole fleet. So they get their own line, and WHICH
 # line a tab sits on is which declaration it came from - never a list here.
-FEEDS_ASSET="$LIBS/appstore/src/main/assets/appstore-feeds.json"
+FEEDS_ASSET="${FLEET_PRIVATE_DIR:-$ROOT/fleet-private-data}/appstore-feeds.json"   # #1566 fleet-private: CI materialises it
 [ -f "$FEEDS_ASSET" ] || { echo "ERROR: missing $FEEDS_ASSET" >&2; exit 2; }
 
 # (a) The two lines must not be concatenated back into one. This is the exact
@@ -372,7 +372,7 @@ command grep -qE 'if \((labels|line)\.isEmpty\(\)\) continue' "$TABS" \
 #     assets/appstore-controls.json, so there is no exemption left. Derived from
 #     ALL THREE declarations, so the assertion count grows when any gains an
 #     entry: a pinned list would not move.
-CONTROLS_ASSET="$LIBS/appstore/src/main/assets/appstore-controls.json"
+CONTROLS_ASSET="$ROOT/data/fleet/appstore-controls.json"   # #1562 a served dataset
 [ -f "$CONTROLS_ASSET" ] || { echo "ERROR: missing $CONTROLS_ASSET" >&2; exit 2; }
 for label in $(jq -r '.groups[].label' "$FLEET" | tr ' ' '\036') \
              $(jq -r '.feeds[].label' "$FEEDS_ASSET" | tr ' ' '\036') \

@@ -136,6 +136,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Checkout private fleet data
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
 
       # Every application's testers, and — for the 24 that have none — the
       # COVERAGE-GAP line naming exactly what this run did NOT check. Until this
@@ -206,6 +210,9 @@ jobs:
           repository: diegonmarcos/cloud-me-pvt-vault
           token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
           path: .vault
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Install jq
         if: steps.gate.outputs.skip != 'true'
@@ -373,6 +380,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Checkout private fleet data
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
 
       # #1783: this job publishes BOTH Vault assets (one universal fork APK, staged as Cloud-Vault.apk and
       # Cloud-Vault-x86_64.apk) and was the one fleet publisher with no publish gate: every push its trigger
@@ -422,6 +433,9 @@ jobs:
           repository: diegonmarcos/cloud-me-pvt-vault
           token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
           path: .vault
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
 
       # The fork signs with the same sops-encrypted shared key as the WebView
       # job — sops must be on PATH before build-fork's signing step (an early

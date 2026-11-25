@@ -84,7 +84,7 @@ for needle, what in (("PhoneAppActions.installerOf(ctx, pkg)", "origin_store is 
     else: bad("AppInventory: " + what + " - missing " + needle)
 if "PhoneAppActions.sources(app)" in phone: ok("the import reads the map shipped in assets")
 else: bad("the import does not read PhoneAppActions.sources")
-src = json.loads(read(os.path.join(lib, "assets/appstore-install-sources.json")))
+src = json.loads(read(os.path.join(os.environ.get("FLEET_PRIVATE_DIR") or os.path.join(lib, "../../../../../fleet-private-data"), "appstore-install-sources.json")))   # #1566 fleet-private: CI materialises it
 installers = sorted(src["sources"])
 dup = ["%s: %s" % (f, k) for f, t in kt.items() for k in installers if '"%s"' % k in t]
 dup += [f for f, t in kt.items() if '"deeplink"' in t and f != "PhoneAppActions.kt"]
@@ -94,7 +94,7 @@ dup += [f for f, t in kt.items() if '"deeplink"' in t and f != "PhoneAppActions.
 # filename, which a pinned-name check would have allowed) and stops failing on a
 # declaration that installs nothing: #642's read-only commits/CI-CD feed reader
 # is not an installer map and never was.
-maps = sorted(os.path.basename(p) for p in glob.glob(os.path.join(lib, "assets/*.json"))
+maps = sorted(os.path.basename(p) for p in glob.glob(os.path.join(os.environ.get("FLEET_PRIVATE_DIR") or os.path.join(lib, "../../../../../fleet-private-data"), "*.json"))
               if {"sources", "resolver"} & set(json.loads(read(p))))
 if installers and not dup and maps == ["appstore-install-sources.json"]:
     ok("one map (%s), read only by PhoneAppActions" % ", ".join(installers))

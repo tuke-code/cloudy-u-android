@@ -76,6 +76,7 @@ import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.ui.res.colorResource
+import com.diegonmarcos.cloudsuperintel.NotebookConfig
 import com.diegonmarcos.cloudsuperintel.Persona
 import com.diegonmarcos.superapp.bottomnav.TopBarDrawerWithActions
 import com.diegonmarcos.superapp.bottomnav.rememberAccountLauncher
@@ -117,11 +118,14 @@ fun siAiTheme(): AiTheme = materialAiTheme(
 @Composable
 fun SiShell() {
     val ctx = LocalContext.current.applicationContext
-    val personas = remember { SiAi.personas(ctx) }
-    val siDefault = remember { SiAi.defaultId(ctx) }
+    // #1547 the personas and the notebook's knobs are served datasets: the default router and the default notebook config show while they load.
+    val personas by produceState(SiAi.personas(ctx), ctx) { SiAi.observe(ctx).collect { value = SiAi.personas(ctx) } }
+    val siDefault = SiAi.defaultId(ctx)
     val notebooks = remember { NotebookModel(ctx) }
+    LaunchedEffect(notebooks) { NotebookConfig.observe(ctx).collect { if (it != null) notebooks.cfg = it } }
     val nav = Decl.nav
-    val aiPages = remember { AiData.pages(AiData.asset(ctx, AiData.PAGES)) }
+    // #1562 the page declaration is a served dataset: no Context page until it is served (never a crash), then it appears.
+    val aiPages by produceState(AiData.readPages(ctx), ctx) { AiData.observePages(ctx).collect { if (it != null) value = it } }
     var section by rememberSaveable { mutableStateOf(nav.default()?.id ?: Decl.SECTION_SI) }
     var page by rememberSaveable { mutableStateOf<String?>(null) }
     // #1630 Settings (the app's Configs) ends with the fleet-default tail: {own tabs} | Agents, Perms, Logcat, X-Ray App, About.

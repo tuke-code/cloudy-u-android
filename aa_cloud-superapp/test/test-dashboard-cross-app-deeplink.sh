@@ -57,7 +57,7 @@ d = json.load(open(sys.argv[1]))
 cloud = next(s for s in d["ui"]["sections"] if s["id"] == "cloud")
 group = next(g for g in cloud["tile_groups"] if g["title"] == "Me")
 tiles = {t.get("id"): t for t in group["tiles"]}
-want = {"myhealth": "extapp:cloud-me#page:health/home"}
+want = {"myhealth": "extapp:cloud-me#page:pers/pers-profiles"}   # #1903 Me-Pers (was Me-Health, page:health/home: still resolves through ui.renamed)
 for tid, target in want.items():
     assert tid in tiles, f"Me tile {tid} is gone — the icon must remain"
     assert tiles[tid]["target"] == target, (tid, tiles[tid]["target"], "!=", target)
@@ -111,6 +111,11 @@ for t in links:
     frag = t.split("#", 1)[1]
     assert frag.startswith("page:"), f"{t}: only page: targets are deep-linkable today"
     sec, _, pg = frag.removeprefix("page:").partition("/")
+    # #1901 Cloud-Me's old section and page ids (health/home ...) resolve through its ui.renamed, as LegacyRoutes does before MainActivity.open
+    ren = me["ui"].get("renamed", {})
+    to = ren.get("pages", {}).get(f"{sec}/{pg}" if pg else sec)
+    if to: sec, _, pg = to.partition("/")
+    else: sec = ren.get("sections", {}).get(sec, sec)
     assert sec in pages, f"{t}: Cloud-Me has no section '{sec}'"
     assert pg in pages[sec], f"{t}: Cloud-Me section '{sec}' has no page '{pg}'"
 PY
@@ -148,7 +153,8 @@ ROWS = {
     # then MySocials, MyBuro, MyHealth, MyStudy, MyTrips as the owner ordered. Agenda left the row (it is
     # reachable inside the Me app); the old rules projects-me-sep-0/1/2 went with the old layout.
     # Owner order (Cloud Me restructure): Lnktree | Me-Health Experiences Socials | Me-Inventory Me-Buro Me-LLC | Profile.
-    "Me": ["me", "me-sep-1", "myhealth", "myexperiences", "myroadmap", "me-sep-2", "myduties", "myburo", "myllc", "me-sep-3", "tools-account"],
+    # #1903 the Me row reads Lnktree | Me-Pers Me-Prof Me-Prj | Me-Invent. Me-Buro Me-LLC: Profile left it (tile configs-profile stays in Setup), tile ids unchanged.
+    "Me": ["me", "me-sep-1", "myhealth", "myexperiences", "myroadmap", "me-sep-2", "myduties", "myburo", "myllc"],
     # (#1331: the row is now Lnktree; before it held seven named boards (#1212), and task 311 had removed PM Boards, PM C3 and the
     # "|" between them. The rule had marked the board LIST off from the named
     # boards; with the list gone there are no longer two kinds of destination in
@@ -167,7 +173,6 @@ ROWS_SOON = {"circusverse"}   # #1778 the coming_soon placeholders of the rows p
 TARGETS = {
     # The Me app itself: launches Cloud-Me at its front door (no #page fragment). #1092 dropped the Agenda
     # tile from this row, so its deep link is no longer pinned here.
-    "tools-account": "extapp:cloud-me#page:profile/profile",   # #1440 Profile -> Cloud Me profile page
     "me":        "extapp:cloud-me",
     # #1335: the Lnktree row's tiles LAUNCH the Lnktree family apps (test-lnktree-row.sh pins the row, ad_*/test/test-lnktree-app.sh the pages).
     # owner 2026-10-30: SuperApp leads Lnktree (moved from Configs); #1153 app:// own-task launch, T7 pins the mechanics.
@@ -177,9 +182,9 @@ TARGETS = {
     "finterm": "extapp:capital-stack-finterminal",
     "cad": "extapp:hardtech-cad",
     "biomed": "extapp:hardtech-biomed",
-    "myhealth":    "extapp:cloud-me#page:health/home",
-    "myexperiences": "extapp:cloud-me#page:experiences/work",
-    "myroadmap":   "extapp:cloud-me#page:socials/socials-professional",
+    "myhealth":    "extapp:cloud-me#page:pers/pers-profiles",   # #1903 Me-Pers
+    "myexperiences": "extapp:cloud-me#page:prof/prof-profiles",   # #1903 Me-Prof
+    "myroadmap":   "extapp:cloud-me#page:proj/lnktree-site",      # #1903 Me-Prj
     "myduties":    "extapp:cloud-me#page:tasks/backlogs",
     "myburo":      "extapp:cloud-me#page:buro/ids",
     "myllc":       "extapp:cloud-me#page:llc/employed",
@@ -284,11 +289,13 @@ titles = [g["title"] for g in cloud["tile_groups"]]
 want = [c["label"] for c in json.load(open(sys.argv[2]))["app_categories"] if c["id"] != "other"]
 assert titles == want, (titles, "!=", want, "regen: data/regen.sh --constellation-only")
 g = {x["title"]: [t.get("label") for t in x["tiles"]] for x in cloud["tile_groups"]}
-assert g["Me"] == ["Lnktree", "|", "Me-Health", "Experienc.", "Socials", "|", "Me-Invent.", "Me-Buro", "Me-LLC", "|", "Profile"], g["Me"]  # #1440 Account -> Profile (Cloud Me profile page)
+assert g["Me"] == ["Lnktree", "|", "Me-Pers", "Me-Prof", "Me-Prj", "|", "Me-Invent.", "Me-Buro", "Me-LLC"], g["Me"]  # #1903
+assert g["Setup"][-2:] == ["Profile", "About"], g["Setup"]  # #1903 the Profile tile left Me and is still reachable in Setup (Profile | About)
 # #1627 renamed 'Tools Primary'->'Primary' and 'Data Apps'->'Data'; Drive moved Data->Primary, Vault moved Primary->Data,
 # and a second Me tile (data-me) was added to Data. Primary now ends Writer, '||', Wallet; Account stays out of Primary.
-assert g["Primary"][-2:] == ["||", "Wallet"] and "Account" not in g["Primary"] and "Vault" not in g["Primary"], g["Primary"]
-assert "Vault" in g["Data"] and "Me" in g["Data"], g["Data"]  # #1627 Vault and a Me tile close the Data row (after '||')
+# #1916 MOVED: Primary ends Calc (Navigation, Camera, Canvas, Keyboard, Calc); Wallet moved to Data (Drive Browser Gallery Notes | Me Tasks Vault Wallet | Office).
+assert g["Primary"][-1] == "Calc" and "Wallet" not in g["Primary"] and "Account" not in g["Primary"] and "Vault" not in g["Primary"], g["Primary"]
+assert "Vault" in g["Data"] and "Me" in g["Data"] and "Wallet" in g["Data"] and g["Data"].index("Wallet") == g["Data"].index("Vault") + 1, g["Data"]
 assert "Me" not in g["Primary"], g["Primary"]
 assert "Account" in g["Setup"], "Account must stay in Setup (was Configs, #1755; intentional duplicate)"
 ids = [t["id"] for x in cloud["tile_groups"] for t in x["tiles"] if t.get("id")]

@@ -28,15 +28,16 @@ KT="$APP/app/src/main/java/com/diegonmarcos/superapp"
 LIB="$ROOT/ab_cloud-libs-shared/libs/wifi"
 LK="$LIB/src/main/java/com/diegonmarcos/superapp/wifi"
 LA="$LIB/src/main/assets/wifi"
+FL="$ROOT/data/fleet"   # #1547 the analyzer defaults are the served shared dataset wifi-config, not a lib asset
 PK="$ROOT/data/fleet/packs"   # #1547 the OUI table is a downloadable pack, no longer a lib asset
 for f in "$BJ" "$KT/configs/WifiFragment.kt" "$KT/launcher/SectionPages.kt" "$LIB/build.gradle" "$LIB/src/main/AndroidManifest.xml" "$LK/WifiUi.kt" \
-         "$LK/WifiTabs.kt" "$PK/wifi-oui.tsv" "$PK/wifi-oui.json" "$LA/channel-plans.json" "$LA/wifi-config.json" "$LIB/src/main/res/values/strings.xml" "$LIB/src/main/res/values-es/strings.xml"; do
+         "$LK/WifiTabs.kt" "$PK/wifi-oui.tsv" "$PK/wifi-oui.json" "$FL/channel-plans.json" "$FL/wifi-config.json" "$LIB/src/main/res/values/strings.xml" "$LIB/src/main/res/values-es/strings.xml"; do
   [ -f "$f" ] || { echo "  ABORT: no such file: $f"; exit 2; }
 done
 command -v python3 >/dev/null 2>&1 || { echo "  ABORT: python3 missing"; exit 2; }
 
 echo "== W1: the page, its place and its five tabs =="
-check "$(python3 - "$BJ" "$LA/wifi-config.json" <<'PY'
+check "$(python3 - "$BJ" "$FL/wifi-config.json" <<'PY'
 import json, sys
 sec = next(s for s in json.load(open(sys.argv[1]))['ui']['sections'] if s['id'] == 'config')
 pages = sec['pages']; by = {p['id']: p for p in pages}
@@ -113,14 +114,14 @@ for w in 'startScan' 'isScanThrottleEnabled' 'is80211mcResponder' 'is80211azNtbR
 done
 
 echo "== W4: the vocabulary is data =="
-check "$(python3 - "$LA" "$BJ" "$PK" <<'PY'
+check "$(python3 - "$LA" "$BJ" "$PK" "$FL" <<'PY'
 import json, re, sys
 d = sys.argv[1]; probs = []
 keys = [l[:6] for l in open(sys.argv[3] + '/wifi-oui.tsv', encoding='utf-8') if l and l[0] != '#']
 if len(keys) < 30000: probs.append('OUI table has %d entries' % len(keys))
 if keys != sorted(set(keys)): probs.append('OUI keys not sorted / unique')
 if any(not re.fullmatch(r'[0-9A-F]{6}', k) for k in keys): probs.append('OUI key not 6 hex')
-plans = json.load(open(d + '/channel-plans.json'))
+plans = json.load(open(sys.argv[4] + '/channel-plans.json'))
 ids = [p['id'] for p in plans['plans']]
 if plans['default'] not in ids: probs.append('default plan missing')
 cc = [c for p in plans['plans'] for c in p['countries']]
@@ -131,7 +132,7 @@ for p in plans['plans']:
         if len(ns) != len(set(ns)): probs.append('%s %s duplicate' % (p['id'], b))
         ok = {'2.4': range(1, 15), '5': range(32, 178), '6': range(1, 234)}[b]
         if any(n not in ok for n in ns): probs.append('%s %s out of range' % (p['id'], b))
-cfg = json.load(open(d + '/wifi-config.json'))
+cfg = json.load(open(sys.argv[4] + '/wifi-config.json'))
 for k in ('rssi', 'smoothing', 'scan', 'ping', 'traceroute', 'port_scan', 'sweep', 'throughput', 'locator', 'heatmap', 'ports', 'nsd_types'):
     if k not in cfg: probs.append('config lacks ' + k)
 if cfg.get('port_scan', {}).get('max_ports', 0) > 4096: probs.append('port scan unbounded')
@@ -143,6 +144,13 @@ PY
 )" "OUI = sorted IEEE registry, channel plans valid, config bounds every tool, build.json declares the throughput endpoint"
 grep -rqE '"(F0D1A9|001A11|B827EB)"' "$LK" && bad "a vendor prefix is typed in Kotlin" || ok "no vendor table in Kotlin (packs/wifi-oui.tsv is the only list)"
 grep -rqE 'listOf\((36, 40, 44, 48|1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)' "$LK" && bad "a channel list is typed in Kotlin" || ok "no channel plan in Kotlin (channel-plans.json is the only list)"
+
+# #1547 the analyzer's data is served (wifi-config, channel-plans, packs/wifi-oui), never an APK asset: the lib's assets hold no JSON, and the check goes red when one is baked back (mutation)
+baked() { find "$1" -name '*.json' 2>/dev/null | head -1; }
+[ -z "$(baked "$LA")" ] && ok "libs:wifi bakes no JSON asset" || bad "libs:wifi bakes $(baked "$LA") (it is a served dataset)"
+MUT="$(mktemp -d)"; echo '{}' > "$MUT/wifi-config.json"
+[ -n "$(baked "$MUT")" ] && ok "mutant: a baked wifi JSON is caught" || bad "mutant: a baked wifi JSON went unnoticed"
+rm -rf "$MUT"
 
 echo "== W5: permissions =="
 M="$LIB/src/main/AndroidManifest.xml"

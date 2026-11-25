@@ -43,6 +43,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Checkout private fleet data
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
 
       # Tests first, deliberately NOT gated on the publish gate: editing a
       # tester does not move the APK, and gating it would let a new assertion
@@ -106,6 +110,9 @@ jobs:
           repository: diegonmarcos/cloud-me-pvt-vault
           token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
           path: .vault
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
 
       # Gerrit serves neither sha fetches nor blob filters, so the pinned clone
       # is a ten-minute, 480 MB fetch. Cached by revision; saved right after

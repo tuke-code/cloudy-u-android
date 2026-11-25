@@ -21,7 +21,8 @@ class LnktreeCacheDeclTest {
 
     @Test fun `the declared values are what the app reads`() {
         assertTrue(cfg.enabled)
-        assertEquals("lnktree", cfg.section)
+        assertEquals("proj", cfg.section)   // #1901 the Lnktree section is Proj
+        assertEquals(listOf("pers", "prof", "proj"), cfg.cachedSections())
         assertEquals(7 * 24 * 60 * 60 * 1000L, cfg.ttlMs)
         assertTrue(cfg.prefetchEnabled)
         assertEquals(3, cfg.prefetchConcurrency)
@@ -49,11 +50,13 @@ class LnktreeCacheDeclTest {
     }
 
     @Test fun `the pages the cache covers are the https web pages of the section`() {
-        val ids = listOf("leafy", "nexus", "stark", "astro", "lnktree-site", "professional", "personal", "social", "health", "dd", "area-unix")
-        val got = ids.mapNotNull { LnktreePages.fromStack(it, JSONArray(BuroLlcTestData.text("data/ui/lnktree/$it.json")), cfg) }
-        assertEquals(setOf("leafy", "nexus", "stark", "astro", "lnktree-site"), got.map { it.id }.toSet())
+        val files = mapOf("leafy" to "prof/leafy", "nexus" to "prof/nexus", "stark" to "prof/stark", "astro" to "pers/astro", "lt-lnktree-site" to "lnktree/lt-lnktree-site",
+            "personal" to "pers/pers-profiles/personal", "professional" to "prof/prof-profiles/professional", "ig0" to "pers/pers-profiles/ig0", "orkut" to "pers/pers-profiles/orkut",
+            "health-profile" to "pers/health/health-profile", "dd" to "pers/dd", "pj-cg-omniverse" to "proj/pj-cg/pj-cg-omniverse", "lt-area-unix" to "lnktree/lt-area-unix")
+        val got = files.mapNotNull { (id, f) -> LnktreePages.fromStack(id, JSONArray(BuroLlcTestData.text("data/ui/$f.json")), cfg) }
+        assertEquals(setOf("leafy", "nexus", "stark", "astro", "lt-lnktree-site", "personal", "professional", "ig0", "orkut", "pj-cg-omniverse"), got.map { it.id }.toSet())
         assertTrue(got.all { it.url.startsWith("https://") })
         val optOut = cfg.copy(excludePages = setOf("stark"))
-        assertNull(LnktreePages.fromStack("stark", JSONArray(BuroLlcTestData.text("data/ui/lnktree/stark.json")), optOut))
+        assertNull(LnktreePages.fromStack("stark", JSONArray(BuroLlcTestData.text("data/ui/prof/stark.json")), optOut))
     }
 }

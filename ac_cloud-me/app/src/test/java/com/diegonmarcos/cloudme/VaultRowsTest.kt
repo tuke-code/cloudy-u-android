@@ -43,7 +43,7 @@ class VaultRowsTest {
         assertTrue(rows.first { it.id == "inboxes" }.chips.size >= 10)
     }
 
-    @Test fun `Projects is Lnktree's Proj row`() {
+    @Test fun `Projects is the Proj row of the Lnktree bottom-nav section (#1914 Proj became Home and its groups)`() {
         val proj = groups("lnktree").first { it.getString("id") == "proj" }
         val mine = groups("tasks").first { it.getString("id") == "projects" }
         assertEquals(ids(proj.getJSONArray("pages")), ids(mine.getJSONArray("pages")))

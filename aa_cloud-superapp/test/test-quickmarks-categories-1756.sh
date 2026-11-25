@@ -22,12 +22,12 @@ pk = lambda x: x if isinstance(x, str) else x['pkg']
 phone = [s for s in bj['sections'] if s['id'] == 'phone'][0]['phone_app_groups']
 cloud = [s for s in bj['sections'] if s['id'] == 'cloud'][0]['tile_groups']
 folders = bj['phone_folders']; secs = bj['phone_sections']
-ORDER = ['Primary', 'Communication', 'Data', 'Me', 'Projects', 'Services', 'AGI', 'Setup']  # #1769 Projects right after Me
+ORDER = ['Data', 'Communication', 'Primary', 'Me', 'Services · City', 'Services · Leisure', 'AGI', 'Setup', 'Projects']  # #1916 MOVED: Data first, Projects after Setup (was #1769 Projects right after Me, #1902 Services split)
 
 print('== G: group order (Phone and Cloud quickmarks) ==')
 check([g['title'] for g in phone] == ORDER, 'Phone quickmark groups are %s (got %s)' % (ORDER, [g['title'] for g in phone]))
 check([g['title'] for g in cloud] == ORDER, 'Cloud quickmark groups are %s (got %s)' % (ORDER, [g['title'] for g in cloud]))
-check([s['title'] for s in secs] == ['Tools · Primary', 'Tools · Communication', 'Tools · Data', 'Tools · Me', 'Projects', 'Services', 'AGI', 'Setup'],
+check([s['title'] for s in secs] == ['Tools · Data', 'Tools · Communication', 'Tools · Primary', 'Tools · Me', 'Services · City', 'Services · Leisure', 'AGI', 'Setup', 'Projects'],  # #1916 MOVED
       'All Apps sections follow the same order: %s' % [s['title'] for s in secs])
 
 print('== P: field parity against the previous layout ==')
@@ -68,12 +68,13 @@ check(sorted(x['order'] for x in folders) == [x['order'] for x in folders] or Tr
 orders = [int(x['order']) for x in folders]
 check(orders == sorted(orders) and len(set(orders)) == len(orders), 'folder orders are unique and ascending (render order = section order)')
 want = {
- '=': ['Browser', 'Nav', 'Calc', 'Camera', 'Canvas', 'Keyboard', 'Wallet', 'Utilities'],
- '@': ['Mail', 'Chat', 'Messenger', 'Dialer', 'Contacts', 'Social'],
- '.': ['Drive', 'Notes', 'Agenda', 'Office', 'Gallery', 'Vault'],
+ '=': ['Nav', 'Camera', 'Canvas', 'Keyboard', 'Calc', 'Utilities'],  # #1916 MOVED: Browser and Wallet to '.'
+ '@': ['Mail', 'Chat', 'Messenger', 'Dialer', 'Contacts'],  # #1902 Social moved to Services · Leisure
+ '.': ['Drive', 'Browser', 'Gallery', 'Notes', 'Agenda', 'Vault', 'Wallet', 'Office'],  # #1916
  '~': ['Me', 'Health Trackers', 'Gov & ID', 'Telecom', 'Home & Housing', 'Nutrition', 'Learning'],  # #1806 Health + Outdoor & Sport = Health Trackers
- '+': ['Search', 'News', 'Events', 'Media Center', 'Games', 'Shopping', 'Jobs & Business', 'Real Estate', 'Health', 'Money', 'Hotels', 'Transports', 'City Mobility', 'KG Store'],  # #1806 ui.services_order
- '*': ['AI', 'Code', 'Terminal', 'Tools'], '#': ['SuperApp', 'Omniverse', 'FinTerm', 'CAD', 'BioMed'],
+ '+': ['Money', 'Shopping', 'Health', 'Real Estate', 'Jobs & Business', 'City Mobility', 'Transports', 'Hotels'],  # #1902 ui.services_order, Services · City
+ '%': ['News', 'Events', 'Media Center', 'Social', 'Games'],  # #1902 Services · Leisure
+ '*': ['AI', 'Code', 'Tools', 'Terminal', 'Search', 'KG Store'],  # #1902 Search and KG Store end AGI '#': ['SuperApp', 'Omniverse', 'FinTerm', 'CAD', 'BioMed'],
  '_': ['Store', 'Account', 'C3 & Dev', 'Diagnostics', 'Network', 'Security', 'Settings'],
 }
 for pre, labs in want.items():
@@ -116,7 +117,7 @@ check(not [a for a in inv if a['category'] is None and len(claims.get(a['package
 
 print('== Q: Phone quickmarks hold one tile per subtype, in All Apps order ==')
 sub_of = {f['id']: (f['label'][0], f['label'][1:]) for f in folders}
-GROUP = {'=': 'Primary', '@': 'Communication', '.': 'Data', '~': 'Me', '+': 'Services', '*': 'AGI', '#': 'Projects', '_': 'Setup'}
+GROUP = {'=': 'Primary', '@': 'Communication', '.': 'Data', '~': 'Me', '+': 'Services · City', '%': 'Services · Leisure', '*': 'AGI', '#': 'Projects', '_': 'Setup'}
 fold_order = {f['id']: int(f['order']) for f in folders}
 def cls(p):
     for f in sorted(folders, key=lambda x: int(x['order'])):
@@ -131,17 +132,18 @@ for g in phone:
         continue
     check(not g['packages'] and g.get('folders'), '%s holds folders only (#1764): one folder per Cloud app tile' % g['title'])
 WANT_FOLDERS = {
- 'Primary': ['Drive', 'Browser', 'Calc', 'Nav', 'Camera', 'Canvas', 'Keyboard', 'Wallet'],
+ 'Primary': ['Nav', 'Camera', 'Canvas', 'Keyboard', 'Calc'],  # #1916 MOVED: Drive, Browser, Wallet to Data
  'Communication': ['Mail', 'Chat', 'Messenger', 'Dialer', 'Contacts'],
- 'Data': ['Notes', 'Agenda', 'Office', 'Gallery', 'Vault'],
- 'Me': ['Me-Health', 'Experiences', 'Socials', 'Me-Buro'],
- 'Services': ['Search', 'News', 'Events', 'Media Center', 'Games', 'Shopping', 'Jobs & Business', 'Real Estate', 'Health', 'Money', 'Hotels', 'Transports', 'City Mobility'],  # #1806
- 'AGI': ['AI', 'Code', 'Terminal'],
+ 'Data': ['Drive', 'Browser', 'Gallery', 'Notes', 'Agenda', 'Vault', 'Wallet', 'Office'],  # #1916
+ 'Me': ['Me-Pers', 'Me-Prof', 'Me-Prj', 'Me-Buro'],   # #1903 (were Me-Health, Experiences, Socials)
+ 'Services · City': ['Money', 'Shopping', 'Health', 'Real Estate', 'Jobs & Business', 'City Mobility', 'Transports', 'Hotels'],  # #1902 (#1806 order)
+ 'Services · Leisure': ['News', 'Events', 'Media Center', 'Social', 'Games'],  # #1902 Social opens the media_social All Apps folder
+ 'AGI': ['AI', 'Code', 'Terminal', 'Search'],  # #1902 Search ends AGI
  'Setup': ['Quick Actions', 'UI', 'NG Firewall', 'Store', 'C3', 'About'],
 }
 _me_labels = [t.get('label') for g_ in cloud if g_['title'] == 'Me' for t in g_['tiles']]
 # #1769 the Cloud Me row's second tile is Experienc. today and Socials once renamed; both folders follow that tile.
-CLOUD_LABEL = {'Nav': 'Navigation', 'Agenda': 'Tasks', 'Me-Health': 'Me-Health', 'Experiences': 'Experienc.' if 'Experienc.' in _me_labels else 'Socials', 'Socials': 'Experienc.' if 'Experienc.' in _me_labels else 'Socials', 'Me-Buro': 'Me-Buro'}
+CLOUD_LABEL = {'Nav': 'Navigation', 'Agenda': 'Tasks', 'Me-Pers': 'Me-Pers', 'Me-Prof': 'Me-Prof', 'Me-Prj': 'Me-Prj', 'Me-Buro': 'Me-Buro'}   # #1903 the phone folders carry the Cloud tile names
 fleet_pkgs = set()
 for e in bj['external_apps']:
     for p_ in [e.get('hub_package'), e.get('alt_package'), e.get('install_package')] + list((e.get('forks') or {}).values()):
@@ -166,7 +168,8 @@ for g in phone:
         # #1769 a folder holds PHONE apps only: a fleet package is allowed as icon_pkg (the face), never as a member.
         own = [t['pkg'] for t in f['packages'] if is_fleet(t['pkg'])]
         check(not own, '%s / %s: no fleet (Cloud) app is a member (#1769)%s' % (g['title'], f['label'], ' FOUND %s' % own if own else ''))
-        check(f['packages'], '%s / %s: still holds phone apps' % (g['title'], f['label']))
+        # #1902 a folder holds phone apps, or OPENS a declared All Apps folder (`opens_folder`: Services · Leisure's Social opens media_social) and then declares none of its own
+        check(f['packages'] or (f.get('opens_folder') in {x['id'] for x in folders} and not f['packages']), '%s / %s: still holds phone apps or opens a declared All Apps folder' % (g['title'], f['label']))
         # #1769 every folder wears a Cloud icon: the Cloud app's launcher icon (icon_pkg) and/or the drawable of the Cloud tile at that position (icon_res).
         check(ip in fleet_pkgs or f.get('icon_res') in cloud_icons, '%s / %s has a Cloud-icon face (icon_pkg %s, icon_res %s)' % (g['title'], f['label'], ip, f.get('icon_res')))
         check(f.get('icon_res') in cloud_icons, '%s / %s icon_res is a Cloud tile drawable' % (g['title'], f['label']))
@@ -192,9 +195,9 @@ for g in phone:
         check(rows is not None and len({r['capability'] for r in rows if r['capability'] != 'dating'}) == len([r for r in rows if r['capability'] != 'dating']), '%s / %s: one app per capability' % (g['title'], f['label']))
         miss = [r for r in rows or [] if r['pkg'] not in inst]
         check(all(r['pkg'] in {t['pkg'] for t in f['packages']} for r in miss), '%s / %s: every capability not installed is shown as a suggestion tile %s' % (g['title'], f['label'], [r['label'] for r in miss]))
-socials = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == 'Socials' for t in f['packages']]
+socials = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == 'Me-Prj' for t in f['packages']]
 check(all(p_ in socials for p_ in ['com.instagram.android', 'com.instagram.barcelona', 'com.facebook.katana', 'com.linkedin.android', 'com.pinterest', 'com.bereal.ft']), 'Socials holds Instagram, Threads, Facebook, LinkedIn, Pinterest, BeReal')
-check(not [p_ for g in phone for f in g.get('folders', []) if f['label'] != 'Socials' for t in f['packages'] for p_ in [t['pkg']] if p_ in socials], 'no social app sits in another folder')
+check(not [p_ for g in phone for f in g.get('folders', []) if f['label'] != 'Me-Prj' for t in f['packages'] for p_ in [t['pkg']] if p_ in socials], 'no social app sits in another folder')
 want_pick = {'Mail': ['com.google.android.gm'], 'Chat': ['com.Slack'], 'Messenger': ['com.whatsapp.w4b'], 'Drive': ['com.google.android.apps.docs'], 'Browser': ['com.brave.browser'], 'Nav': ['com.google.android.apps.maps']}
 for st, pl in want_pick.items():
     got = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == st for t in f['packages']]
@@ -203,10 +206,12 @@ for st, pl in want_pick.items():
 print('== C: Cloud quickmark icons are unchanged from origin/main ==')
 snap = json.load(open(A + 'test/data/cloud-tile-icons-1756.json'))['tiles']
 now = {t['id']: t.get('icon') for g in cloud for t in g['tiles'] if not t.get('separator')}
+MOVED = {'tools-account': 'configs-profile'}   # #1903 the Profile tile left the Me row; it is reachable in Setup (Profile | About), a rename of its place, not a removal
 for tid, o in snap.items():
+    if tid not in now and MOVED.get(tid) in now: continue
     if tid not in now: check(False, 'Cloud tile %s is gone' % tid)
     elif now[tid] != o['icon']: check(False, 'Cloud tile %s icon changed %s -> %s' % (tid, o['icon'], now[tid]))
-check(all(now.get(tid) == o['icon'] for tid, o in snap.items()), 'all %d Cloud tile icons are identical to origin/main' % len(snap))
+check(all(now.get(tid) == o['icon'] for tid, o in snap.items() if tid not in MOVED), 'all %d Cloud tile icons are identical to origin/main' % len(snap))
 # #1778 the Projects row reads Wiki | SuperApp, Omniverse | FinTerm, BioMed, CAD | Circusverse: Wiki and Circusverse are new, Circusverse is a greyed-out
 # coming_soon tile (no target, no fleet app), and every tile that was there keeps its icon (checked above).
 proj = [g for g in cloud if g['title'] == 'Projects'][0]['tiles']
@@ -221,7 +226,7 @@ check(circ.get('coming_soon') is True and not circ.get('target') and not circ.ge
 check(not [e for e in bj['external_apps'] if 'circus' in e['id']], 'Circusverse has no external app entry (#1778)')
 # #1771 the Cloud Me row renames (Me -> Lnktree, Tasks -> Socials) change labels only: the snapshot pins both.
 lab = {t['id']: t.get('label') for g in cloud for t in g['tiles'] if not t.get('separator')}
-check(lab.get('me') == snap['me']['label'] == 'Lnktree' and lab.get('myroadmap') == snap['myroadmap']['label'] == 'Socials', 'Cloud Me row tiles me and myroadmap read Lnktree and Socials (#1771)')
+check(lab.get('me') == snap['me']['label'] == 'Lnktree' and snap['myroadmap']['label'] == 'Socials' and lab.get('myroadmap') == 'Me-Prj' and lab.get('myhealth') == 'Me-Pers' and lab.get('myexperiences') == 'Me-Prof', 'Cloud Me row tiles me, myhealth, myexperiences and myroadmap read Lnktree, Me-Pers, Me-Prof and Me-Prj (#1903, renamed from Me-Health, Experienc., Socials: the ids and icons are unchanged)')
 
 print('== X: All Apps subtypes mirror the Cloud apps ==')
 sub = {f['id']: f['label'][1:] for f in folders}

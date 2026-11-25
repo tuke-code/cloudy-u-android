@@ -39,6 +39,7 @@ class WireGuardFragment : KitComposeFragment() {
     private val prefs: WireGuardPrefs get() = WgState.prefs(requireContext())
 
     private val store: MeshStore by lazy {
+        TunnelBinder.install(requireContext())   // #1900 probes take their network (tunnel / outside) from the binder
         MeshStore(AndroidMeshPort(requireContext()), MeshDecl.baked, host,
             journalFile = com.diegonmarcos.superapp.network.mesh.MeshEventLog.file(requireContext()),
             autoProbe = true).also { s ->
@@ -52,7 +53,7 @@ class WireGuardFragment : KitComposeFragment() {
     override fun Content() = MeshScreen(store)
 
     /** Tell the page what happened outside a composable (a picker's result): the notice line and the journal. */
-    private fun report(label: String, block: () -> String) = store.perform(label, block)
+    private fun report(label: String, block: () -> String) = store.perform(label, block = block)
 
     /** Read an imported .conf into prefs (multi-peer aware). */
     private val importLauncher: ActivityResultLauncher<String> =
