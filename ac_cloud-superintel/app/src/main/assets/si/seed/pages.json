@@ -4,7 +4,8 @@
  "pages": {
   "apis": {
    "kind": "apis",
-   "asset": "ai/apis.json"
+   "asset": "ai/apis.json",
+   "accounts": "ai/api-accounts.json"
   },
   "plugins": {
    "kind": "rows",
@@ -12,6 +13,9 @@
     {
      "asset": "ai/plugins.json",
      "groups": [
+      "Skills plugins",
+      "Performance plugins",
+      "Registry plugins \\(SOT\\)",
       "Enabled plugins \\(SOT\\)",
       "c3-infra plugin"
      ]

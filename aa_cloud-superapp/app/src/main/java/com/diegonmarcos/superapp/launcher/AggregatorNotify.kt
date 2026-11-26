@@ -181,7 +181,7 @@ private fun SplitCenter(state: AggregatorState, panel: Sections.StackPanel, onOp
             return@Column
         }
         when {
-            all -> GroupList(state, views, onOpen)
+            all -> GroupList(state, views, shade = true, onOpen = onOpen)
             state.groupMode(feed) == AggregatorModel.GROUP_TIME -> Timeline(state, feed, views.map { it.group }, null, onOpen)
             else -> Categories(state, feed, views.map { it.group }, onOpen)
         }
@@ -293,7 +293,7 @@ private fun PhoneCenter(state: AggregatorState, onOpen: (String) -> Unit) {
         AggStateLine("silent · nothing captured", Tone.WARN); return
     }
     val views by remember { derivedStateOf { state.phoneViews() } }
-    if (views.isEmpty()) AggCaption(AggregatorModel.filteredAwayNote(total)) else GroupList(state, views, onOpen)
+    if (views.isEmpty()) AggCaption(AggregatorModel.filteredAwayNote(total)) else GroupList(state, views, onOpen = onOpen)
 }
 
 /** Cloud stream, grouped by PUBLISHER: the ntfy TOPIC for a fleet message, the `source` field for an in-app one. */
@@ -306,7 +306,7 @@ private fun CloudCenter(state: AggregatorState, panel: Sections.StackPanel, onOp
     if (local.isEmpty()) {
         if (total == 0) AggStateLine("silent · no in-app events", Tone.WARN)
         else AggCaption(AggregatorModel.filteredAwayNote(total))
-    } else GroupList(state, local, onOpen)
+    } else GroupList(state, local, onOpen = onOpen)
     AggShadeLabel("CHANNELS")
     NtfyGroups(state, panel, onOpen)
 }
@@ -330,7 +330,7 @@ internal fun NtfyGroups(state: AggregatorState, panel: Sections.StackPanel, onOp
     val order = remember(state.epoch, state.sortMode, topics) {
         AggregatorModel.orderTopics(topics, state.sortMode, state.ntfyCache.toMap())
     }
-    GroupList(state, state.ntfyViews(panel, order), onOpen)
+    GroupList(state, state.ntfyViews(panel, order), onOpen = onOpen)
 }
 
 // ── groups ───────────────────────────────────────────────────────────
@@ -340,12 +340,12 @@ internal fun NtfyGroups(state: AggregatorState, panel: Sections.StackPanel, onOp
  * Archive), and neither is a box whose every row was swiped into it.
  */
 @Composable
-internal fun GroupList(state: AggregatorState, views: List<GroupView>, onOpen: (String) -> Unit) {
+internal fun GroupList(state: AggregatorState, views: List<GroupView>, shade: Boolean = false, onOpen: (String) -> Unit) {
     for (v in views) {
         if (state.isArchived(v.group.key)) continue
         val rows = v.group.rows
         if (rows.isNotEmpty() && rows.all { state.isRowArchived(it) }) continue
-        androidx.compose.runtime.key(v.group.key) { GroupBlock(state, v, archived = false, onOpen = onOpen) }
+        androidx.compose.runtime.key(v.group.key) { GroupBlock(state, v, archived = false, onOpen = onOpen, shade = shade) }
     }
 }
 
@@ -413,6 +413,10 @@ internal fun appTint(key: String, label: String): Color {
  *
  * [rowArchive]: this box is the Archive's view of rows swiped away from a box that is still on the page, so Restore
  * puts those rows back rather than un-archiving the box.
+ *
+ * [shade] (#1935, the All page): the card face is the Android shade's - no Mark read / Archive / Open / Reply button row. Only
+ * the Reply the notification itself carries is drawn; every entry of the removed row is in the long-press menu, a swipe away
+ * archives, and expanding or opening reads ([NotifActions.SHADE_GESTURE_FOR]).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -421,6 +425,7 @@ internal fun GroupBlock(
     view: GroupView,
     archived: Boolean,
     rowArchive: Boolean = false,
+    shade: Boolean = false,
     onOpen: (String) -> Unit,
 ) {
     val p = LocalKitPalette.current
@@ -432,8 +437,10 @@ internal fun GroupBlock(
     // Absent = One UI's default (folded); false = the user opened it; true = the user folded it again.
     val open = state.collapsedGroups[g.key] == false
     val turn by animateFloatAsState(if (open) 180f else 0f, tween(160), label = "chevron")
-    val toggle: () -> Unit = { state.collapsedGroups[g.key] = open }
+    // #1935 on the shade-style All page opening a card reads it, as expanding does in the Android shade.
+    val toggle: () -> Unit = { if (shade && !archived && !open) state.markGroupRead(g); state.collapsedGroups[g.key] = open }
     var menu by remember { mutableStateOf(false) }
+    var replying by remember { mutableStateOf(false) }
     val tint = appTint(g.key, g.label)
     val launch: (() -> Unit)? = when {
         g.launchPackage.isNotBlank() -> ({
@@ -485,14 +492,21 @@ internal fun GroupBlock(
                 if (i > 0) Box(Modifier.padding(horizontal = NotifCard.pad).fillMaxWidth().height(0.7.dp)
                     .background(NotifCard.divider))
                 NotifRowItem(state, r, g.launchPackage, tint, expanded = open, ownTime = open && stacked,
-                    inArchive = archived)
+                    inArchive = archived, shade = shade)
             }
             if (archived) Row(
                 Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 10.dp),
                 horizontalArrangement = Arrangement.End,
             ) { ArchivePill(state, g, archived = true, rowArchive = rowArchive) }
             else if (rows.isEmpty()) Box(Modifier.height(6.dp))   // a quiet channel has nothing to read, archive or reply to
-            else {
+            else if (shade) {
+                // #1935 the shade card face: no app button row. Only the Reply the notification itself carries; Mark read,
+                // Archive and Open are the gestures and the long-press menu (NotifActions.SHADE_GESTURE_FOR).
+                val replyRow = rows.filter { it.id.startsWith(AggregatorModel.PHONE_NS) }.maxByOrNull { it.ts }
+                ShadeReplyRow(g.key, replyRow?.id?.removePrefix(AggregatorModel.PHONE_NS), replying,
+                    onToggle = { replying = !replying }, onSent = { replying = false })
+                Box(Modifier.height(6.dp))
+            } else {
                 // The box's own actions, back in One UI's action-pill row (#1068): Mark read, Archive, Open, Reply.
                 val replyRow = rows.filter { it.id.startsWith(AggregatorModel.PHONE_NS) }.maxByOrNull { it.ts }
                 val unreadAny = rows.any { state.isUnread(it) }
@@ -507,13 +521,29 @@ internal fun GroupBlock(
             }
         }
         NotifSheet(menu, { menu = false }) {
-            if (!archived && g.rows.isNotEmpty()) SheetItem(AggregatorModel.MARK_READ_LABEL, AggTags.groupCheck(g.key)) {
+            if (!archived && g.rows.isNotEmpty()) SheetItem(
+                if (!shade || g.rows.any { state.isUnread(it) }) AggregatorModel.MARK_READ_LABEL else "Read", AggTags.groupCheck(g.key),
+            ) {
                 menu = false; state.markGroupRead(g)
             }
             if (!archived) SheetItem(AggregatorModel.ARCHIVE_LABEL, AggTags.groupArchive(g.key)) {
                 menu = false; state.setArchived(g.key, true)
             }
-            if (launch != null) SheetItem("Open app", AggTags.groupOpen(g.key)) { menu = false; launch() }
+            if (launch != null) SheetItem("Open app", AggTags.groupOpen(g.key)) {
+                menu = false
+                if (shade) state.markGroupRead(g)
+                launch()
+            }
+            // #1935 the Reply of the removed row: inline when the notification carries one, else it opens the conversation.
+            if (shade && !archived && g.rows.isNotEmpty()) {
+                val replyKey = g.rows.filter { it.id.startsWith(AggregatorModel.PHONE_NS) }.maxByOrNull { it.ts }
+                    ?.id?.removePrefix(AggregatorModel.PHONE_NS)
+                if (com.diegonmarcos.superapp.notificationcenter.ReplyActions.has(replyKey) || launch != null)
+                    SheetItem("Reply", NotifActions.menuTag(NotifActions.REPLY, g.key)) {
+                        menu = false
+                        if (com.diegonmarcos.superapp.notificationcenter.ReplyActions.has(replyKey)) replying = true else launch?.invoke()
+                    }
+            }
         }
     }
 }
@@ -655,6 +685,7 @@ private fun NotifRowItem(
     expanded: Boolean,
     ownTime: Boolean,
     inArchive: Boolean = false,
+    shade: Boolean = false,
 ) {
     val p = LocalKitPalette.current
     val ctx = LocalContext.current
@@ -666,7 +697,9 @@ private fun NotifRowItem(
     var width by remember { mutableStateOf(0) }
     var menu by remember { mutableStateOf(false) }
     val rid = r.id.ifBlank { r.title }
+    // #1935 on the shade-style page opening a notification reads it (the tap and the menu's Open both go through here).
     val openApp: (() -> Unit)? = if (launchPackage.isBlank()) null else ({
+        if (shade && !inArchive && r.id.isNotBlank() && state.isUnread(r)) state.markRead(r.id, true)
         runCatching { ctx.packageManager.getLaunchIntentForPackage(launchPackage)?.let { ctx.startActivity(it) } }
         Unit
     })
@@ -924,7 +957,7 @@ internal fun InboxNotifications(state: AggregatorState, panel: Sections.StackPan
     // here, on purpose — this is ONE app's slice of the phone namespace and pruning against a partial view is what makes
     // read rows silently reappear.
     val views by remember(panel) { derivedStateOf { state.inboxViews(panel) } }
-    GroupList(state, views, onOpen)
+    GroupList(state, views, onOpen = onOpen)
 }
 
 // ── kind=class_inbox: one card per CHANNEL CLASS ─────────────────────
@@ -959,7 +992,7 @@ internal fun ClassInboxBody(state: AggregatorState, panel: Sections.StackPanel, 
     // may declare both, and RSS does: the same messages arrive by two roads and belong on one card.
     if (cls.source == AggregatorModel.C3NTFY_SOURCE) NtfyGroups(state, panel, onOpen)
     if (groups.isNotEmpty()) {
-        GroupList(state, state.classViews(panel), onOpen)
+        GroupList(state, state.classViews(panel), onOpen = onOpen)
     } else if (cls.source != AggregatorModel.C3NTFY_SOURCE) {
         // Granted and empty is a real, different state from unavailable, and the line names WHICH class came up empty.
         AggStateLine(stringResource(R.string.inbox_class_silent, name), Tone.WARN)

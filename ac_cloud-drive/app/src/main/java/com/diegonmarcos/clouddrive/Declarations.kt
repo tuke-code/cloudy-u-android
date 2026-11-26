@@ -489,6 +489,8 @@ object Declarations {
     /** #1149 the former Sync pages are bottom-nav sections now: [SYNC_SECTIONS], in nav order. */
     val sync: SyncDecl by lazy { parseSync(decode(BuildConfig.UI_SYNC_B64), nav.sections.filter { it.id in SYNC_SECTIONS }.map { PageDecl(it.id, it.label, it.icon) }) }
     /** #1149 Git > Cloud's public list (ui.sync.cloud_list) and Git > Me's extra hosts (ui.sync.git_hosts). */
+    /** #1934 the unified repo control sheet (build.json ui.git_control_sheet): tabs, groups, controls, presets; libs:git-ui parses and draws it. */
+    val controlSheet: JsonObject by lazy { runCatching { element(decode(BuildConfig.UI_GIT_SHEET_B64)) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap()) }
     val cloudList: GitHostsDecl.CloudListDecl by lazy { GitHostsDecl.parseCloud(decode(BuildConfig.UI_SYNC_B64)) }
     val gitHosts: List<GitHostsDecl.GitHostDecl> by lazy { GitHostsDecl.parseHosts(decode(BuildConfig.UI_SYNC_B64)) }
     /** #1679 ui.sync.git.auto_cloned_cleanup: the folders the retired seed cloned by itself (More ▸ Remove auto-cloned copies). */
@@ -1017,7 +1019,7 @@ object Declarations {
     const val DEPTH_SCOPE_FOLDER = "folder"
     /** #1315 the top bar's item kinds (ui.sync.git.top_bar.groups[].items[].kind), dispatched by GitReposScreen; test-drive-git-top-bar.sh diffs both ways. */
     /** #1679 refresh_list / fetch_status = Refresh ▸ Refresh repo list / Fetch status; remove_auto_cloned = More ▸ Remove auto-cloned copies. */
-    val TOP_KINDS = setOf("check_light", "check_full", "check_remote", "check_sizes", "scan_inventory", "cancel_checks", "op", "compound", "pull", "depth", "open_logs", "open_report", "toggle_filter", "legend", "open_advanced", "open_conflicts", "refresh_list", "fetch_status", "remove_auto_cloned")
+    val TOP_KINDS = setOf("check_light", "check_full", "check_remote", "check_sizes", "scan_inventory", "cancel_checks", "op", "compound", "pull", "depth", "open_logs", "open_report", "toggle_filter", "legend", "open_advanced", "open_conflicts", "refresh_list", "fetch_status", "remove_auto_cloned", "open_control_sheet")
     const val REMOTE_READONLY = "readonly"
 
     /** #608 the Git page's two sections and the personal section's two groups, by id. */

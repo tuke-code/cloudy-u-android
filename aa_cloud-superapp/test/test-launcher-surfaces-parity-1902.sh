@@ -13,7 +13,7 @@
 #   S4  Cloud Smart Folders (data/fleet/launcher-folders/cloud.json): every folder id is still declared with its label and icon.
 #   N   the new entries exist: Services · City / Services · Leisure sections with their own prefixes, Social in Leisure on the
 #       Cloud and Phone quickmarks and on the cloud smart folders.
-# #1916: the nine sections are now ordered Data, Communication, Primary, Me, City, Leisure, AGI, Setup, Projects (a MOVE; the N checks pin it).
+# #1916: the nine sections are now ordered Primary, Communication, Data, Me (#1927 MOVED: Primary and Data swapped), City, Leisure, AGI, Setup, Projects (a MOVE; the N checks pin it).
 # Static, no device.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -29,7 +29,8 @@ SNAP = json.load(open(A + 'test/data/launcher-surfaces-before-1902.json'))
 pk = lambda x: x if isinstance(x, str) else x['pkg']
 # #1903 the Me row renames (old -> new), never removals: the three page tiles keep id and icon (label and target are the new Cloud Me pages), the Profile tile and
 # its rule moved to Setup (configs-profile), the three phone Me folders carry the same new names.
-ME_TILE = {'myhealth': ('Me-Pers', 'extapp:cloud-me#page:pers/pers-profiles'), 'myexperiences': ('Me-Prof', 'extapp:cloud-me#page:prof/prof-profiles'), 'myroadmap': ('Me-Prj', 'extapp:cloud-me#page:proj/lnktree-site')}
+ME_TILE = {'myhealth': ('Me-Pers', 'extapp:cloud-me#page:pers/pers-profiles'), 'myexperiences': ('Me-Prof', 'extapp:cloud-me#page:prof/prof-web'), 'myroadmap': ('Me-Prj', 'extapp:cloud-me#page:proj/pj-home')}
+ICON_SWAP = {'me': 'ic_tree', 'myroadmap': 'ic_vcard'}   # #1931 the Lnktree and Me-Prj tiles swapped icons (a move)
 ME_MOVED = {'tools-account': 'configs-profile'}
 ME_FOLDER = {'Me-Health': 'Me-Pers', 'Experiences': 'Me-Prof', 'Socials': 'Me-Prj'}
 CITY, LEIS = 'Services · City', 'Services · Leisure'
@@ -65,13 +66,20 @@ def surface(name, bj, ph, cl):
                 if n is None and old['id'] in ME_MOVED:
                     if ME_MOVED[old['id']] not in now or where.get(ME_MOVED[old['id']]) != 'Setup': f.append('Cloud Me tile %s left the Me row but is not in Setup as %s' % (old['id'], ME_MOVED[old['id']]))
                     continue
-                if n is None: f.append('Cloud %s tile %s is gone' % (gt, old['id'])); continue
+                if n is None:
+                    # #1929 a tile merged into another keeps its id as an alias of the merged tile, whose target opens the group that holds the old target's page
+                    h = [t for t in now.values() if old['id'] in t.get('aliases', [])]
+                    if h:
+                        launcher = {'page:config/' + p['id'] for p in S['config']['pages'] if p.get('group') == 'Launcher'}
+                        if h[0].get('target') != 'page:config/launcher-hub' or old['target'] not in launcher: f.append('Cloud tile %s merged into %s but its page %s is not reachable from the Launcher group' % (old['id'], h[0]['id'], old['target']))
+                        continue
+                    f.append('Cloud %s tile %s is gone' % (gt, old['id'])); continue
                 if gt == 'Me':   # #1903 renames: the id and the icon stay, the label and target are the new ones
                     if old['id'] in ME_TILE:
-                        if n.get('icon') != old['icon'] or (n.get('label'), n.get('target')) != ME_TILE[old['id']]: f.append('Cloud Me tile %s is not renamed to %s with icon %s' % (old['id'], ME_TILE[old['id']], old['icon']))
+                        if n.get('icon') != ICON_SWAP.get(old['id'], old['icon']) or (n.get('label'), n.get('target')) != ME_TILE[old['id']]: f.append('Cloud Me tile %s is not renamed to %s with icon %s' % (old['id'], ME_TILE[old['id']], old['icon']))
                     else:
                         for k in ('label', 'icon', 'target'):
-                            if n.get(k) != old[k]: f.append('Cloud Me tile %s changed %s: %r -> %r' % (old['id'], k, old[k], n.get(k)))
+                            if n.get(k) != (ICON_SWAP.get(old['id'], old[k]) if k == 'icon' else old[k]): f.append('Cloud Me tile %s changed %s: %r -> %r' % (old['id'], k, old[k], n.get(k)))
                     continue
                 for k in ('label', 'icon', 'target', 'coming_soon'):
                     if n.get(k) != old[k]: f.append('Cloud tile %s changed %s: %r -> %r' % (old['id'], k, old[k], n.get(k)))
@@ -81,9 +89,10 @@ def surface(name, bj, ph, cl):
         labels = {g['title']: [fo['label'] for fo in g.get('folders', [])] for g in pg.values()}
         everylabel = {l for ls in labels.values() for l in ls}
         links = {l['label'] for g in pg.values() for l in g.get('links', [])}
+        aliased = {a for g in pg.values() for fo in g.get('folders', []) for a in fo.get('aliases', [])}   # #1929 Quick Actions and UI merged into Launcher
         for gt, old in SNAP['phone_quickmarks'].items():
             for fl, pl in old['folders'].items():
-                if fl not in everylabel and ME_FOLDER.get(fl) not in everylabel: f.append('Phone quickmark folder %s (was in %s) is gone' % (fl, gt))
+                if fl not in everylabel and ME_FOLDER.get(fl) not in everylabel and fl not in aliased: f.append('Phone quickmark folder %s (was in %s) is gone' % (fl, gt))
                 lost = [p for p in pl if p not in allpk]
                 if lost: f.append('Phone quickmark folder %s lost packages %s' % (fl, lost))
             lost = [p for p in old['packages'] if p not in allpk]
@@ -109,8 +118,8 @@ def surface(name, bj, ph, cl):
         if fo['media_social']['label'] != sp.get(LEIS, '?') + 'Social': f.append('media_social is not a Leisure folder')
         for x in ('svc_search', 'svc_kgstore'):
             if not fo[x]['label'].startswith(sp['AGI']): f.append('%s is not an AGI folder' % x)
-        if [g['title'] for g in S['cloud']['tile_groups']] != ['Data', 'Communication', 'Primary', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Cloud quickmark groups are not the nine sections')
-        if [g['title'] for g in S['phone']['phone_app_groups']] != ['Data', 'Communication', 'Primary', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Phone quickmark groups are not the nine sections')
+        if [g['title'] for g in S['cloud']['tile_groups']] != ['Primary', 'Communication', 'Data', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Cloud quickmark groups are not the nine sections')
+        if [g['title'] for g in S['phone']['phone_app_groups']] != ['Primary', 'Communication', 'Data', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Phone quickmark groups are not the nine sections')
         cs = [t for g in S['cloud']['tile_groups'] if g['title'] == LEIS for t in g['tiles'] if t['id'] == 'social']
         if not cs or cs[0]['target'] != 'https://diegonmarcos.github.io/mySocials/': f.append('Cloud Leisure has no Social tile opening the mySocials URL (#1904)')
         ps = [x for g in S['phone']['phone_app_groups'] if g['title'] == LEIS for x in g['folders'] if x['label'] == 'Social']
@@ -118,7 +127,7 @@ def surface(name, bj, ph, cl):
         sections = []
         for x in cl['folders']:
             if x['section'] not in sections: sections.append(x['section'])
-        if sections != ['Data', 'Communication', 'Primary', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Cloud smart folder sections are %s' % sections)
+        if sections != ['Primary', 'Communication', 'Data', 'Me', CITY, LEIS, 'AGI', 'Setup', 'Projects']: f.append('Cloud smart folder sections are %s' % sections)
         if [x['section'] for x in cl['folders'] if x['id'] == 'social'] != [LEIS]: f.append('Cloud smart folder Social is not in Leisure')
     return f
 
@@ -156,6 +165,9 @@ mut('Me-Prof retargeted away from Cloud Me Prof (#1903)', 'S2', lambda bj, ph, c
 mut('the Profile tile returns to the Me row (#1903)', 'N', lambda bj, ph, cl: [g['tiles'].append({'id': 'tools-account', 'label': 'Profile', 'icon': 'ic_p_identities', 'target': 'extapp:cloud-me#page:profile/profile'}) for g in sec(bj, 'cloud')['tile_groups'] if g['title'] == 'Me'])
 mut('a phone Me folder is dropped (#1903)', 'S3', lambda bj, ph, cl: [g['folders'].pop(0) for g in sec(bj, 'phone')['phone_app_groups'] if g['title'] == 'Me'])
 mut('a phone Me folder keeps the old name (#1903)', 'N', lambda bj, ph, cl: [fo.__setitem__('label', 'Socials') for g in sec(bj, 'phone')['phone_app_groups'] if g['title'] == 'Me' for fo in g['folders'] if fo['label'] == 'Me-Prj'])
+mut('the Launcher tile loses its aliases (#1929)', 'S2', lambda bj, ph, cl: [t.pop('aliases') for g in sec(bj, 'cloud')['tile_groups'] for t in g['tiles'] if t['id'] == 'configs-launcher'])
+mut('the Launcher tile opens another page (#1929)', 'S2', lambda bj, ph, cl: [t.__setitem__('target', 'page:config/controls') for g in sec(bj, 'cloud')['tile_groups'] for t in g['tiles'] if t['id'] == 'configs-launcher'])
+mut('the Phone Launcher folder loses its aliases (#1929)', 'S3', lambda bj, ph, cl: [fo.pop('aliases') for g in sec(bj, 'phone')['phone_app_groups'] for fo in g.get('folders', []) if fo['label'] == 'Launcher'])
 mut('a Cloud tile removed', 'S2', lambda bj, ph, cl: [g['tiles'].pop(0) for g in sec(bj, 'cloud')['tile_groups'] if g['title'] == CITY])
 mut('a Cloud tile retargeted', 'S2', lambda bj, ph, cl: [t.__setitem__('target', 'extapp:cloud-news') for g in sec(bj, 'cloud')['tile_groups'] for t in g['tiles'] if t['id'] == 'shopping'])
 mut('the Cloud Social tile loses the mySocials URL (#1904)', 'N', lambda bj, ph, cl: [t.__setitem__('target', 'extapp:cloud-news') for g in sec(bj, 'cloud')['tile_groups'] for t in g['tiles'] if t['id'] == 'social'])

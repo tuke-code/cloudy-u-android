@@ -50,6 +50,8 @@ pitest {
                        'sshCallback', 'sessionCallback', 'withAuth', 'ownerOnly']
     // The jsch session factory only runs against a live ssh server (proven on the emulator flow, not in a JVM suite).
     excludedClasses = ['com.diegonmarcos.cloudlib.gitcore.JGitEngine$Companion$sshCallback$factory$1']
+    // #1934 only the heavy executed matrix stays out of the per-mutant replay; PlanExecutorFastTest (a representative slice on tiny repos) kills the mutants of the new code.
+    excludedTestClasses = ['com.diegonmarcos.cloudlib.gitcore.SheetCommandMatrixTest']
     // Closing a resource is not observable from a test (kotlin.io.use / AutoCloseable.use).
     avoidCallsTo = ['kotlin.jvm.internal', 'kotlin.jdk7.AutoCloseableKt', 'kotlin.io.CloseableKt']
     threads = 2
@@ -59,3 +61,17 @@ pitest {
 }
 
 tasks.named('test') { finalizedBy 'pitest' }
+
+// #1934 the survivors in the CI log: every SURVIVED / NO_COVERAGE mutant of the run (class, method, line, mutator), so a weak spot can be killed by a test and not guessed.
+def pitReportPath = "${buildDir}/reports/pitest/mutations.xml".toString()
+tasks.named('pitest') {
+    doLast {
+        def xml = new File(pitReportPath)
+        if (xml.exists()) {
+            new XmlSlurper().parse(xml).mutation.each { m ->
+                def st = m.@status.toString()
+                if (st == 'SURVIVED' || st == 'NO_COVERAGE') println "PIT ${st} ${m.mutatedClass}.${m.mutatedMethod}:${m.lineNumber} ${m.mutator.toString().tokenize('.').last()}"
+            }
+        }
+    }
+}

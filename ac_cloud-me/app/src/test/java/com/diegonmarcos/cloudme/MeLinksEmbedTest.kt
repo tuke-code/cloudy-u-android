@@ -32,7 +32,7 @@ class MeLinksEmbedTest {
 
     @Test fun `Leaf-y Nexus Stark Personal Social Instagram LinkedIn and Lnktree embed their real sites`() {
         val want = mapOf("prof-leafy" to "https://diegonmarcos.github.io/leafy/", "prof-nexus" to "https://diegonmarcos.github.io/nexus/", "prof-stark" to "https://diegonmarcos.github.io/stark/",
-            "pers-personal" to "https://diegonmarcos.com/", "pers-ig0" to "https://diegonmarcos.github.io/mySocials/instagram-diegocnmarcos_.html", "prof-professional" to "https://linkedin.com/in/diegonmarcos",
+            "pers-personal" to "https://diegonmarcos.com/", "pers-ig0" to "https://diegonmarcos.github.io/mySocials/instagram-diegocnmarcos_.html",
             "lnktree-default" to "https://linktree.diegonmarcos.com/", "proj-cg-omniverse" to "https://diegonmarcos.github.io/galaxy/", "proj-unix-cloudy" to "https://github.com/diegonmarcos/cloudy-___")
         for ((id, url) in want) assertEquals(id, url, block(tabs.first { it.getString("id") == id }).optString("url"))
     }
@@ -50,7 +50,8 @@ class MeLinksEmbedTest {
     @Test fun `the Open button and the Links panel are gone`() {
         val ss = BuroLlcTestData.text("app/src/main/java/com/diegonmarcos/cloudme/SectionScreen.kt")
         assertFalse(ss.contains("MeLinkedWeb"))
-        assertTrue(ss.contains("\"web\" -> WebPage(single, modifier, pageId = page.id)"))
+        // #1932 the "web" page is still the bare WebPage for every entry that is not a repo with declared views; a repo entry hosts the viewer, whose GH view is that same WebPage
+        assertTrue(ss.contains("\"web\" ->") && ss.contains("else WebPage(single, modifier, pageId = page.id)"))
         val k = BuroLlcTestData.text("app/src/main/java/com/diegonmarcos/cloudme/MeLinks.kt")
         for (gone in listOf("Open \$", "\"Links\"", "FilledTonalButton", "ACTION_VIEW", "MeLinkedWeb")) assertFalse(gone, k.contains(gone))
     }

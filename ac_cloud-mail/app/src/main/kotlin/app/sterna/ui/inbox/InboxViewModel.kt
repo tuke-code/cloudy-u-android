@@ -834,6 +834,10 @@ class InboxViewModel(
             store.totalUnreadCount(),
         ),
     )
+    /** #1925 The account the error log names for a sync failure. */
+    private fun currentAccountLabel(): String =
+        store.accounts().firstOrNull { it.id == currentAccountId.value }?.let { it.accountName.ifBlank { it.username } }.orEmpty()
+
     private val status = MutableStateFlow(Status(refreshing = false, error = null))
 
     /**
@@ -1437,6 +1441,8 @@ class InboxViewModel(
                         is Sel.Folder -> refreshFolder(sel.id)
                     }
                 }
+                // #1925 a failed refresh goes to the error log with its exchange and route profile.
+                (outcome as? RefreshOutcome.Failed)?.let { com.diegonmarcos.superapp.fleetendpoints.errors.ErrorLog.shared.record("sync", currentAccountLabel(), it.cause) }
                 when (outcome) {
                     RefreshOutcome.Delivered -> {
                         status.value = Status(refreshing = false, error = null)
@@ -1463,6 +1469,7 @@ class InboxViewModel(
             } catch (c: CancellationException) {
                 throw c // a superseding refresh cancelled us — don't stomp its status
             } catch (t: Throwable) {
+                com.diegonmarcos.superapp.fleetendpoints.errors.ErrorLog.shared.record("sync", currentAccountLabel(), t)
                 status.value = Status(refreshing = false, error = app.sterna.core.jmap.GatewayErrors.syncMessage(t) ?: t.message ?: t.javaClass.simpleName)
                 connectivity.reportFailure(t)
             }
