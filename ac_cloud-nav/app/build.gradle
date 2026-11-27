@@ -291,6 +291,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = '17' }
+    // #1944 the background card's Robolectric test (NavBackgroundCardTest) needs the merged resources.
+    testOptions { unitTests { includeAndroidResources = true } }
 }
 
 dependencies {
@@ -300,6 +302,7 @@ dependencies {
     implementation project(':libs:fleet-data-client')   // #1547 the sky catalog is read at RUNTIME from Cloud Store, never baked into the APK
     implementation project(':libs:maps')
     implementation project(':libs:updater')
+    testImplementation project(':libs:fleet-notify')   // #1944 the background-card tests name FleetNotify.GROUP_RUNNING
     implementation project(':libs:devtools')
     implementation project(':libs:bottomnav')   // #868 the island + page-tab strips + NavDecl
     implementation project(':libs:ui-nav-bars')
@@ -346,6 +349,8 @@ dependencies {
 
     // JVM unit tests: dead reckoning, source rules, trigger scheduling, segmentation, aggregation, day picker.
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16.1'   // #1944 NavBackgroundCardTest
+    testImplementation 'androidx.test:core:1.6.1'
     testImplementation 'org.json:json:20250107'   // DayJson contract test: the Android stub is not mocked on the JVM
 
     androidTestImplementation 'androidx.test:runner:1.6.1'

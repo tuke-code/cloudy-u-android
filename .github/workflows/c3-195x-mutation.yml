@@ -1,0 +1,157 @@
+# #1953 #1954 #1955 Cloud C3 mutation runs: each leg applies ONE deliberate break and runs Cloud C3's JVM suite (JVM + Robolectric Compose),
+# whose NAMED test must catch it. The JVM suite itself is RED (expected); the JOB is green only when the verdict step finds the named test failed
+# (KILLED); a mutation whose named test stayed green, or never ran, fails the job. Manual only.
+name: c3-195x-mutation
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'index-back | lfs-ignored | scope-primary | drop-project-repo | drop-section | hub-primary-only | drop-wiki-path | split-ignored | map-edge-dropped | mail-alias-lost | wiki-lost | home-row-lost | home-zero-on-fail | projects-row-lost | projects-column-lost | vm-unknown-lost | vm-repo-on-host | vm-devices-dropped'
+        required: true
+permissions:
+  contents: read
+env:
+  WORK_DIR: ac_cloud-c3
+  # the input reaches the scripts through the environment only, never interpolated into a run: script (expression injection)
+  MUT: ${{ inputs.name }}
+jobs:
+  mutate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Validate the mutation name against the allowed list
+        run: |
+          case "$MUT" in
+            index-back|lfs-ignored|scope-primary|drop-project-repo|drop-section|hub-primary-only|drop-wiki-path|split-ignored|map-edge-dropped|mail-alias-lost|wiki-lost|home-row-lost|home-zero-on-fail|projects-row-lost|projects-column-lost|vm-unknown-lost|vm-repo-on-host|vm-devices-dropped) echo "leg: $MUT" ;;
+            *) echo "::error::unknown mutation name"; exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+      - name: Checkout private fleet data (app/build.gradle reads it at configuration, as in Ship Cloud C3)
+        uses: ./.github/actions/fleet-private
+        with:
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
+      - name: Apply the mutation
+        run: |
+          K=ac_cloud-c3/app/src/main/java/com/diegonmarcos/cloudc3
+          D=ac_cloud-c3/data
+          pyj() { python3 -I - "$1" "$2" <<'PY'
+          import json, sys
+          p, code = sys.argv[1:]
+          d = json.load(open(p)); exec(code); open(p, "w").write(json.dumps(d, indent=1, ensure_ascii=False) + "\n")
+          PY
+          }
+          case "$MUT" in
+            # #1953-a the Index tile row is back on the Topology pages
+            index-back)        pyj ac_cloud-c3/build.json 'd["ui"]["carried_c3"]["stack_topology"].insert(0, {"kind": "tile_row", "title": "Index", "subtitle": "Jump to a table on this page", "tiles": []})' ;;
+            # #1953-c an LFS repo is a Repo again (the registry flag is ignored)
+            lfs-ignored)       sed -i 's/if (repoOf(e)?.lfs == true \&\& lfsKind.isNotBlank())/if (false)/' $K/pages/ContainerProjects.kt ;;
+            # #1953-c scope keeps a repo on its primary project only (hubs and declared repos vanish from the others)
+            scope-primary)     sed -i 's/decl.projectsOf(it).any { p -> p.id == projectId }/decl.projectOf(it)?.id == projectId/' $K/pages/ContainerProjects.kt ;;
+            # #1953-b a project_repos attachment is lost (Wiki ModernSc draws no lib-chronos)
+            drop-project-repo) pyj $D/repos_declared.json 'r = next(x for x in d["repos"] if x["name"] == "lib-chronos"); r["attached"] = [a for a in r["attached"] if a["project"] != "pj-wiki-modernsc"]' ;;
+            # #1953-d a layout section is dropped (its Type falls outside every section)
+            drop-section)      pyj $D/container_projects.json 'b = d["topology_layout"]["bands"][0]; b["sections"] = [x for x in b["sections"] if x["id"] != "other"]' ;;
+            # #1953-d the Topology scopes repos to their primary project only (the hubs leave the other projects)
+            hub-primary-only)  sed -i 's/decl.projectsOf(it).any { p -> p.id == projectId }/decl.projectOf(it)?.id == projectId/' $K/pages/ContainerProjects.kt ;;
+            # #1953-d an attached repo loses its path (Wiki ModernSc draws lib-chronos without 1.Modern-science)
+            drop-wiki-path)    pyj $D/repos_declared.json 'r = next(x for x in d["repos"] if x["name"] == "lib-chronos"); [a.update(path="") for a in r["attached"] if a["project"] == "pj-wiki-modernsc"]' ;;
+            # #1953-d the Public / Private split is ignored
+            split-ignored)     sed -i 's/val parts = if (s.id in splitHere) listOf(/val parts = if (false) listOf(/' $K/pages/ContainerTopology.kt ;;
+            # #1955-B a Tables path row loses the first edge of each map node
+            map-edge-dropped)  sed -i 's/else r.edges.map { e -> base/else r.edges.drop(1).map { e -> base/' $K/pages/MailStack.kt ;;
+            # #1955-B the mail_map alias is dropped (a deep link to the old Mail subpage opens nothing)
+            mail-alias-lost)   pyj ac_cloud-c3/build.json 'del d["ui"]["aliases"]["pages"]["mail_map"]' ;;
+            # #1968 a former Lib entity (the root _git-repos-master) loses its Wiki attachment (the parity test must catch it)
+            wiki-lost)         pyj $D/repos_declared.json 'r = next(x for x in d["repos"] if x["name"] == "_git-repos-master"); r["attached"] = []' ;;
+            # #1969 Home loses the row of the first page of every section (a declared page has no row)
+            home-row-lost)     sed -i 's/flat(s.pages).map { (p, depth) ->/flat(s.pages).drop(1).map { (p, depth) ->/' $K/pages/HomeLive.kt ;;
+            # #1969 a Home source that failed shows a zero instead of its reason
+            home-zero-on-fail) sed -i 's/"\$what unavailable: \${l.why}"/"\$what: 0"/' $K/pages/HomeLive.kt ;;
+            # #1969 Infra Projects drops the first declared project
+            projects-row-lost) sed -i 's/decl.projects.map { p ->/decl.projects.drop(1).map { p ->/' $K/pages/InfraProjects.kt ;;
+            # #1969 Infra Projects loses a declared column
+            projects-column-lost) pyj $D/container_projects.json 'd["projects_table"]["columns"] = [c for c in d["projects_table"]["columns"] if c["key"] != "domains"]' ;;
+            # #1971 a container whose host is none of the derived ones vanishes from the VM pages
+            vm-unknown-lost)   sed -i 's/(if (h == vm.unknown) e.host !in hostIds else e.host == h)/(if (h == vm.unknown) false else e.host == h)/' $K/pages/ContainerProjects.kt ;;
+            # #1971 a repo is listed under a host
+            vm-repo-on-host)   sed -i 's/h == vm.all || (e.role != "repo" \&\& (/h == vm.all || ((/' $K/pages/ContainerProjects.kt ;;
+            # #1971 the mesh-client devices are no longer derived as hosts
+            vm-devices-dropped) sed -i 's/slice.devices.filter { !it.wgIp.isNullOrBlank() }/slice.devices.filter { false }/' $K/pages/ContainerHosts.kt ;;
+            *) echo "unknown mutation"; exit 2 ;;
+          esac
+          git diff --stat
+          test -n "$(git diff --name-only)" || { echo "mutation target missing"; exit 3; }
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 platforms;android-35 platforms;android-26 build-tools;35.0.0 build-tools;34.0.0 platform-tools"
+      - name: Set up Gradle 8.10.2 (cached)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.10.2"
+      # ── MANAGED-GRADLE-CACHE-HYGIENE: injected by cloud-android-gradle-cache-hygiene.py ──
+      # Edit 1_cicd/src/actions/gradle-cache-hygiene, never this block.
+      - name: Gradle cache hygiene (retry failed resolution, never cache a failed lookup)
+        uses: ./.github/actions/gradle-cache-hygiene
+      # ── end MANAGED-GRADLE-CACHE-HYGIENE ──
+      - name: Checkout vault (shared Android signing key, read by app/build.gradle at configuration)
+        uses: actions/checkout@v4
+        with:
+          repository: diegonmarcos/cloud-me-pvt-vault
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
+          path: .vault
+      - name: Install jq
+        run: sudo apt-get update -y && sudo apt-get install -y jq
+      - name: Install ORAS + sops (pinned)
+        uses: ./.github/actions/install-pinned-tools
+        with:
+          tools: oras sops
+      - name: JVM unit tests (RED expected; the verdict step reads the XML)
+        env:
+          BYPASS_NIX: "1"
+          VAULT_DIR: ${{ github.workspace }}/.vault
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: sh 1_cicd/dist/scripts/cloud-android-test-engine.sh unit "$WORK_DIR" || true
+      - name: Verdict (KILLED = the named test failed)
+        run: |
+          M="$MUT"
+          case "$M" in
+            index-back)        C=ContainersPageComposeTest; N="no Topology page carries the Index row, and the Ops Obsv Index stays" ;;
+            lfs-ignored)       C=ContainerProjectsTest; N="an LFS repo is Type Db with the git-lfs engine, and is not a Repo" ;;
+            scope-primary)     C=ContainerProjectsTest; N="scope keeps a repo on every attached project, not only its primary one" ;;
+            drop-project-repo) C=ContainerProjectsTest; N="projects the registry cannot place get their declared repos, Wiki with its lib-chronos path" ;;
+            drop-section)      C=ContainerTopologyTest; N="the section types are the declared Types, each in exactly one section" ;;
+            hub-primary-only)  C=ContainerTopologyTest; N="a hub is drawn in the Repos band of every project under its code" ;;
+            drop-wiki-path)    C=ContainerTopologyTest; N="each Wiki project carries lib-chronos with its path" ;;
+            split-ignored)     C=ContainersPageComposeTest; N="the Topology body has a services band and a Repos band, with Public and Private under Apps, DB and Repos on Cloud-me" ;;
+            map-edge-dropped)  C=MailStackTest; N="parity - every section, row and edge of the old Mail map is in a Tables table" ;;
+            home-row-lost)     C=HomeLiveTest; N="every declared section and page has a Home row, in the declared order" ;;
+            home-zero-on-fail) C=HomeLiveTest; N="a failed source shows its reason on the row, never a zero" ;;
+            projects-row-lost) C=InfraProjectsTest; N="every declared project is a row and the columns match the declaration" ;;
+            projects-column-lost) C=InfraProjectsTest; N="every declared project is a row and the columns match the declaration" ;;
+            vm-unknown-lost   ) C=ContainerProjectsTest; N="#1971 parity Projects keeps every entity reachable, VM lists every container under exactly one host or the unknown host with a reason" ;;
+            vm-repo-on-host   ) C=ContainerProjectsTest; N="#1971 parity Projects keeps every entity reachable, VM lists every container under exactly one host or the unknown host with a reason" ;;
+            vm-devices-dropped) C=ContainerProjectsTest; N="#1971 parity Projects keeps every entity reachable, VM lists every container under exactly one host or the unknown host with a reason" ;;
+            wiki-lost)         C=ContainerProjectsTest; N="#1968 parity every entity under Lib before is under Wiki now, the All total is unchanged and the old ids resolve to Wiki" ;;
+            mail-alias-lost)   C=OrchOpsReorgTest; N="every old page id still resolves through the aliases to its new place" ;;
+          esac
+          X="$(find ac_cloud-c3/app/build -path '*test-results*' -name "TEST-*.$C.xml" | head -1)"
+          [ -n "$X" ] || { echo "::error::LEG ERROR $M: no result for $C (did not compile or run); not a kill"; exit 1; }
+          python3 -I - "$X" "$N" "$M" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          path, want, leg = sys.argv[1:]
+          cases = {c.get("name"): c for c in ET.parse(path).getroot().iter("testcase")}
+          failed = sorted(n for n, c in cases.items() if c.find("failure") is not None or c.find("error") is not None)
+          print("failed tests:", failed)
+          if want not in cases: print("::error::LEG ERROR %s: the named test did not run: %s" % (leg, want)); sys.exit(1)
+          if want not in failed: print("::error::LEG SURVIVED %s: the named test stayed green: %s" % (leg, want)); sys.exit(1)
+          print("KILLED %s by: %s" % (leg, want))
+          PY
+      - name: Failed tests
+        if: always()
+        run: grep -rl "<failure" --include="TEST-*.xml" ac_cloud-c3/app/build 2>/dev/null | xargs -r grep -h -o 'testcase name="[^"]*"' | head -40 || true

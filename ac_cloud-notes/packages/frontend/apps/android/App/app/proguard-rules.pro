@@ -73,3 +73,9 @@
 -keepattributes SourceFile,LineNumberTable
 # Keep custom exceptions.
 -keep public class * extends java.lang.Exception
+
+# #1949 PdfBox-Android (libs:pdf) names an optional JPEG2000 codec it does not ship.
+-dontwarn com.gemalto.jp2.**
+-keep class com.tom_roush.pdfbox.** { *; }
+-dontwarn com.tom_roush.pdfbox.**
+-dontwarn org.bouncycastle.**

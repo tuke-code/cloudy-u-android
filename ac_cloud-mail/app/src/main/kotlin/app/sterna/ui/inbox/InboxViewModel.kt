@@ -117,6 +117,9 @@ data class MailUi(
     /** Event-driven "no usable network" flag from [ConnectivityWatcher] (#65): true the moment
      *  WiFi/mobile drops, without waiting for a refresh to fail. Drives the offline banner. */
     val offline: Boolean = false,
+    /** #1952: when the account last reconciled with the server successfully (epoch ms; null = never). The banner over the cached
+     *  list says it whenever the refresh did not land. */
+    val lastSyncAt: Long? = null,
     /** Inline search-on-the-list state. */
     val searching: Boolean = false,
     val searchQuery: String = "",
@@ -145,6 +148,8 @@ private data class Base(
     val error: String?,
     /** Folded in after the five-flow combine below, from [refreshIndicatorVisibility]. */
     val showRefreshIndicator: Boolean = false,
+    /** #1952: the account's last successful reconcile, for the banner over the cached list. */
+    val lastSyncAt: Long? = null,
 )
 
 private data class SearchUi(
@@ -1159,6 +1164,13 @@ class InboxViewModel(
     val pagedListRows: Flow<PagingData<InboxRow>> =
         combine(pagedEmails, localDraftRows) { paged, local -> withLocalDrafts(paged, local) }
 
+    /**
+     * #1952: [pagedListRows], kept. The list screen leaves the composition on every page change; collected bare, its rows came back
+     * through the combine a few frames after the screen did (an empty list first, and the scroll position with it). Cached in this
+     * ViewModel's scope, the returning screen is handed the loaded pages in its FIRST composition. Still downstream of the drafts merge.
+     */
+    val keptListRows: Flow<PagingData<InboxRow>> = pagedListRows.cachedIn(viewModelScope)
+
     /** #1837: the (account, mailbox) folders that also list messages filed under another mailbox (a label holding an Inbox message):
      *  the rows guard cannot call such a row foreign by its mailbox ([rowsForeign]). */
     val extraFolders: StateFlow<Set<Pair<String, String>>> =
@@ -1213,6 +1225,8 @@ class InboxViewModel(
             unread = if (sel is Sel.Unified) unifiedUnread else meta.unread,
             refreshing = status.refreshing,
             error = status.error,
+            // Read at every status change; the collector in init stamps it when a refresh lands.
+            lastSyncAt = store.lastSyncAt(store.currentId()),
         )
     }
 
@@ -1249,6 +1263,7 @@ class InboxViewModel(
             error = base.error,
             showRefreshIndicator = base.showRefreshIndicator,
             offline = !online,
+            lastSyncAt = base.lastSyncAt,
             searching = search.active,
             searchQuery = search.query,
             searchLoading = search.loading,
@@ -1275,14 +1290,27 @@ class InboxViewModel(
             showRefreshIndicator = false,
             error = null,
             offline = !connectivity.online.value,
+            lastSyncAt = store.lastSyncAt(store.currentId()),
         ),
     )
 
     init {
+        // #1952: ONE list ViewModel per process run is the design; a second one means a page change rebuilt the list.
+        FirstRowTiming.viewModelCreated()
+        // #1952: the last sync time of the banner over the cached list. Stamped from the status itself ([refreshLanded]): only the
+        // refresh's landed arm leaves a running refresh with no error. The account on screen and nothing else.
+        viewModelScope.launch {
+            var wasRefreshing = false
+            status.collect { now ->
+                if (refreshLanded(wasRefreshing, now.refreshing, now.error)) store.currentId()?.let { store.setLastSyncAt(it, System.currentTimeMillis()) }
+                wasRefreshing = now.refreshing
+            }
+        }
         // Backfill the "G0 _ Auth" class of rows cached before it existed (bounded batches, once per row).
-        viewModelScope.launch(Dispatchers.IO) { runCatching { repo.indexAuth() } }
+        // #1952 cold start: both index passes wait for the first painted rows (they scan the whole store).
+        viewModelScope.launch(Dispatchers.IO) { app.sterna.core.data.mail.ColdStart.awaitRows(); runCatching { repo.indexAuth() } }
         // And the sender domain ("Group by Domain"), the same way.
-        viewModelScope.launch(Dispatchers.IO) { runCatching { repo.indexDomains() } }
+        viewModelScope.launch(Dispatchers.IO) { app.sterna.core.data.mail.ColdStart.awaitRows(); runCatching { repo.indexDomains() } }
         refreshUnlessFresh()
         connectivity.start()
         observeThreadMembers()

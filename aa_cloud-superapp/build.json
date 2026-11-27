@@ -3939,6 +3939,10 @@
                 {
                   "pkg": "com.viscouspot.gitsync",
                   "label": "Git Sync"
+                },
+                {
+                  "pkg": "com.github.android",
+                  "label": "GitHub"
                 }
               ],
               "icon_res": "ic_drive"
@@ -4055,6 +4059,19 @@
           "packages": [],
           "folders": [
             {
+              "label": "Lnktree",
+              "icon_pkg": "com.diegonmarcos.cloudme",
+              "icon_res": "ic_tree",
+              "packages": [],
+              "links": [
+                {
+                  "label": "Linktree",
+                  "url": "https://linktree.diegonmarcos.com",
+                  "icon": "ic_link_tile"
+                }
+              ]
+            },
+            {
               "label": "Me-Pers",
               "icon_pkg": "com.diegonmarcos.cloudme",
               "packages": [
@@ -4077,30 +4094,7 @@
                 {
                   "pkg": "com.garmin.android.apps.connectmobile",
                   "label": "Garmin Connect"
-                }
-              ],
-              "icon_res": "ic_heart"
-            },
-            {
-              "label": "Me-Prof",
-              "icon_pkg": "com.diegonmarcos.cloudme",
-              "packages": [
-                {
-                  "pkg": "com.memrise.android.memrisecompanion",
-                  "label": "Memrise"
                 },
-                {
-                  "pkg": "mobi.eup.easygerman",
-                  "label": "Todaii German"
-                }
-              ],
-              "icon_res": "ic_file_stack"
-            },
-            {
-              "label": "Me-Prj",
-              "icon_pkg": "com.diegonmarcos.cloudme",
-              "icon_res": "ic_file_stack",
-              "packages": [
                 {
                   "pkg": "com.instagram.android",
                   "label": "Instagram"
@@ -4136,6 +4130,35 @@
                 {
                   "pkg": "co.hinge.app",
                   "label": "Hinge"
+                }
+              ],
+              "icon_res": "ic_heart"
+            },
+            {
+              "label": "Me-Prof",
+              "icon_pkg": "com.diegonmarcos.cloudme",
+              "packages": [
+                {
+                  "pkg": "com.memrise.android.memrisecompanion",
+                  "label": "Memrise"
+                },
+                {
+                  "pkg": "mobi.eup.easygerman",
+                  "label": "Todaii German"
+                }
+              ],
+              "icon_res": "ic_file_stack"
+            },
+            {
+              "label": "Me-Prj",
+              "icon_pkg": "com.diegonmarcos.cloudme",
+              "icon_res": "ic_vcard",
+              "packages": [],
+              "links": [
+                {
+                  "label": "Linktree",
+                  "url": "https://linktree.diegonmarcos.com",
+                  "icon": "ic_link_tile"
                 }
               ]
             },
@@ -4251,6 +4274,10 @@
                 {
                   "pkg": "com.indeed.android.jobsearch",
                   "label": "Indeed"
+                },
+                {
+                  "pkg": "com.linkedin.android",
+                  "label": "LinkedIn"
                 }
               ],
               "icon_res": "ic_suite"
@@ -4357,12 +4384,12 @@
                   "label": "YouTube"
                 },
                 {
-                  "pkg": "com.amazon.avod.thirdpartyclient",
-                  "label": "Prime Video"
-                },
-                {
                   "pkg": "com.shazam.android",
                   "label": "Shazam"
+                },
+                {
+                  "pkg": "com.aspiro.tidal",
+                  "label": "Tidal"
                 }
               ],
               "icon_res": "ic_music"
@@ -4403,6 +4430,10 @@
                 {
                   "pkg": "ai.perplexity.app.android",
                   "label": "Perplexity"
+                },
+                {
+                  "pkg": "com.google.android.apps.bard",
+                  "label": "Gemini"
                 }
               ],
               "icon_res": "ic_ai_chat"
@@ -4414,10 +4445,6 @@
                 {
                   "pkg": "com.foxdebug.acode",
                   "label": "Acode"
-                },
-                {
-                  "pkg": "com.github.android",
-                  "label": "GitHub"
                 }
               ],
               "icon_res": "ic_ide"
@@ -5789,6 +5816,8 @@
               "onehand",
               "launcher-sep-1",
               "notify",
+              "launcher-sep-2",
+              "launcher-configs",
               "presets",
               "panels-all",
               "panels-battery",
@@ -5853,20 +5882,14 @@
           },
           {
             "id": "connect",
-            "label": "Connect",
+            "label": "C3",
             "icon": "ic_settings",
             "pages": [
               "c3",
-              "kde"
-            ]
-          },
-          {
-            "id": "tools",
-            "label": "Profiling",
-            "icon": "ic_settings",
-            "pages": [
-              "c3-watchdog",
+              "c3-sep-0",
+              "kde",
               "tools-sep-1",
+              "c3-watchdog",
               "xray",
               "logcat-fleet"
             ]
@@ -5961,7 +5984,7 @@
             "id": "launcher-hub",
             "label": "Launcher",
             "icon": "ic_apps",
-            "hub_sections": ["Launcher"],
+            "hub_sections": ["Launcher", "Configs"],
             "group": "Launcher",
             "subgroup": ""
           },
@@ -6035,6 +6058,23 @@
             "mirror_page": "communication/my-rss",
             "_doc_1848": "#1848 ONE Notify page: this Configs tile (and page:config/notify, and every link that used it) is REDIRECTED to Notify (communication) on its All sub-page, with its full two-row menu (Cards | Boards). mirror_page is kept as the record of what this tile used to render; the redirect is applied by Sections.canonicalPage, before any page is built.",
             "redirect": "communication/my-rss",
+            "group": "Launcher",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1943 The | between Notify and the Configs tile of the Launcher row: a CHARACTER, not a tile.",
+            "id": "launcher-sep-2",
+            "label": "|",
+            "separator": true,
+            "group": "Launcher",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1943 Setup ▸ Launcher row, right after | Notify: Configs opens the Launcher page (`redirect` to config/launcher-hub, like Notify: its own tile target keeps the Launcher tile's page:config/launcher-hub unique on the grid; its own icon keeps G1 unique), whose second section Configs holds what the Setup Configs section held (Profile, Perms, Agents, Logcat app, X-Ray App, About). A pure link, so the Launcher hub does not list it on itself (Sections.hubSections skips a page that redirects to the hub).",
+            "id": "launcher-configs",
+            "label": "Configs",
+            "icon": "ic_act_settings",
+            "redirect": "config/launcher-hub",
             "group": "Launcher",
             "subgroup": ""
           },
@@ -6218,7 +6258,15 @@
             "label": "Cloudy C3",
             "icon": "ic_cloud_control",
             "action": "extapp:cloud-c3",
-            "group": "Connect",
+            "group": "C3",
+            "subgroup": ""
+          },
+          {
+            "_doc": "#1943 The | between Cloudy C3 and Peer Control in the Setup C3 section: a CHARACTER, not a tile.",
+            "id": "c3-sep-0",
+            "label": "|",
+            "separator": true,
+            "group": "C3",
             "subgroup": ""
           },
           {
@@ -6226,7 +6274,15 @@
             "id": "kde",
             "label": "Peer Control",
             "icon": "ic_hub",
-            "group": "Connect",
+            "settings": ["Fleet Control"],
+            "group": "C3",
+            "subgroup": ""
+          },
+          {
+            "id": "tools-sep-1",
+            "label": "|",
+            "separator": true,
+            "group": "C3",
             "subgroup": ""
           },
           {
@@ -6235,14 +6291,7 @@
             "label": "Watchdog",
             "icon": "ic_watchtower",
             "action": "extapp:c3-watchdog",
-            "group": "Profiling",
-            "subgroup": ""
-          },
-          {
-            "id": "tools-sep-1",
-            "label": "|",
-            "separator": true,
-            "group": "Profiling",
+            "group": "C3",
             "subgroup": ""
           },
           {
@@ -6250,7 +6299,7 @@
             "id": "xray",
             "label": "X-Ray Device",
             "icon": "ic_monitor_heart",
-            "group": "Profiling",
+            "group": "C3",
             "subgroup": ""
           },
           {
@@ -6258,7 +6307,7 @@
             "id": "logcat-fleet",
             "label": "Logcat Fleet",
             "icon": "ic_p_logs",
-            "group": "Profiling",
+            "group": "C3",
             "subgroup": ""
           },
           {
@@ -6267,6 +6316,7 @@
             "label": "Profile",
             "icon": "ic_p_accounts",
             "action": "extapp:cloud-account",
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6275,6 +6325,7 @@
             "id": "configs-sep-a",
             "label": "|",
             "separator": true,
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6283,6 +6334,7 @@
             "id": "perms",
             "label": "Perms",
             "icon": "ic_key",
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6294,6 +6346,7 @@
             "hub_sections": [
               "Network"
             ],
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6302,6 +6355,7 @@
             "id": "logcat",
             "label": "Logcat app",
             "icon": "ic_subject",
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6310,6 +6364,7 @@
             "id": "xray-app",
             "label": "X-Ray App",
             "icon": "ic_p_c3_health",
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -6318,6 +6373,7 @@
             "id": "app-about",
             "label": "About",
             "icon": "ic_info",
+            "hidden_on": ["setup"],
             "group": "Configs",
             "subgroup": ""
           },
@@ -7883,6 +7939,12 @@
           "pkg:ott.alanwatts",
           "pkg:cn.com.aftershokz.app",
           "pkg:com.oceanwing.soundcore",
+          "pkg:com.samsung.accessory.berrymgr",
+          "pkg:com.samsung.accessory.neobeanmanager",
+          "pkg:com.google.android.apps.wearables.maestro.companion",
+          "pkg:com.sony.songpal.mdr",
+          "pkg:com.bose.bosemusic",
+          "pkg:com.jbl.oneapp",
           "pkg:com.mi.earphone"
         ],
         "match_metadata": [
@@ -11870,7 +11932,23 @@
               "type": "toggle",
               "label": "Show album art",
               "default": true
+            },
+            {
+              "key": "buds_app",
+              "type": "choice",
+              "label": "Buds app (button after Spotify)",
+              "options": ["com.oceanwing.soundcore", "com.samsung.android.app.watchmanager", "com.google.android.apps.wearables.maestro.companion", "com.sony.songpal.mdr", "com.bose.bosemusic", "com.jbl.oneapp"],
+              "default": "com.oceanwing.soundcore"
             }
+          ],
+          "_doc_buds_apps": "#1966 the Media card's buds-app button opens the companion app of the owner's earbuds (the real launcher icon; hidden, with the reason in this setting, when the app is not installed). The `buds_app` customization is the app shown when no matching earbuds are connected (default Anker Soundcore, com.oceanwing.soundcore, in the declaration only). `buds_apps` maps a connected Bluetooth audio device to its companion app: the first connected device whose name starts with any of name_prefixes (case-insensitive) selects the first installed of packages.",
+          "buds_apps": [
+            {"name_prefixes": ["Soundcore", "Anker", "Liberty", "Space One", "Life "], "label": "Anker Soundcore", "packages": ["com.oceanwing.soundcore"]},
+            {"name_prefixes": ["Galaxy Buds"], "label": "Galaxy Wearable", "packages": ["com.samsung.android.app.watchmanager", "com.samsung.accessory.berrymgr", "com.samsung.accessory.neobeanmanager"]},
+            {"name_prefixes": ["Pixel Buds"], "label": "Pixel Buds", "packages": ["com.google.android.apps.wearables.maestro.companion"]},
+            {"name_prefixes": ["WF-", "WH-", "LinkBuds"], "label": "Sony Sound Connect", "packages": ["com.sony.songpal.mdr"]},
+            {"name_prefixes": ["Bose"], "label": "Bose Music", "packages": ["com.bose.bosemusic"]},
+            {"name_prefixes": ["JBL"], "label": "JBL One", "packages": ["com.jbl.oneapp"]}
           ]
         },
         {

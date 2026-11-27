@@ -64,6 +64,7 @@ class PushService : Service() {
      */
     private fun goForeground(): Boolean = try {
         FleetNotify.startKeepAlive(this, Notifications.SERVICE_ID, Notifications.serviceNotification(this), FleetNotify.specialUseType())
+        runCatching { FleetNotify.post(this, FleetNotify.SUMMARY_ID, Notifications.backgroundSummary(this)) }   // #1944
         true
     } catch (e: RuntimeException) {
         Log.w(TAG, "startForeground refused; fallback poll carries delivery", e)
@@ -83,6 +84,13 @@ class PushService : Service() {
         if (intent?.action == ACTION_STOP) {
             stopSelf()
             return START_NOT_STICKY
+        }
+        // #1965 the card's Sync now: one full sync now, then a fresh card. The service keeps running as it was.
+        if (intent?.action == ACTION_SYNC) {
+            if (!goForeground()) return START_NOT_STICKY
+            runCatching { app.sterna.mail.OfflineSyncWorker.runNow(this) }
+            refreshBadge()
+            return START_STICKY
         }
         // #1828 every startForegroundService owes its own startForeground (see [goForeground]).
         if (!goForeground()) return START_NOT_STICKY
@@ -245,6 +253,7 @@ class PushService : Service() {
     override fun onDestroy() {
         instance = null
         isRunning = false
+        runCatching { FleetNotify.cancelBackgroundSummary(this) }   // #1944 the card and its group summary go together
         // #1768: no push any more: the full sync is back to every 15 minutes.
         runCatching { app.sterna.mail.OfflineSyncWorker.ensureScheduled(this, hasPush = false) }
         connections.values.forEach { runCatching { it.close() } }
@@ -261,6 +270,9 @@ class PushService : Service() {
 
         /** The keep-alive badge's Stop action ([Notifications.serviceNotification]). */
         const val ACTION_STOP = "app.sterna.push.STOP"
+
+        /** #1965 The card's Sync now action ([Notifications.serviceNotification]). */
+        const val ACTION_SYNC = "app.sterna.push.SYNC"
 
         /** Whether the service object exists. Says nothing about whether any connection is open,
          *  the reconnect loop keeping the service alive through every failure. Only the status line

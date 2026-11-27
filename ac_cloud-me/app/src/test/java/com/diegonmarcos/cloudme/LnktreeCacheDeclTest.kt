@@ -22,14 +22,16 @@ class LnktreeCacheDeclTest {
     @Test fun `the declared values are what the app reads`() {
         assertTrue(cfg.enabled)
         assertEquals("proj", cfg.section)   // #1901 the Lnktree section is Proj
-        assertEquals(listOf("pers", "prof", "proj"), cfg.cachedSections())
+        assertTrue(cfg.cachedSections().containsAll(listOf("pers", "prof", "proj", "lnktree")))   // #1951 all sections
         assertEquals(7 * 24 * 60 * 60 * 1000L, cfg.ttlMs)
         assertTrue(cfg.prefetchEnabled)
         assertEquals(3, cfg.prefetchConcurrency)
-        assertEquals("unmetered", cfg.prefetchNetwork)
+        assertEquals("connected", cfg.prefetchNetwork)   // #1951
+        assertEquals(0, cfg.prefetchMaxPages)   // #1951 0 = every page
+        assertEquals(0, cfg.maxSubresourcesPerPage)   // #1957 0 = every file of the page
         assertEquals(8, cfg.holderMaxWebViews)
         assertEquals("page", cfg.hardRefreshScope)
-        assertEquals(40L * 1024 * 1024, cfg.maxBytes)
+        assertEquals(512L * 1024 * 1024, cfg.maxBytes)   // #1957 every file of every page, cross-origin media included (#1951 measured 62 MB same-origin only)
         assertTrue(cfg.excludePages.isEmpty())
         assertTrue(decl.getString("_doc").isNotBlank())
     }

@@ -61,7 +61,7 @@ sec = next(s for s in json.load(open(sys.argv[1]))['ui']['sections'] if s['id'] 
 probs = []
 if sec.get('nav_mode') != 'horizontal_two_rows': probs.append('nav_mode = %r' % sec.get('nav_mode'))
 groups = {g['id']: g for g in sec.get('groups', [])}
-if set(groups) != {'launcher', 'network', 'apps', 'connect', 'tools', 'configs'}: probs.append('groups = %r (want the six #1623 groups)' % sorted(groups))
+if set(groups) != {'launcher', 'network', 'apps', 'connect', 'configs'}: probs.append('groups = %r (want the five #1943 groups: Connect is labelled C3, Profiling merged in)' % sorted(groups))
 # #1623 bluetooth and its tabs live in the Network group (no subgroup)
 net_pages = set(groups.get('network', {}).get('pages', []))
 if 'bluetooth' not in net_pages or not {'bluetooth-find', 'bluetooth-dev'} <= net_pages: probs.append('bluetooth and its tabs are not in the Network group')
@@ -69,7 +69,7 @@ for stale in ('device', 'setup', 'fleet', 'agents', 'observability'):
     if stale in groups: probs.append('%s is still a top-level group (#1623 made Configs the six flat groups)' % stale)
 label = {p['id']: p['label'] for p in sec['pages']}
 if label['c3'] != 'Cloudy C3': probs.append('c3 label = %r' % label['c3'])  # #1610 C3 moved to Setup ▸ Connect, relabelled Cloudy C3
-if label['kde'] != 'Peer Control': probs.append('kde label = %r' % label['kde'])
+if label['kde'] != 'Peer Control': probs.append('kde label = %r' % label['kde'])   # #1943 relabelled from Peer Control
 icon = {p['id']: p.get('icon') for p in sec['pages']}
 if icon['c3'] != 'ic_cloud_control': probs.append('c3 icon = %r' % icon['c3'])
 if icon['c3'] in [p.get('icon') for p in sec['pages'] if p['id'] != 'c3']: probs.append('c3 icon collides with another Configs page')

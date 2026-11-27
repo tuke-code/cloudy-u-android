@@ -58,6 +58,8 @@ object Stacks {
         val source: String = "",
         /** Rows per repo / total rows / messages per channel group; 0 = renderer default. */
         val limit: Int = 0,
+        /** #1953 the Topology layout id this card draws: a section id (cloud_dashboard) or a band id (topo_band, topo_band_empty); blank = none. */
+        val dashSection: String = "",
     )
 
     /** One declared in-panel anchor — see the SuperApp's Sections.PanelAnchor. */
@@ -233,10 +235,19 @@ object Stacks {
 
     /** #1148 the container dashboards: the SAME document as the Table page (ContainersSource), one card per group, one
      *  sub-table per category, in the document's order. Not cached: the live copy may replace the baked one. */
-    fun cloudServices(project: String? = null, kind: String? = null): CloudDash {
+    fun cloudServices(project: String? = null, kind: String? = null, types: Set<String> = emptySet(), vms: Set<String> = emptySet()): CloudDash {
         val c = ContainersSource.current()
         val d = Declarations.containerProjects
-        return dashOf(ContainerProjects.scope(d, c, project?.takeIf { d.project(it) != null }, kind))
+        return dashOf(ContainerProjects.scope(d, c, project?.takeIf { d.scopeKnown(it) }, kind, types, vms))
+    }
+
+    /** #1953 the Topology plan of [project] (null = All) under the Type / VM filters, and every drawn entity's dashboard entry by name. */
+    fun topology(project: String? = null, types: Set<String> = emptySet(), vms: Set<String> = emptySet()): Pair<com.diegonmarcos.cloudc3.pages.ContainerTopology.Plan, Map<String, CloudContainer>> {
+        val d = Declarations.containerProjects
+        val pid = project?.takeIf { d.scopeKnown(it) }
+        val scoped = ContainerProjects.scope(d, ContainersSource.current(), pid, null, types, vms)
+        val byName = dashOf(scoped).groups.flatMap { g -> g.subgroups.flatMap { it.containers } }.associateBy { it.name }
+        return com.diegonmarcos.cloudc3.pages.ContainerTopology.plan(d, scoped, pid) to byName
     }
 
     fun dashOf(c: ContainersModel.Catalog): CloudDash = CloudDash(c.groups.map { g ->

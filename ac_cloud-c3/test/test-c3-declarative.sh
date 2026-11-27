@@ -80,11 +80,21 @@ for p in cont:
     if got != want: bad.append("Containers page %r nests %s, not the Topology | Table switch %s" % (p["id"], got, want))
     labels = [q["label"] for q in p.get("pages") or []]
     if labels != ["Topology", "Table"]: bad.append("Containers page %r labels its switch %s" % (p["id"], labels))
-if [p["label"] for p in cont] != ["All", "Cloudy", "Cloud-me", "CG", "Capital", "Hardtech", "Others"]:
-    bad.append("the Containers strip reads %s" % [p["label"] for p in cont])
+cpj = json.load(open(app + "/data/container_projects.json", encoding="utf-8"))["projects"]
+sys.path.insert(0, app + "/data")
+import gen_vm_hosts
+if [p["id"] for p in cont] != ["all"] + [p["id"] for p in cpj] + gen_vm_hosts.page_ids("vm-", app + "/data"):
+    bad.append("the Containers strip reads %s, not All + the container_projects.json projects + the derived VM pages (#1971)" % [p["id"] for p in cont])
+want_vm = ["All"] + [l for _, l in gen_vm_hosts.derive(app + "/data")] + ["Unknown host"]
+if [p["label"] for p in cont if p["id"].startswith("vm-")] != want_vm:
+    bad.append("the VM row reads %s, not %s (declared order + short labels, Unknown host last; #1971)" % ([p["label"] for p in cont if p["id"].startswith("vm-")], want_vm))
+if [l for _, l in gen_vm_hosts.derive(app + "/data")] != ["oci-apps", "oci-analytics", "oci-mail", "gcp-proxy", "SurfacePro8", "SamsungA37", "SamsungS21"]:
+    bad.append("the derived VM hosts are not the owner's list: %s" % gen_vm_hosts.derive(app + "/data"))
+if [p["label"] for p in cont][0] != "All" or "Lib" in [p["label"] for p in cont] or "Wiki_ModernSc" not in [p["label"] for p in cpj]:
+    bad.append("the Containers strip lacks All, still has Lib or lacks Wiki (#1968): %s" % [p["label"] for p in cont])
 def ids(pages): return [p["id"] for p in pages] + [i for p in pages for i in ids(p.get("pages") or [])]
-ops = ids(secs["ops"]["pages"])
-if "orch_agents" not in ops: bad.append("Agents is not an Ops page")
+orch = ids(secs["orch"]["pages"])
+if "orch_agents" not in orch: bad.append("Agents is not an Orch page (#1942)")
 if "agents" in ids(cont): bad.append("Agents is still under Containers")
 for b in bad: print("    " + b)
 sys.exit(1 if bad else 0)
@@ -100,10 +110,11 @@ strip = [p["id"] for p in next(s for s in ui["sections"] if s["id"] == "containe
 cp = json.load(open(app + "/data/container_projects.json", encoding="utf-8"))
 declared = [p["id"] for p in cp["projects"]]
 bad = []
-if sorted(declared) != sorted(i for i in strip if i != "all"): bad.append("the strip %s and container_projects.json %s name different projects" % (strip, declared))
+if sorted(declared) != sorted(i for i in strip if i != "all" and not i.startswith("vm-")): bad.append("the strip %s and container_projects.json %s name different projects" % (strip, declared))
 if cp.get("default") not in declared: bad.append("the default project %r is not declared" % cp.get("default"))
 for p in cp["projects"]:
-    if p["id"] != cp.get("default") and not re.fullmatch(r"\d+(\.\d+)*", p.get("code", "")): bad.append("project %r has no registry code" % p["id"])
+    if p.get("code", "") and not re.fullmatch(r"\d+(\.\d+)*", p["code"]): bad.append("project %r has a malformed registry code" % p["id"])
+    if not p.get("category"): bad.append("project %r has no category (the first row of the Containers page)" % p["id"])
 for b in bad: print("    " + b)
 sys.exit(1 if bad else 0)
 PY
@@ -178,7 +189,7 @@ ap = json.load(open(app + "/data/api_providers.json", encoding="utf-8"))
 infra = next(s for s in bj["ui"]["sections"] if s["id"] == "infra")
 rows = [g["label"] for g in infra["groups"]]
 bad = []
-if rows != ["Bare", "APIs", "Personal", "Domains"]: bad.append("the Infra rows read %s, not Bare | APIs | Personal | Domains" % rows)
+if rows != ["Bare", "APIs", "Personal", "Domains", "Projects"]: bad.append("the Infra rows read %s, not Bare | APIs | Personal | Domains | Projects (#1969)" % rows)
 row = next((g for g in infra["groups"] if g["id"] == "apis"), {})
 pages = {p["id"] for p in infra["pages"]}
 gids = [g["id"] for g in ap["groups"]]
@@ -245,43 +256,47 @@ sys.exit(1 if bad else 0)
 PY
 }
 
-# d8 <app dir> : #2 Filters is ONE page-wide row above the project strip
+# d8 <app dir> : #1941 the page-wide Filters row is gone; each page draws its own Filters row under Topology | Table
 d8() { python3 - "$1" <<'PY'
-import re, sys
+import os, re, sys
 app = sys.argv[1]; K = app + "/app/src/main/java/com/diegonmarcos/cloudc3/"
 rd = lambda f: open(K + f, encoding="utf-8").read()
-rt, st, pg, tf = rd("pages/RoutesTable.kt"), rd("cloud/C3StackFragment.kt"), rd("pages/PagedFragment.kt"), rd("pages/TabFragments.kt")
+rt, st, cp, tf = rd("pages/RoutesTable.kt"), rd("cloud/C3StackFragment.kt"), rd("pages/ContainersPage.kt"), rd("pages/TabFragments.kt")
 bad = []
-m = re.search(r"fun KindBar\(.*?\n}\n", rt, flags=re.S)
-if not m or 'Text("Filters"' not in m.group(0): bad.append("the kind row is not labelled Filters")
-if re.search(r'ChipRow\("Kind"', rt): bad.append("a Kind chip row is left")
-if len(re.findall(r"\bKindBar\(", rt + st + tf)) != 2: bad.append("KindBar must be defined once and called once (ContainersFragment.AboveStrip), not per page")
-if "AboveStrip()" not in pg or pg.index("AboveStrip()") > pg.index("NavBarTopSecondRow("): bad.append("PagedFragment does not draw AboveStrip before the project strip")
-if not re.search(r"class ContainersFragment.*?override fun AboveStrip\(\) = KindBar", tf, flags=re.S): bad.append("ContainersFragment does not draw Filters above the strip")
-for name, src in (("Topology (C3StackFragment)", st), ("Table (RoutesTableFragment)", rt)):
-    if "ContainerFilter.kind" not in src: bad.append("%s does not read the page-wide ContainerFilter" % name)
+allsrc = ""
+for dp, _d, files in os.walk(K):
+    for f in files:
+        if f.endswith(".kt"): allsrc += open(os.path.join(dp, f), encoding="utf-8").read()
+if "KindBar" in allsrc: bad.append("the page-wide KindBar row is still defined or called")
+if "ContainerFilter.kind" in allsrc: bad.append("a page still reads the page-wide kind selection")
+if 'Text("Filters"' in allsrc: bad.append("a Filters label is still drawn")
+if re.search(r'ChipRow\("Light"', rt): bad.append("the Table still labels its status filter Light")
+for lab in ("Status", "Auth", "VM", "Project", "Type"):
+    if not re.search(r'ChipRow\("%s"' % lab, rt): bad.append("the Table lacks its %s filter row" % lab)
+for lab in ("Status", "VM", "Type"):
+    if not re.search(r'ChipRow\("%s"' % lab, cp): bad.append("the Topology lacks its %s filter row" % lab)
+order = [cp.find(x) for x in ("ContainersTags.ROW_CATEGORY)", "ContainersTags.ROW_PROJECT)", "ContainersTags.ROW_VIEW)", "ContainersTags.ROW_FILTERS)")]
+if -1 in order or order != sorted(order): bad.append("the Containers rows are not category, project, Topology | Table, Filters in that order")
+if "ContainerFilter.types" not in st: bad.append("Topology (C3StackFragment) does not read the Topology filters")
+if "ContainersChrome(" not in tf: bad.append("ContainersFragment does not draw the four rows")
 for b in bad: print("    " + b)
 sys.exit(1 if bad else 0)
 PY
 }
 
-# d9 <app dir> : #4 every project tab shows data; the Topology draws one card per scoped group (no static group-id filter)
+# d9 <app dir> : #4 every repo is in a declared project, Wiki shows the former Lib repos (#1968); the Topology draws one card per scoped group (no static group-id filter)
 d9() { python3 - "$1" <<'PY'
 import json, sys
 app = sys.argv[1]
 cp = json.load(open(app + "/data/container_projects.json", encoding="utf-8"))
 rd = json.load(open(app + "/data/repos_declared.json", encoding="utf-8"))
-cd = json.load(open(app + "/data/containers_declared.json", encoding="utf-8"))
 bad = []
 count = {p["id"]: 0 for p in cp["projects"]}
 for r in rd["repos"]:
     if r["project"] not in count: bad.append("repo %r is in the undeclared project %r" % (r["name"], r["project"]))
     else: count[r["project"]] += 1
-for c in cd["containers"]:
-    pid = cp["name_overrides"].get(c["name"]) or next((p["id"] for p in cp["projects"] if any(c.get("dir", "").startswith(x) for x in p["folder_prefix"]) or any(c["name"].startswith(x) for x in p["name_prefix"])), cp["default"])
-    if pid in count: count[pid] += 1
-for pid, n in count.items():
-    if n == 0: bad.append("project %r shows nothing: no container and no repo" % pid)
+if "lib" in count: bad.append("project 'lib' is still declared: Lib is Wiki (#1968)")
+if count.get("pj-wiki-modernsc", 0) + count.get("pj-wiki-projects", 0) == 0: bad.append("Wiki shows nothing: the former Lib repos are lost")
 kt = open(app + "/app/src/main/java/com/diegonmarcos/cloudc3/cloud/C3StackFragment.kt", encoding="utf-8").read()
 if "shownPanels(panels)" not in kt or "dashGroupIds = listOf(g.id)" not in kt: bad.append("the Topology does not draw one card per scoped group: a group id outside the panels' static list would be dropped (the root cause of the empty tabs)")
 for b in bad: print("    " + b)
@@ -301,12 +316,15 @@ seen = {}
 for p in cp["projects"]:
     fams = rd["projects"].get(p["id"], {}).get("families") or []
     if p.get("repo_group"): continue
-    if not fams: bad.append("project %r declares no registry families" % p["id"])
+    if not fams: continue   # #1941 a Cloud Me project with no registry repo has no family yet
     if macro & set(fams): bad.append("project %r repeats a Cloudy macro group" % p["id"])
-    if tuple(fams) in seen: bad.append("projects %r and %r share one family list" % (p["id"], seen[tuple(fams)]))
-    seen[tuple(fams)] = p["id"]
+    # sibling projects of one category (the 42 projects) may share a registry family; two categories never do
+    if tuple(fams) in seen and seen[tuple(fams)][1] != p.get("category"): bad.append("projects %r and %r share one family list" % (p["id"], seen[tuple(fams)][0]))
+    seen[tuple(fams)] = (p["id"], p.get("category"))
     for r in rd["repos"]:
-        if r["project"] == p["id"] and r["group"] not in fams: bad.append("repo %r sits in %r, not a family of %r" % (r["name"], r["group"], p["id"]))
+        # #1953 a registry hub (role hub) sits in the declared Hub group, every other repo in a family of its project
+        if r["project"] == p["id"] and r.get("role") == "hub" and r["group"] != "Hub": bad.append("hub %r sits in %r, not Hub" % (r["name"], r["group"]))
+        if r["project"] == p["id"] and r.get("role", "repo") == "repo" and r["group"] not in fams: bad.append("repo %r sits in %r, not a family of %r" % (r["name"], r["group"], p["id"]))
 for n, f in cp.get("container_family", {}).items():
     pid = cp["name_overrides"].get(n)
     if pid and f not in (rd["projects"].get(pid, {}).get("families") or []): bad.append("container %r family %r is not a registry family of %r" % (n, f, pid))
@@ -333,6 +351,27 @@ sys.exit(1 if bad else 0)
 PY
 }
 
+# d12 <app dir> : #1968 parity (rule 16): every entity under Lib before is under Wiki now, the All total is unchanged, the old ids alias to Wiki
+d12() { python3 - "$1" <<'PY'
+import json, sys
+app = sys.argv[1]
+cp = json.load(open(app + "/data/container_projects.json", encoding="utf-8"))
+rd = json.load(open(app + "/data/repos_declared.json", encoding="utf-8"))
+base = json.load(open(app + "/data/lib_members_1968.json", encoding="utf-8"))
+bad = []
+wiki = {p["id"] for p in cp["projects"] if p["category"] == "Wiki"}
+if "Lib" in {p["category"] for p in cp["projects"]} or any(p["id"] == base["former_project"] for p in cp["projects"]): bad.append("Lib is still a category or project")
+by = {r["name"]: r for r in rd["repos"]}
+for n in base["members"]:
+    if n not in by or not ({a["project"] for a in by[n]["attached"]} & wiki): bad.append("former Lib entity %r is not under Wiki" % n)
+if len(rd["repos"]) != base["repos_total"]: bad.append("the All total is %d, was %d" % (len(rd["repos"]), base["repos_total"]))
+for k in ("lib", "pj-lib"):
+    if cp.get("aliases", {}).get(k) not in wiki: bad.append("alias %r does not resolve to a Wiki project" % k)
+for b in bad: print("    " + b)
+sys.exit(1 if bad else 0)
+PY
+}
+
 d1 "$APP" && pass "D1 no platform or project name is a string literal in Kotlin" || fail "D1 a page hard-codes a declared platform or project"
 d2 "$APP" && pass "D2 every project nests Topology | Table; Agents is under Ops" || fail "D2 the nav declaration is wrong"
 d3 "$APP" && pass "D3 the project strip and the container -> project mapping agree" || fail "D3 the strip and the mapping disagree"
@@ -340,9 +379,10 @@ d4 "$APP" && pass "D4 the platform rows are declared, reach the slice, and the I
 d5 "$APP" && pass "D5 no personal email address and no secret-shaped value in the app tree; the private source is a declaration" || fail "D5 a personal address, a secret value or an undeclared private source"
 d6 "$APP" && pass "D6 the APIs row and its groups are declared; a secret is a name only" || fail "D6 the APIs row is not declarative or a secret is not a name"
 d7 "$APP" && pass "D7 no tab has a Project Apps table or macro group" || fail "D7 Project Apps is back on a tab"
-d8 "$APP" && pass "D8 Filters is one page-wide row above the project tabs, read by Topology and Table" || fail "D8 the Filters row is not page-wide"
-d9 "$APP" && pass "D9 every project tab shows data and the Topology draws one card per scoped group" || fail "D9 a project tab is empty"
+d8 "$APP" && pass "D8 no page-wide Filters row; each page draws its own Filters under Topology | Table" || fail "D8 the page-wide Filters row is back or a page lacks its own"
+d9 "$APP" && pass "D9 every repo is in a declared project, Wiki shows the former Lib repos, and the Topology draws one card per scoped group" || fail "D9 a repo has no project, Wiki is empty or the Topology drops a group"
 d10 "$APP" && pass "D10 Infra Apps and Cloud Apps are Cloudy's only; every other project has its own families" || fail "D10 a project repeats Cloudy's groups or lacks families"
+d12 "$APP" && pass "D12 every entity under Lib is under Wiki, the All total is unchanged, the old ids alias to Wiki" || fail "D12 a former Lib entity left Wiki or the All total changed"
 d11 "$APP" && pass "D11 both Google Apps Script environments are declared Containers-Node-Python platforms and reach the slice" || fail "D11 a Google Apps Script platform is missing"
 
 # ── M: every check able to go RED ───────────────────────────────────────────
@@ -375,12 +415,12 @@ json.dump(d, open(p, "w"), indent=2)
 PY
 }
 append() { printf '%s\n' "$2" >> "$1"; }
-m_kt_project()   { append "$1/$KT/pages/TabFragments.kt" 'val projectsTyped = listOf("Hardtech", "Capital")'; }
+m_kt_project()   { append "$1/$KT/pages/TabFragments.kt" 'val projectsTyped = listOf("Hardtech_CAD", "Capital_PM")'; }
 m_kt_platform()  { append "$1/$KT/pages/InfraPages.kt" 'val platformsTyped = listOf("Google Firebase")'; }
 m_kt_prefix()    { append "$1/$KT/pages/ContainerProjects.kt" 'val folderTyped = "user-fin_"'; }
 m_no_switch()    { pyjson "$1/build.json" 'next(s for s in d["ui"]["sections"] if s["id"]=="containers")["pages"][2]["pages"].pop()'; }
 m_agents_back()  { pyjson "$1/build.json" 'next(s for s in d["ui"]["sections"] if s["id"]=="containers")["pages"].append({"id":"agents","label":"Agents","icon":"ic_robot"})'; }
-m_no_agents()    { pyjson "$1/build.json" 'o=next(s for s in d["ui"]["sections"] if s["id"]=="ops"); [p.__setitem__("pages",[q for q in p["pages"] if q["id"]!="orch_agents"]) for p in o["pages"]]'; }
+m_no_agents()    { pyjson "$1/build.json" 'o=next(s for s in d["ui"]["sections"] if s["id"]=="orch"); o["pages"]=[q for q in o["pages"] if q["id"]!="orch_agents"]'; }
 m_extra_page()   { pyjson "$1/build.json" 'next(s for s in d["ui"]["sections"] if s["id"]=="containers")["pages"].append({"id":"ghost","label":"Ghost","icon":"ic_p_c3_stack","pages":[{"id":"ghost_topology","label":"Topology","icon":"ic_p_c3_stack"},{"id":"ghost_table","label":"Table","icon":"ic_link_tile"}]})'; }
 m_platform_gone(){ pyjson "$1/data/fleet_slice.json" 'd["hosting"]=d["hosting"][1:]'; }
 m_lists_ctrs()   { append "$1/$KT/pages/InfraPages.kt" 'val x = slice.serverless'; }
@@ -405,15 +445,22 @@ import json, sys
 p = sys.argv[1]; d = json.load(open(p)); d["group_remap"] = {}; json.dump(d, open(p, "w"))
 PY
 }
-m_filters_row()  { sed -i 's/Text("Filters"/Text("Kind"/' "$1/$KT/pages/RoutesTable.kt"; }
+m_filters_row()  { sed -i 's/ChipRow("Status")/ChipRow("Light")/' "$1/$KT/pages/RoutesTable.kt"; }
+m_kindbar_back() { append "$1/$KT/pages/RoutesTable.kt" 'fun KindBar() {}'; }
+m_rows_swap()    { sed -i 's/ContainersTags.ROW_FILTERS)/ContainersTags.ROW_ZZZ)/; s/ContainersTags.ROW_CATEGORY)/ContainersTags.ROW_FILTERS)/' "$1/$KT/pages/ContainersPage.kt"; }
 m_empty_tab()    { python3 - "$1/data/repos_declared.json" <<'PY'
 import json, sys
-p = sys.argv[1]; d = json.load(open(p)); d["repos"] = [r for r in d["repos"] if r["project"] != "hardtech"]; json.dump(d, open(p, "w"))
+p = sys.argv[1]; d = json.load(open(p)); d["repos"] = [r for r in d["repos"] if r["project"] not in ("pj-wiki-modernsc", "pj-wiki-projects")]; json.dump(d, open(p, "w"))
+PY
+}
+m_wiki_lost()    { python3 - "$1/data/repos_declared.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); r = next(x for x in d["repos"] if x["name"] == "_git-repos-master"); r["attached"] = []; json.dump(d, open(p, "w"))
 PY
 }
 m_fam_repeat()   { python3 - "$1/data/repos_declared.json" <<'PY'
 import json, sys
-p = sys.argv[1]; d = json.load(open(p)); d["projects"]["cg"]["families"].append("Infra Apps"); json.dump(d, open(p, "w"))
+p = sys.argv[1]; d = json.load(open(p)); d["projects"]["pj-cg-omniverse"]["families"].append("Infra Apps"); json.dump(d, open(p, "w"))
 PY
 }
 m_no_source()    { pyjson "$1/build.json" 'del d["ui"]["private_sources"]'; }
@@ -433,8 +480,11 @@ mutate "a 4th address lands in public_identities.json"    d5 m_email_data
 mutate "an allowed address is copied into another file"   d5 m_email_other
 mutate "the private source declaration is removed"       d5 m_no_source
 mutate "Project Apps is no longer remapped"              d7 m_ps_card
-mutate "the Filters label is renamed back to Kind"       d8 m_filters_row
-mutate "a project tab has no container and no repo"      d9 m_empty_tab
+mutate "the Status filter is renamed back to Light"      d8 m_filters_row
+mutate "the page-wide KindBar row comes back"            d8 m_kindbar_back
+mutate "the Filters row is no longer under the view row" d8 m_rows_swap
+mutate "Wiki has none of the former Lib repos"           d9 m_empty_tab
+mutate "a former Lib entity is not under Wiki"        d12 m_wiki_lost
 mutate "a project repeats Infra Apps"                    d10 m_fam_repeat
 mutate "a provider name is typed into Kotlin"            d1 m_kt_provider
 mutate "an API group page id is typed into Kotlin"       d1 m_kt_group

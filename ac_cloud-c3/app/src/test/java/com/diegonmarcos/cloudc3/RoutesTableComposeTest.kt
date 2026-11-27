@@ -40,7 +40,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /** The Containers > Table page, DRIVEN: header taps sort, chips filter, the count follows, the state is handed out. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "w1200dp-h900dp-mdpi")
+@Config(sdk = [34], qualifiers = "w2000dp-h900dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RoutesTableComposeTest {
 
@@ -58,7 +58,7 @@ class RoutesTableComposeTest {
     }).around(compose)
 
     private fun r(name: String, auth: String, vm: String, pub: String = "$name.example.com") =
-        RoutesTableModel.Row("app", name, pub, auth, "$name.app:80", vm, "$name.vm:80", group = "Infra Apps")
+        RoutesTableModel.Row("app", name, pub, auth, "$name.app:80", vm, "$name.vm:80", group = "Infra Apps", project = "Unix_Cloudy", type = "App")
 
     private val rows = listOf(
         r("charlie", "bearer", "vm-b"), r("alpha", "woauth", "vm-a"), r("bravo", "mesh", "vm-a", pub = ""), r("delta", "mesh", "vm-c", pub = ""),
@@ -80,9 +80,9 @@ class RoutesTableComposeTest {
     private fun tap(tag: String) { compose.onNodeWithTag(tag).performClick(); compose.waitForIdle() }
 
     @Test
-    fun `all eight data columns are headed in the owner's order, Group and Category first`() {
+    fun `all ten data columns are headed in the declared order, Project Cat1 Cat2 Type first, no Group column`() {
         show()
-        val want = listOf("Group", "Category", "Container", "Public URL", "Auth Type", "Private URL", "VM Name", "VM IP:PORT")
+        val want = listOf("Project", "Cat1", "Cat2", "Type", "Container", "Public URL", "Auth Type", "Private URL", "VM Name", "VM IP:PORT")
         Column.DATA.zip(want).forEach { (c, text) -> compose.onNodeWithTag(RoutesTags.header(c)).assertTextContains(text, substring = true) }
     }
 

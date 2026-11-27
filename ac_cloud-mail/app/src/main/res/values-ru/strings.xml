@@ -1471,6 +1471,8 @@
     <string name="ep_sync_refused">Cloud Account не передал конечные точки. Разрешите Cloud Mail в разделе «Секреты» в Cloud Account.</string>
     <string name="settings_offline_section">Офлайн</string>
     <string name="settings_offline_window_title">Хранить почту офлайн</string>
+    <string name="settings_body_cache_limit_title">Лимит кэша писем</string>
+    <string name="settings_body_cache_usage">%1$s из %2$s · писем: %3$s</string>
     <string name="settings_offline_window_1">1 месяц</string>
     <string name="settings_offline_window_3">3 месяца</string>
     <string name="settings_offline_window_6">6 месяцев</string>
@@ -1599,4 +1601,6 @@
     <string name="settings_navigation_child_pages">Навигация по подстраницам</string>
     <string name="settings_navigation_default">по умолчанию</string>
     <string name="settings_tree_configs">Конфигурация</string>
+    <string name="banner_last_sync">Последняя синхронизация: %1$s</string>
+    <string name="banner_never_synced">Синхронизации ещё не было</string>
 </resources>

@@ -63,6 +63,11 @@ abstract class PagedFragment : KitComposeFragment() {
     /** The selected nested page of the selected top page (null when that page declares none). */
     private var selectedSub by mutableStateOf<String?>(null)
 
+    /** The selected top page and nested page ids, for a tab that draws its own rows (Containers, #1941); [selectLeaf] picks a nested page of the selected top page. */
+    protected val selectedTop: String? get() = selected
+    protected val selectedLeaf: String? get() = selectedSub
+    protected fun selectLeaf(id: String) { selectedSub = id }
+
     /** [id] as (top page, nested page): a top page id gives its first nested page, a nested id its parent; null when undeclared. */
     private fun locate(id: String?): Pair<String, String?>? {
         val top = pages().firstOrNull { it.id == id } ?: pages().firstOrNull { p -> p.pages.any { it.id == id } } ?: return null
@@ -77,6 +82,9 @@ abstract class PagedFragment : KitComposeFragment() {
 
     /** Show a declared page of this tab (a pivot link from one page to a sibling); an id the tab does not declare is ignored. */
     fun openPage(pageId: String) = select(pageId)
+
+    /** True when [pageId] is a top or nested page of THIS tab (a pivot to another tab goes through the host instead). */
+    fun hasPage(pageId: String) = locate(pageId) != null
 
     override fun palette(): KitPalette = c3KitPalette(requireContext())
 

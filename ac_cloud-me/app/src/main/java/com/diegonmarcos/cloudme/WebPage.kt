@@ -70,6 +70,10 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
     val holder = LocalLnktreeHolder.current
     val cached = holder != null && inject.isBlank() && url.startsWith("https://") && cfg.caches(pageId)
     var refreshing by remember { mutableStateOf(false) }
+    var offlineNote by remember(url, pageId) { mutableStateOf<String?>(null) }
+    // #1951 cache_then_live: the live page differed from the painted cached copy; the shown page swaps to it and says so for a moment
+    var updatedNote by remember(url, pageId) { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(updatedNote) { if (updatedNote) { kotlinx.coroutines.delay(3_000); updatedNote = false } }
     var atTop by remember { mutableStateOf(true) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     /** The page's WebView state (history, scroll), refreshed whenever a page finishes loading. */
@@ -110,14 +114,19 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
     val page: @Composable (Modifier) -> Unit = { mod ->
     AndroidView(
         modifier = mod,
-        update = { com.diegonmarcos.superapp.bottomnav.ChromeWebScroll.attach(it, collapse) },
+        update = { sr ->
+            sr.isRefreshing = refreshing   // #1947 the spinner follows the page's state: it stops on onPageFinished, on an error and after the 20 s cap
+            (sr.tag as? WebView)?.let { com.diegonmarcos.superapp.bottomnav.ChromeWebScroll.attach(it, collapse) }
+        },
         factory = { ctx ->
             var fresh = false
+            var swapsDone = 0
+            var swapScrollY = -1   // #1951 the scroll position kept across a live swap
             val make = {
                 fresh = true
                 // a fleet page (APP_PAGE, #1371); bundled pages come from the https asset origin, so they fetch their own
                 // stylesheets and data same-origin with no file:// access at all
-                CloudWeb.create(ctx, WebProfile.APP_PAGE).apply { setBackgroundColor(0xFF0B0414.toInt()); WebDarkMode.apply(settings) }   // #1938 readable in the dark theme: the site's own scheme, else algorithmic darkening
+                CloudWeb.create(ctx, WebProfile.APP_PAGE).apply { setBackgroundColor(0xFF0B0414.toInt()); WebDarkMode.apply(settings); if (cached) LnktreeSw.block(this, url) }   // #1957 the site's service worker is off: the app cache answers   // #1938 readable in the dark theme: the site's own scheme, else algorithmic darkening
             }
             // A kept WebView comes back as it was left (page, scroll, history): no reload, so switching is instant.
             val view = if (cached) holder!!.web(url, make) else make()
@@ -141,6 +150,7 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
 
                     // #1911 the emulator walk reads these from logcat: a main-frame error is MAINFRAME_ERROR, a loaded page MAINFRAME_OK with its title
                     override fun onReceivedError(view: WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                        if (request?.isForMainFrame != true && request != null) android.util.Log.w("CloudMeWeb", "SUBRES_ERROR page=$pageId url=${request.url} err=${error?.errorCode}:${error?.description}")   // #1957 the reason behind a broken image
                         if (request?.isForMainFrame == true) {
                             android.util.Log.e("CloudMeWeb", "MAINFRAME_ERROR page=$pageId url=${request.url} err=${error?.description}")
                             if (url.startsWith("https://")) { refreshing = false; loadError = WebLoadState.describe(error?.description?.toString(), null) }
@@ -150,6 +160,7 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
 
                     // #1937 an edge that answers 5xx/4xx for the page itself (the fleet edge down) is an error too, not a page to draw
                     override fun onReceivedHttpError(view: WebView?, request: android.webkit.WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
+                        if (request?.isForMainFrame != true && request != null) android.util.Log.w("CloudMeWeb", "SUBRES_HTTP page=$pageId url=${request.url} status=${errorResponse?.statusCode}")
                         if (request?.isForMainFrame == true && url.startsWith("https://") && WebLoadState.isHttpFailure(errorResponse?.statusCode ?: 0)) {
                             android.util.Log.e("CloudMeWeb", "MAINFRAME_HTTP page=$pageId url=${request.url} status=${errorResponse?.statusCode}")
                             refreshing = false; loadError = WebLoadState.describe(null, errorResponse?.statusCode)
@@ -157,19 +168,40 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
                         super.onReceivedHttpError(view, request, errorResponse)
                     }
 
+                    // #1951 the walk's first-paint mark: the first frame with content of the page
+                    override fun onPageCommitVisible(view: WebView?, url: String?) {
+                        android.util.Log.i("CloudMeWeb", "MAINFRAME_PAINT page=$pageId url=$url")
+                        super.onPageCommitVisible(view, url)
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         android.util.Log.i("CloudMeWeb", "MAINFRAME_OK page=$pageId url=$url title=${view?.title}")
                         refreshing = false
+                        offlineNote = if (cached) LnktreeCache.offlineSince[pageId]?.let { "Offline copy from ${LnktreeResolver.age(it, System.currentTimeMillis())}" } else null
                         // #1937 a page that finished with nothing in it (an empty 200 from a half-up edge) is the black page: show the error instead
-                        if (loadError == null && url?.startsWith("https://") == true) view?.postDelayed({
-                            view.evaluateJavascript(WebLoadState.PROBE_JS) { r -> if (WebLoadState.isBlank(r) && loadError == null) loadError = WebLoadState.describe("the page loaded empty", null) }
-                        }, 2500)
+                        // #1951 judged only once the page has settled (main frame finished, no swap pending); a page still loading never shows the error
+                        if (loadError == null && url?.startsWith("https://") == true) {
+                            val t0 = System.currentTimeMillis()
+                            lateinit var probe: Runnable
+                            probe = Runnable {
+                                val v = view ?: return@Runnable
+                                when (WebLoadState.probeAction(v.progress, LnktreeCache.swapPending.contains(pageId), System.currentTimeMillis() - t0)) {
+                                    WebLoadState.Probe.WAIT -> v.postDelayed(probe, WebLoadState.PROBE_RETRY_MS)
+                                    WebLoadState.Probe.GIVE_UP -> {}
+                                    WebLoadState.Probe.PROBE -> v.evaluateJavascript(WebLoadState.PROBE_JS) { r -> if (WebLoadState.isBlank(r) && loadError == null) loadError = WebLoadState.describe("the page loaded empty", null) }
+                                }
+                            }
+                            view?.postDelayed(probe, WebLoadState.PROBE_DELAY_MS)
+                        }
+                        if (swapScrollY >= 0) { val y = swapScrollY; swapScrollY = -1; view?.postDelayed({ view.scrollTo(0, y) }, 150); updatedNote = true; android.util.Log.i("CloudMeWeb", "LIVE_SWAPPED page=$pageId scrollY=$y") }
                         // #1913 the walk's image check: once the page had time to fetch its images, count those that finished with naturalWidth 0
                         view?.postDelayed({
-                            view.evaluateJavascript("(function(){var n=document.images,b=[];for(var i=0;i<n.length;i++){if(n[i].complete&&n[i].naturalWidth==0&&n[i].getAttribute('data-fb')!='done')b.push(n[i].currentSrc||n[i].src)}return n.length+' '+b.length+' '+(b[0]||'')})()") { r ->
-                                android.util.Log.i("CloudMeWeb", "IMG_CHECK page=$pageId images_broken=$r")
+                            view.evaluateJavascript(WebLoadState.IMG_CHECK_JS) { r ->
+                                android.util.Log.i("CloudMeWeb", "IMG_CHECK page=$pageId images_broken=\"${WebLoadState.imgSummary(r)}\"")
+                                WebLoadState.imgBroken(r).forEach { android.util.Log.i("CloudMeWeb", "IMG_BROKEN page=$pageId url=$it") }
                             }
                         }, 8000)
+                        view?.evaluateJavascript(WebReveal.JS, null)   // #1938 a section the page keeps hidden until a 95% intersection is shown while any part of it is on screen
                         view?.let { com.diegonmarcos.superapp.bottomnav.ChromeWebScroll.inject(it) }
                         view?.let { if (inject.isNotBlank()) pushProfile(it, ctx, inject) }
                         view?.saveState(saved)
@@ -184,57 +216,58 @@ fun WebPage(block: JSONObject, modifier: Modifier = Modifier, pageId: String = b
                     @JavascriptInterface fun importData() { post { picker.launch(arrayOf("application/json", "text/plain", "*/*")) } }
                 }, "CloudMeBridge")
                 web.value = this
+                // #1951 the live page differed from the cached copy just painted: reload it (now served from the updated cache) at the same scroll position
+                if (cached) LnktreeCache.swapListeners[pageId] = { _ -> post { if (swapsDone < 1 && CacheKey.normalize(this.url ?: "") == CacheKey.normalize(url)) { swapsDone++; swapScrollY = scrollY; reload() } } }
                 // the scroll bridge must exist BEFORE the first load: a JavaScript interface added later only reaches pages loaded after it
                 com.diegonmarcos.superapp.bottomnav.ChromeWebScroll.attach(this, collapse)
                 canGoBack = canGoBack()
                 if (!fresh) onResume()
                 else if (!saved.isEmpty) restoreState(saved) else loadUrl(if (url.startsWith("https://")) url else CloudWeb.assetUrl(url))
             }
+            // #1947 pull-down at the top of the page reloads it, cached or not. SwipeRefreshLayout reads the WebView's real scroll state;
+            // a page that scrolls inside an inner element is asked through JS on touch-down, so a pull while scrolling up inside the page never refreshes.
+            var innerScrolled = false
+            view.setOnTouchListener { v, ev ->
+                if (ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                    val d = v.resources.displayMetrics.density
+                    (v as WebView).evaluateJavascript(WebPullRefresh.innerScrolledJs(ev.x / d, ev.y / d)) { r -> innerScrolled = r?.trim() == "true" }
+                }
+                false
+            }
+            androidx.swiperefreshlayout.widget.SwipeRefreshLayout(ctx).also { sr ->
+                sr.addView(view, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
+                sr.tag = view
+                sr.setColorSchemeColors(0xFF7C3AED.toInt())
+                sr.setProgressBackgroundColorSchemeColor(0xFF1A0033.toInt())
+                sr.isEnabled = WebPullRefresh.armed(cached)
+                sr.setOnChildScrollUpCallback { _, _ -> WebPullRefresh.canChildScrollUp(view.scrollY, view.canScrollVertically(-1), innerScrolled) }
+                sr.setOnRefreshListener {
+                    refreshing = true
+                    scope.launch {
+                        // #1323 a cached page: its cache files (scope: build.json) are deleted first; every page: WebView cache emptied, reloaded from the network
+                        WebPullRefresh.run(cached, { withContext(Dispatchers.IO) { LnktreeCache.hardRefresh(ctx, pageId); LnktreeCache.refill(ctx, pageId, url) } }, { view.clearCache(true) }, { view.reload() })
+                    }
+                }
+            }
         },
-        onRelease = {
-            (it.parent as? android.view.ViewGroup)?.removeView(it)
-            if (cached && holder!!.peek(url) === it) it.onPause() else { it.stopLoading(); it.destroy() }
+        onRelease = { sr ->
+            val w = sr.tag as WebView
+            if ((w.parent as? android.view.ViewGroup) === sr) sr.removeView(w)
+            if (cached && holder!!.peek(url) === w) w.onPause() else { w.stopLoading(); w.destroy() }
         },
     )
     }
-    if (cached) {
-        // #1323 pull-down = HARD refresh. Only armed when the finger lands with the page scrolled to its top, so it never
-        // fights the WebView's own scrolling. Deletes the page's cache files (scope: build.json), empties the WebView cache, reloads.
-        // Material3's pull-to-refresh building block: PullToRefreshBox is this modifier plus the indicator, without the `enabled` switch.
-        val ptr = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
-        androidx.compose.foundation.layout.Box(
-            modifier = modifier.fillMaxSize()
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val e = awaitPointerEvent(PointerEventPass.Initial)
-                            if (e.changes.any { it.pressed && !it.previousPressed }) atTop = web.value?.let { !it.canScrollVertically(-1) } ?: true
-                        }
-                    }
-                }
-                .pullToRefresh(
-                    isRefreshing = refreshing,
-                    state = ptr,
-                    enabled = atTop,
-                    onRefresh = {
-                        refreshing = true
-                        scope.launch {
-                            withContext(Dispatchers.IO) { LnktreeCache.hardRefresh(ctx, pageId) }
-                            val w = web.value
-                            if (w == null) refreshing = false else { w.clearCache(true); w.reload() }
-                        }
-                    },
-                ),
-        ) {
-            page(Modifier.fillMaxSize())
-            androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
-                state = ptr, isRefreshing = refreshing,
-                modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
-            )
-            loadError?.let { WebLoadErrorPanel(it, retry, Modifier.fillMaxSize()) }
-        }
-    } else androidx.compose.foundation.layout.Box(modifier.fillMaxSize()) {
+    // #1323/#1947 pull-down at the page's top is a HARD refresh on every embedded page (the SwipeRefreshLayout in `page`); the old Compose
+    // pullToRefresh never fired over a WebView (no nested scroll), so its indicator is gone: the layout's own spinner is the one indicator.
+    androidx.compose.foundation.layout.Box(modifier.fillMaxSize()) {
         page(Modifier.fillMaxSize())
+        // #1947 network_first: the live page is shown; only when the network failed is the stored copy shown, with its age
+        offlineNote?.let {
+            androidx.compose.material3.Text(it, color = androidx.compose.ui.graphics.Color(0xFFB8B3C7), style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).background(androidx.compose.ui.graphics.Color(0xCC0B0414)).padding(horizontal = 8.dp, vertical = 2.dp).testTag("me:web:offline"))
+        }
+        if (updatedNote) androidx.compose.material3.Text("Updated", color = androidx.compose.ui.graphics.Color(0xFFB8B3C7), style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).background(androidx.compose.ui.graphics.Color(0xCC0B0414)).padding(horizontal = 8.dp, vertical = 2.dp).testTag("me:web:updated"))
         loadError?.let { WebLoadErrorPanel(it, retry, Modifier.fillMaxSize()) }
     }
     }
@@ -250,8 +283,31 @@ private fun pushProfile(view: WebView, ctx: android.content.Context, id: String)
 object WebLoadState {
     /** One JavaScript expression: how much visible content the document holds (text characters + images + canvases, svgs, iframes, videos). */
     const val PROBE_JS = "(function(){var b=document.body;if(!b)return 0;return b.innerText.trim().length+document.images.length+document.querySelectorAll('canvas,svg,iframe,video').length})()"
+    /** #1951 the probe runs [PROBE_DELAY_MS] after the main frame finished, and only once the page settled: the WebView says 100% and no live swap is pending. Still loading = WAIT; never an error for it. */
+    enum class Probe { WAIT, PROBE, GIVE_UP }
+    const val PROBE_DELAY_MS = 2500L
+    const val PROBE_RETRY_MS = 1500L
+    const val PROBE_GIVE_UP_MS = 90_000L
+    fun probeAction(progress: Int, swapPending: Boolean, waitedMs: Long): Probe = when {
+        progress >= 100 && !swapPending -> Probe.PROBE
+        waitedMs >= PROBE_GIVE_UP_MS -> Probe.GIVE_UP
+        else -> Probe.WAIT
+    }
     fun isBlank(jsResult: String?): Boolean = jsResult == null || jsResult.trim().trim('"') in setOf("0", "null", "")
     fun isHttpFailure(status: Int): Boolean = status >= 400
+    /**
+     * #1957 the image check: every <img> that finished with no pixels, by URL. An img with no src at all (a hidden modal's empty slot) is
+     * not an image the page asked for and is not counted; one the site's own fallback already replaced (data-fb=done) neither.
+     * The JS answers a JSON string {"total":n,"empty":k,"broken":[url...]}.
+     */
+    const val IMG_CHECK_JS = "(function(){var n=document.images,b=[],e=0;for(var i=0;i<n.length;i++){var x=n[i],s=x.getAttribute('src');" +
+        "if(!s&&!x.getAttribute('srcset')){e++;continue}if(x.complete&&x.naturalWidth==0&&x.getAttribute('data-fb')!='done')b.push(x.currentSrc||x.src)}" +
+        "var h=document.getElementById('me-hero3d'),g=null;if(h){var c=document.createElement('canvas');g=!!(c.getContext('webgl2')||c.getContext('webgl'))}" +
+        "return JSON.stringify({total:n.length,empty:e,broken:b,hero:h?h.width+'x'+h.height:null,webgl:g})})()"
+    private fun imgJson(r: String?): org.json.JSONObject? = runCatching { org.json.JSONObject(org.json.JSONTokener(r ?: "").nextValue() as String) }.getOrNull()
+    fun imgBroken(r: String?): List<String> = imgJson(r)?.optJSONArray("broken")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
+    /** The IMG_CHECK line: "<total> <broken> <first broken url>" (the walks read the second number), then empty=<k>. */
+    fun imgSummary(r: String?): String { val o = imgJson(r) ?: return "? ? $r"; val b = imgBroken(r); return "${o.optInt("total")} ${b.size} ${b.firstOrNull() ?: ""} empty=${o.optInt("empty")} hero=${o.opt("hero")} webgl=${o.opt("webgl")}" }
     fun describe(reason: String?, status: Int?): String = when {
         status != null && status >= 400 -> "The server answered HTTP $status."
         !reason.isNullOrBlank() -> reason

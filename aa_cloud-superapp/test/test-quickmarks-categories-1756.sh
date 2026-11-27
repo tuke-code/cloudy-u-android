@@ -135,7 +135,7 @@ WANT_FOLDERS = {
  'Primary': ['Nav', 'Camera', 'Canvas', 'Keyboard', 'Calc'],  # #1916 MOVED: Drive, Browser, Wallet to Data
  'Communication': ['Mail', 'Chat', 'Messenger', 'Dialer', 'Contacts'],
  'Data': ['Drive', 'Browser', 'Gallery', 'Notes', 'Agenda', 'Vault', 'Wallet', 'Office'],  # #1916
- 'Me': ['Me-Pers', 'Me-Prof', 'Me-Prj', 'Me-Buro'],   # #1903 (were Me-Health, Experiences, Socials)
+ 'Me': ['Lnktree', 'Me-Pers', 'Me-Prof', 'Me-Prj', 'Me-Buro'],   # #1956 Lnktree leads like the Cloud row; #1903 (were Me-Health, Experiences, Socials)
  'Services · City': ['Money', 'Shopping', 'Health', 'Real Estate', 'Jobs & Business', 'City Mobility', 'Transports', 'Hotels'],  # #1902 (#1806 order)
  'Services · Leisure': ['News', 'Events', 'Media Center', 'Social', 'Games'],  # #1902 Social opens the media_social All Apps folder
  'AGI': ['AI', 'Code', 'Terminal', 'Search'],  # #1902 Search ends AGI
@@ -143,7 +143,7 @@ WANT_FOLDERS = {
 }
 _me_labels = [t.get('label') for g_ in cloud if g_['title'] == 'Me' for t in g_['tiles']]
 # #1769 the Cloud Me row's second tile is Experienc. today and Socials once renamed; both folders follow that tile.
-CLOUD_LABEL = {'Nav': 'Navigation', 'Agenda': 'Tasks', 'Me-Pers': 'Me-Pers', 'Me-Prof': 'Me-Prof', 'Me-Prj': 'Me-Prj', 'Me-Buro': 'Me-Buro'}   # #1903 the phone folders carry the Cloud tile names
+CLOUD_LABEL = {'Lnktree': 'Lnktree', 'Nav': 'Navigation', 'Agenda': 'Tasks', 'Me-Pers': 'Me-Pers', 'Me-Prof': 'Me-Prof', 'Me-Prj': 'Me-Prj', 'Me-Buro': 'Me-Buro'}   # #1903 the phone folders carry the Cloud tile names
 fleet_pkgs = set()
 for e in bj['external_apps']:
     for p_ in [e.get('hub_package'), e.get('alt_package'), e.get('install_package')] + list((e.get('forks') or {}).values()):
@@ -169,14 +169,17 @@ for g in phone:
         own = [t['pkg'] for t in f['packages'] if is_fleet(t['pkg'])]
         check(not own, '%s / %s: no fleet (Cloud) app is a member (#1769)%s' % (g['title'], f['label'], ' FOUND %s' % own if own else ''))
         # #1902 a folder holds phone apps, or OPENS a declared All Apps folder (`opens_folder`: Services · Leisure's Social opens media_social) and then declares none of its own
-        check(f['packages'] or (f.get('opens_folder') in {x['id'] for x in folders} and not f['packages']), '%s / %s: still holds phone apps or opens a declared All Apps folder' % (g['title'], f['label']))
+        check(f['packages'] or f.get('links') or (f.get('opens_folder') in {x['id'] for x in folders} and not f['packages']), '%s / %s: still holds phone apps, a web link (#1956) or opens a declared All Apps folder' % (g['title'], f['label']))
         # #1769 every folder wears a Cloud icon: the Cloud app's launcher icon (icon_pkg) and/or the drawable of the Cloud tile at that position (icon_res).
         check(ip in fleet_pkgs or f.get('icon_res') in cloud_icons, '%s / %s has a Cloud-icon face (icon_pkg %s, icon_res %s)' % (g['title'], f['label'], ip, f.get('icon_res')))
         check(f.get('icon_res') in cloud_icons, '%s / %s icon_res is a Cloud tile drawable' % (g['title'], f['label']))
         if f['label'] in EXPECT_RES:
             check(f.get('icon_res') == EXPECT_RES[f['label']] and not ip, '%s / %s wears the Cloud tile drawable %s' % (g['title'], f['label'], EXPECT_RES[f['label']]))
 allq = [t['pkg'] for g in phone for f in g.get('folders', []) for t in f['packages']] + [t['pkg'] for g in phone for t in g['packages']]
-check(len(allq) == len(set(allq)), 'no app sits in two phone folders (apps that do the same job share one folder)')
+# #1960 declared exception: LinkedIn sits in Me-Pers (social) AND in Jobs & Business (owner order); any other repeat stays a failure
+DECLARED_TWICE = {'com.linkedin.android'}
+dupq = sorted(p_ for p_, n_ in collections.Counter(allq).items() if n_ > 1)
+check(set(dupq) <= DECLARED_TWICE, 'no app sits in two phone folders except the declared %s (apps that do the same job share one folder)%s' % (sorted(DECLARED_TWICE), ' BAD %s' % dupq if set(dupq) - DECLARED_TWICE else ''))
 before = json.load(open(A + 'test/data/phone-quickmarks-before-1764.json'))['packages']
 # #1769 minimal folders: an app dropped from Quickmarks (a duplicate of another app in its folder) stays in All Apps, so no app disappears from the launcher.
 gone = sorted(p_ for p_ in set(before) - set(allq) if p_ in {e['package'] for e in inv} and cls(p_) is None)
@@ -195,9 +198,9 @@ for g in phone:
         check(rows is not None and len({r['capability'] for r in rows if r['capability'] != 'dating'}) == len([r for r in rows if r['capability'] != 'dating']), '%s / %s: one app per capability' % (g['title'], f['label']))
         miss = [r for r in rows or [] if r['pkg'] not in inst]
         check(all(r['pkg'] in {t['pkg'] for t in f['packages']} for r in miss), '%s / %s: every capability not installed is shown as a suggestion tile %s' % (g['title'], f['label'], [r['label'] for r in miss]))
-socials = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == 'Me-Prj' for t in f['packages']]
+socials = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == 'Me-Pers' for t in f['packages']]   # #1956 the socials moved from Me-Prj to Me-Pers
 check(all(p_ in socials for p_ in ['com.instagram.android', 'com.instagram.barcelona', 'com.facebook.katana', 'com.linkedin.android', 'com.pinterest', 'com.bereal.ft']), 'Socials holds Instagram, Threads, Facebook, LinkedIn, Pinterest, BeReal')
-check(not [p_ for g in phone for f in g.get('folders', []) if f['label'] != 'Me-Prj' for t in f['packages'] for p_ in [t['pkg']] if p_ in socials], 'no social app sits in another folder')
+check(not [p_ for g in phone for f in g.get('folders', []) if f['label'] not in ('Me-Pers', 'Jobs & Business') for t in f['packages'] for p_ in [t['pkg']] if p_ in socials], 'no social app sits in another folder')  # #1960 LinkedIn is also in Jobs & Business (declared)
 want_pick = {'Mail': ['com.google.android.gm'], 'Chat': ['com.Slack'], 'Messenger': ['com.whatsapp.w4b'], 'Drive': ['com.google.android.apps.docs'], 'Browser': ['com.brave.browser'], 'Nav': ['com.google.android.apps.maps']}
 for st, pl in want_pick.items():
     got = [t['pkg'] for g in phone for f in g.get('folders', []) if f['label'] == st for t in f['packages']]

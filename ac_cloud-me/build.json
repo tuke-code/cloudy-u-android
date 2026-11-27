@@ -425,7 +425,7 @@
     "configs_ui": ["nav_ui"],
     "sections": [
       {
-        "_doc": "#1901 Pers: the section called Health became Pers, and it now holds every page of the person. Five subpages: Profiles (Personal, Instagram, Social: the three public profile pages), Health (the WHOLE former Health section moved in as one subpage: Trackers and Plan with every page, Tracked first, plus the health record page that was Lnktree > Health), Astro, DD (the shareholder due-diligence record) and Personal Archives (the Achieves tabs, moved whole from Experiences with their experiences_user ledgers). Personal is the owner's site, embedded by its https URL (data/ui/pers/profiles/personal.json); Instagram is the page the old Personal tab drew. Every page keeps its id; the old section ids and page ids resolve through ui.renamed (LegacyRoutes). The Health page content is drawn by the app's own Compose HealthPage from data/health/*.json and the user's entries (SharedPreferences health_user, a declared fleet-config store); the trackers read Health Connect live. The metric taxonomy stays on this section because libs:health's build.gradle looks it up on the section that declares `metrics` (it used to be looked up by the id health). Health opens on Tracked (#1390): Tracked is the first leaf of Health, Trackers its first strip. Personal Archives: the Achieves tabs: each tab is one kind of experience, holding a Done and a To do list of the owner's own records (add, edit, mark done with today's date, mark undone), all in the declared config store experiences_user so the backup and the new-phone migration carry them. Geo is first: every place visited with live stats (cities, countries, continents, % of world, grouped by continent and country, first and last visit) and a wishlist; the International Experience text and the old Trips tools moved into it. Endurance holds Travel & Adventure (the old Experiences rows and the Personal Pursuits text), Personal Growth holds Personal Growth, Health & Wellness, Creativity & Fun and Career and Finance (with the B1 Personal text), Community holds Relationship & Community, By 30 / By 40 / By 50 hold the Bucket 50 age goals. ui.sections[achieves].migration moves the old done/todo records into the matching tab on first load; LegacyRoutes sends the old page ids to their new tab. Every page id is unique in the section, so page:experiences/<id> reaches any of them; LegacyRoutes maps the old study and achieves routes here.",
+        "_doc": "#1901 Pers: the section called Health became Pers, and it now holds every page of the person. Five subpages: Profiles (Personal, Instagram, Social: the three public profile pages), Health (the WHOLE former Health section moved in as one subpage: Trackers and Plan with every page, Tracked first, plus the health record page that was Lnktree > Health), Astro, DD (the shareholder due-diligence record) and Personal Archives (the Achieves tabs, moved whole from Experiences with their experiences_user ledgers). Personal is the mySocials home page (#1948; the diegonmarcos.com landpage moved to Prof > Profiles > Professional), embedded by its https URL (data/ui/pers/pers-profiles/personal.json); Instagram is the page the old Personal tab drew. Every page keeps its id; the old section ids and page ids resolve through ui.renamed (LegacyRoutes). The Health page content is drawn by the app's own Compose HealthPage from data/health/*.json and the user's entries (SharedPreferences health_user, a declared fleet-config store); the trackers read Health Connect live. The metric taxonomy stays on this section because libs:health's build.gradle looks it up on the section that declares `metrics` (it used to be looked up by the id health). Health opens on Tracked (#1390): Tracked is the first leaf of Health, Trackers its first strip. Personal Archives: the Achieves tabs: each tab is one kind of experience, holding a Done and a To do list of the owner's own records (add, edit, mark done with today's date, mark undone), all in the declared config store experiences_user so the backup and the new-phone migration carry them. Geo is first: every place visited with live stats (cities, countries, continents, % of world, grouped by continent and country, first and last visit) and a wishlist; the International Experience text and the old Trips tools moved into it. Endurance holds Travel & Adventure (the old Experiences rows and the Personal Pursuits text), Personal Growth holds Personal Growth, Health & Wellness, Creativity & Fun and Career and Finance (with the B1 Personal text), Community holds Relationship & Community, By 30 / By 40 / By 50 hold the Bucket 50 age goals. ui.sections[achieves].migration moves the old done/todo records into the matching tab on first load; LegacyRoutes sends the old page ids to their new tab. Every page id is unique in the section, so page:experiences/<id> reaches any of them; LegacyRoutes maps the old study and achieves routes here.",
         "_doc_metrics": "Data-driven metric taxonomy \u2014 read by SummaryPage / TimelinePage / ConfigsPage to render the per-metric tiles + drill-downs. Each metric maps to one-or-more Health Connect record types via `records` (matched at runtime by class simple-name) + the perm subset via `perm_keys`. Add a metric = one entry here + tile icon. Removing a metric here removes it from all 3 top-level pages.",
         "migration": {
           "_doc": "Achieves migration (store experiences_user): the old Experiences page kept its records in the collections done and todo. On load, each record moves to <tab>_done or <tab>_todo by its category; a category this map does not name goes to the default tab, so nothing is dropped. The old collections are then removed, which makes the migration run once.",
@@ -806,7 +806,7 @@
         ]
       },
       {
-        "_doc": "#1901 Prof: the section called Experiences became Prof. Two groups on one strip, Profiles | Leaf.y, Nexus.z, Stark.x. Profiles holds LinkedIn and CV (prof-web); Leaf.y, Nexus.z and Stark.x are their published sites embedded by https URL (data/ui/prof/<id>.json). #1937 owner-ordered removal: the page More (prof-profiles) with its subpages Professional, Work and Study (CV, Roadmap) is gone; every old id (page:prof/prof-profiles, professional, work, study, cv, roadmap and the experiences/* ones) resolves to Prof > Profiles (prof-web) through ui.renamed. Personal Archives moved to Pers. Old page:experiences/* and page:lnktree/<prof page> routes resolve through ui.renamed.",
+        "_doc": "#1901 Prof: the section called Experiences became Prof. Two groups on one strip, Profiles | Leaf.y, Nexus.z, Stark.x. Profiles holds Professional (diegonmarcos.com), LinkedIn, Portfolio (cv_web), Developer (the GitHub profile github.com/diegonmarcos, #1962) and CV (the cv_pdf PDF.js viewer page) (prof-web; #1948); Leaf.y, Nexus.z and Stark.x are their published sites embedded by https URL (data/ui/prof/<id>.json). #1937 owner-ordered removal: the page More (prof-profiles) with its subpages Professional, Work and Study (CV, Roadmap) is gone; every old id (page:prof/prof-profiles, professional, work, study, cv, roadmap and the experiences/* ones) resolves to Prof > Profiles (prof-web) through ui.renamed. Personal Archives moved to Pers. Old page:experiences/* and page:lnktree/<prof page> routes resolve through ui.renamed.",
         "id": "prof",
         "label": "Prof",
         "icon": "ic_nav_work",
@@ -837,8 +837,23 @@
             "icon": "ic_nav_me",
             "pages": [
               {
+                "id": "prof-professional",
+                "label": "Professional",
+                "icon": "ic_world"
+              },
+              {
                 "id": "prof-linkedin",
                 "label": "LinkedIn",
+                "icon": "ic_world"
+              },
+              {
+                "id": "prof-portfolio",
+                "label": "Portfolio",
+                "icon": "ic_world"
+              },
+              {
+                "id": "prof-developer",
+                "label": "Developer",
                 "icon": "ic_world"
               },
               {
@@ -1773,12 +1788,31 @@
       ]
     },
     "lnktree_cache": {
-      "_doc": "#1323 Lnktree page cache. The https pages of every section in `sections` (#1901: Pers, Prof, Proj; `section` is the Lnktree one, Proj): Personal, Astro, Leaf.y, Nexus.z, Stark.x, Lnktree are cached on disk by the app itself (shouldInterceptRequest, files keyed by the URL: the HTML plus its same-origin CSS/JS/images), because the WebView's HTTP cache follows the server's headers, cannot be aged, listed or emptied per page. An entry older than ttl_days is STALE: it is still shown at once and refetched in the background (stale-while-revalidate); offline it is shown as is. Each visited page keeps its WebView alive (LRU of holder_max_webviews), so switching never reloads. Pull-down at the page's top is a HARD refresh: hard_refresh_scope `page` deletes that page's cache files (`all` = every Lnktree cache file), empties the WebView cache and reloads from the network. prefetch: at app start, in the background (WorkManager, never blocks start-up), every page with no valid entry is downloaded with its subresources: concurrency pages at a time, network `unmetered` or `connected`, at most max_pages pages and max_subresources_per_page files each. max_cache_mb trims the oldest entries. exclude_pages lists page ids that opt out. An absent block turns it all off.",
+      "_doc": "#1323 Lnktree page cache. The https pages of every section in `sections` (#1901: Pers, Prof, Proj; `section` is the Lnktree one, Proj): Personal, Astro, Leaf.y, Nexus.z, Stark.x, Lnktree are cached on disk by the app itself (shouldInterceptRequest, files keyed by the URL: the HTML plus its same-origin CSS/JS/images), because the WebView's HTTP cache follows the server's headers, cannot be aged, listed or emptied per page. An entry older than ttl_days is STALE: it is still shown at once and refetched in the background (stale-while-revalidate); offline it is shown as is. Each visited page keeps its WebView alive (LRU of holder_max_webviews), so switching never reloads. Pull-down at the page's top is a HARD refresh: hard_refresh_scope `page` deletes that page's cache files (`all` = every Lnktree cache file), empties the WebView cache and reloads from the network. prefetch: at app start, in the background (WorkManager, never blocks start-up), every page with no valid entry is downloaded with its subresources: concurrency pages at a time, network `unmetered` or `connected`, at most max_pages pages and max_subresources_per_page files each. max_cache_mb trims the oldest entries. exclude_pages lists page ids that opt out. An absent block turns it all off. #1947 strategy: `network_first` (the live production page is fetched ONLINE from its declared URL, its main frame and same-origin CSS/JS come from the network and a good response refreshes the cache entry; the cached copy is served ONLY when the network request fails (offline, DNS, timeout, 5xx) and the page then shows an \"offline copy from <age>\" note; prefetch keeps filling that fallback; pull-down stays a hard refresh) or `stale_while_revalidate` (the cache is the primary source, see above; still supported). #1951 strategy `cache_then_live` (the Cloud Me default): a page with a COMPLETE cached copy (its HTML plus every same-origin CSS/JS it references; images are cached too) paints from the cache at once; the live page is fetched in parallel in the background and, when its hash differs, the cache is updated and the shown page reloads from it at the same scroll position with a short \\\"Updated\\\" note, so the live site stays the source of truth within seconds. A page with no complete copy loads straight through the WebView's own network stack (no blocking app fetch) and the cache is filled afterwards. intercept_timeout_ms is the longest any intercepted request waits on the app's own fetch (network_first); cache_then_live never waits. prefetch (#1951): EVERY page of every section in `sections` (all sections with https pages), with ALL their same-origin subresources (max_pages 0 = all, max_subresources_per_page 0 = all; the cap is large enough that no page is left incomplete), on network `connected`, at app start and every refresh_hours through WorkManager; entries whose content changed are replaced. Opened pages are evicted last when max_cache_mb is exceeded. The log lines CACHE_PAGE (entries, bytes, complete=yes|no) and CACHE_TOTAL give the per-page and total sizes. #1957 owner policy (overrides the #1951 settings), strategy `cache_ttl` (the Cloud Me default; network_first, stale_while_revalidate and cache_then_live stay available): at EVERY app start and on every app update a background job (WorkManager, no start delay) walks every page of every section in `sections` with ALL its files: the HTML, CSS, JS and data files, every image and poster, cross-origin ones included (cross_origin), the asset URLs its scripts and data files name (prefetch.script_urls) and every URL an offscreen WebView pass of the page loads at run time (prefetch.harvest_timeout_s per page). Per page: no copy = downloaded; a COMPLETE copy younger than ttl_days = kept, nothing downloaded; younger but incomplete = only its missing files; older than ttl_days = downloaded again into staging and swapped in atomically ONLY once the new copy is complete (a failed refetch keeps the old copy). Opening a page shows its copy at once and fetches nothing for it while it is younger than ttl_days (no live compare, no swap); a page with no complete copy loads from the network and is cached afterwards; a file the copy lacks is added to its manifest. Pull-down stays the hard refresh: the page's copy is deleted and fetched fresh whatever its age. refresh_hours 0 = no periodic re-check (the startup ttl rule replaces the 6 h one). A page is complete only when every file of its manifest is stored (a 404 and a video over its cap are stored as known skips). Every file of another origin than its page is stored ONCE in a shared store (keyed by URL) and reused by every page that names it; CACHE_TOTAL bytes counts it once. max_cache_mb and the video caps hold WHILE the job runs (staging included): at the cap videos stop first, HTML, CSS, JS, data and images still finish. prefetch.max_script_media_per_page caps the media files one page's data-file scan may plan; the rest are known-missing (reason plan-cap) and the page can still be complete. video: max_file_mb per video, max_total_mb for all videos; images are always cached and evicted after videos and other files. cache_version: a new value wipes every copy once (copies taken before a site fix). The site's own service worker is blocked inside Cloud Me's WebViews and any old registration and its caches removed (the app cache is the one copy); a worker that still runs is answered from the app cache. Log lines: CACHE_FETCH page action=skip|fill|complete|refetch result, CACHE_PROGRESS done/pages, CACHE_HARVEST, CACHE_MISS, CACHE_PAGE, CACHE_TOTAL.",
+      "strategy": "cache_ttl",
+      "cross_origin": true,
+      "cache_version": "1957",
+      "intercept_timeout_ms": 2000,
       "enabled": true,
       "section": "proj",
-      "sections": ["pers", "prof", "proj"],
+      "sections": [
+        "pers",
+        "prof",
+        "tasks",
+        "proj",
+        "lnktree",
+        "inventory",
+        "buro",
+        "llc",
+        "profile",
+        "configs"
+      ],
       "ttl_days": 7,
-      "max_cache_mb": 40,
+      "max_cache_mb": 512,
+      "video": {
+        "max_file_mb": 8,
+        "max_total_mb": 96
+      },
       "holder_max_webviews": 8,
       "hard_refresh_scope": "page",
       "exclude_pages": [],
@@ -1790,9 +1824,17 @@
       "prefetch": {
         "enabled": true,
         "concurrency": 3,
-        "network": "unmetered",
-        "max_pages": 12,
-        "max_subresources_per_page": 40
+        "network": "connected",
+        "max_pages": 0,
+        "max_subresources_per_page": 0,
+        "refresh_hours": 0,
+        "start_delay_s": 0,
+        "subresource_concurrency": 8,
+        "script_urls": true,
+        "harvest_timeout_s": 20,
+        "max_script_media_per_page": 2500,
+        "fetch_deadline_s": 60,
+        "max_file_mb": 32
       }
     },
     "settings": [

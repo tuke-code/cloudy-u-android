@@ -91,7 +91,7 @@ class PhonePageFleetTest {
             "Active enumerator exclusion dropped" to (src.replace("RunningApps.load(ctx, PhonePageFleet.exclude(ourApps))", "RunningApps.load(ctx, emptySet())") to search),
             "Last enumerator exclusion dropped" to (src.replace("RunningApps.loadLastOpened(ctx, PhonePageFleet.exclude(ourApps))", "RunningApps.loadLastOpened(ctx, emptySet())") to search),
             "Cloud app prepended to folders again" to (src.replace("folder to folder.entries.map(::curated)", "folder to (listOf(Entry(folder.iconPkg, folder.label)) + folder.entries).map(::curated)") to search),
-            "Cloud app is the folder face again" to (src.replace("contents.firstOrNull { it.installed }, \"\")", "folder.iconPkg.takeIf { it.isNotBlank() }?.let { resolve(it) }, folder.iconRes)") to search),
+            "Cloud app is the folder face again" to (src.replace("FolderTile(folder.label, contents, null, folder.iconRes)", "FolderTile(folder.label, contents, folder.iconPkg.takeIf { it.isNotBlank() }?.let { resolve(it) }, folder.iconRes)") to search),
             "search unfiltered" to (src to search.replace("filterNot { PhonePageFleet.isFleet(it.packageName, fleet) }", "toList()")),
         )
         for ((name, pair) in mutations) {
@@ -125,10 +125,13 @@ class PhonePageFleetTest {
         for (i in 0 until before.length()) {
             val bg = before.getJSONObject(i); val g = page[i]
             val bf = bg.getJSONArray("folders")
-            assertEquals("${g.title}: folders and their order", (0 until bf.length()).map { bf.getJSONObject(it).getString("label") }, g.folders.map { it.label })
+            assertEquals("${g.title}: folders and their order", (0 until bf.length()).map { bf.getJSONObject(it).getString("label") }, g.folders.map { it.label }.filter { it != "Lnktree" })   // #1956 Lnktree is the one new folder
             for (k in 0 until bf.length()) {
                 val want = bf.getJSONObject(k).getJSONArray("packages").let { a -> (0 until a.length()).map { a.getString(it) } }.filterNot { PhonePageFleet.isFleet(it, realFleet) }
-                assertEquals("${g.title}/${g.folders[k].label}: members and their order", want, g.folders[k].entries.map { it.pkg })
+                    .filterNot { it in moved1956(bf.getJSONObject(k).getString("label")) }
+                val folder = g.folders.first { it.label == bf.getJSONObject(k).getString("label") }
+                // #1956 moves (socials to Me-Pers, GitHub to Drive, Prime Video out of Media Center) and additions (Tidal, Gemini, socials) come after the old members
+                assertEquals("${g.title}/${folder.label}: members and their order", want, folder.entries.map { it.pkg }.take(want.size))
             }
             val bp = bg.getJSONArray("packages").let { a -> (0 until a.length()).map { a.getString(it) } }
             assertEquals("${g.title}: loose packages", bp, g.entries.map { it.pkg })
@@ -144,5 +147,12 @@ class PhonePageFleetTest {
         assertTrue(removed.isNotEmpty())
         for (p in removed) assertTrue("$p left Phone ▸ Apps but Cloud ▸ Apps does not list it", p in cloudApps)
         assertFalse(removed.any { it.isBlank() })
+    }
+
+    private fun moved1956(folder: String): Set<String> = when (folder) {
+        "Me-Prj" -> setOf("com.instagram.android", "com.instagram.barcelona", "com.facebook.katana", "com.linkedin.android", "com.pinterest", "com.bereal.ft", "com.tinder", "com.bumble.app", "co.hinge.app")
+        "Code" -> setOf("com.github.android")
+        "Media Center" -> setOf("com.amazon.avod.thirdpartyclient")
+        else -> emptySet()
     }
 }

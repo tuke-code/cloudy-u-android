@@ -60,7 +60,7 @@ class FleetNotifyTest {
         val n = keepAlive()
         assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertTrue(n.flags and Notification.FLAG_NO_CLEAR != 0)
-        assertEquals(FleetNotify.CHANNEL_KEEP_ALIVE, n.channelId)
+        assertEquals(FleetNotify.CHANNEL_BACKGROUND_SERVICE, n.channelId)   // #1965 (was CHANNEL_KEEP_ALIVE)
     }
 
     @Test fun keepAliveHasAStopActionAndLiveData() {
@@ -71,11 +71,12 @@ class FleetNotifyTest {
         assertEquals("Server", n.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
     }
 
-    @Test fun keepAliveChannelIsLowAndSilent() {
+    /** #1965 was keepAliveChannelIsLowAndSilent: the keep-alive moved to the MIN "Background service" channel. */
+    @Test fun keepAliveChannelIsMinAndSilent() {
         keepAlive()
-        val ch = ctx.getSystemService(NotificationManager::class.java).getNotificationChannel(FleetNotify.CHANNEL_KEEP_ALIVE)
-        assertEquals(FleetNotify.CHANNEL_KEEP_ALIVE_NAME, ch.name.toString())
-        assertEquals(NotificationManager.IMPORTANCE_LOW, ch.importance)
+        val ch = ctx.getSystemService(NotificationManager::class.java).getNotificationChannel(FleetNotify.CHANNEL_BACKGROUND_SERVICE)
+        assertEquals(FleetNotify.CHANNEL_BACKGROUND_SERVICE_NAME, ch.name.toString())
+        assertEquals(NotificationManager.IMPORTANCE_MIN, ch.importance)
         assertNull(ch.sound)
     }
 
@@ -84,7 +85,7 @@ class FleetNotifyTest {
         val shadow = shadowOf(svc)
         assertNotNull(shadow.lastForegroundNotification)
         assertTrue(shadow.isLastForegroundNotificationAttached)
-        assertEquals(FleetNotify.CHANNEL_KEEP_ALIVE, shadow.lastForegroundNotification.channelId)
+        assertEquals(FleetNotify.CHANNEL_BACKGROUND_SERVICE, shadow.lastForegroundNotification.channelId)
     }
 
     @Test fun extraActionsFollowStop() {
@@ -127,5 +128,32 @@ class FleetNotifyTest {
         assertFalse(KeepAliveStatus.meshUp(listOf("wlan0" to true, "wg0" to false)))
         assertFalse(KeepAliveStatus.meshUp(emptyList()))
         assertEquals("mesh down", KeepAliveStatus.meshLine(false))
+    }
+
+    // ── #1944 the one "running in the background" group ──────────────────
+
+    @Test fun backgroundCardJoinsTheSharedGroupOnlyWhenAsked() {
+        val grouped = FleetNotify.keepAliveNotification(ctx, android.R.drawable.ic_dialog_info, "Mail", listOf("2 unread"), pi(), groupKey = FleetNotify.GROUP_RUNNING)
+        assertEquals(FleetNotify.GROUP_RUNNING, grouped.group)
+        assertTrue(grouped.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertTrue(grouped.channelId.startsWith(FleetNotify.CHANNEL_BACKGROUND_SERVICE))
+        assertTrue("an existing consumer that passes no group stays ungrouped", keepAlive().group != FleetNotify.GROUP_RUNNING)
+    }
+
+    @Test fun backgroundSummaryIsTheGroupsOngoingSummary() {
+        val n = FleetNotify.backgroundSummary(ctx, android.R.drawable.ic_dialog_info, "Cloud Mail", listOf("0_inbox 3"))
+        assertEquals(FleetNotify.GROUP_RUNNING, n.group)
+        assertTrue(n.flags and Notification.FLAG_GROUP_SUMMARY != 0)
+        assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertTrue(n.flags and Notification.FLAG_NO_CLEAR != 0)
+        assertEquals(FleetNotify.SUMMARY_TITLE, n.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+    }
+
+    @Test fun backgroundSummaryIsPostedAndRemoved() {
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        FleetNotify.postBackgroundSummary(ctx, android.R.drawable.ic_dialog_info, "Cloud Nav")
+        assertNotNull(shadowOf(nm).getNotification(FleetNotify.SUMMARY_ID))
+        FleetNotify.cancelBackgroundSummary(ctx)
+        assertNull(shadowOf(nm).getNotification(FleetNotify.SUMMARY_ID))
     }
 }

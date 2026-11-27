@@ -78,18 +78,21 @@ object Declarations {
     val externalApps: List<ExternalAppDecl> by lazy { parseExternalApps(decode(BuildConfig.UI_EXTERNAL_APPS_B64)) }
     val infraPages: List<NavPage> get() = pages("infra")
     val containersPages: List<NavPage> get() = pages("containers")
-    val observPages: List<NavPage> get() = pages("observ")
+    val orchPages: List<NavPage> get() = pages("orch")
     val configsPages: List<NavPage> get() = pages("configs")
     val opsPages: List<NavPage> get() = pages("ops")
 
-    /** The nested Ops pages (`<page>_<view>`) that show a topology [view]: its pivot target and label. */
-    fun opsViewPage(view: String): NavPage? = opsPages.flatMap { it.pages }.firstOrNull { it.id.endsWith("_$view") }
+    /** The Orch pages and the nested Ops pages (`<page>_<view>`) that show a topology [view]: its pivot target and label. */
+    fun opsViewPage(view: String): NavPage? = (orchPages + opsPages.flatMap { it.pages }).firstOrNull { it.id.endsWith("_$view") }
 
     /** ui.top_bar (libs:bottomnav TopBarDecl): the shared first row. Null = the app declares none. */
     val topBar: TopBarDecl? by lazy { TopBarDecl.fromBuildConfig(BuildConfig.UI_TOP_BAR_B64) }
 
     /** ui.aliases: ids that moved keep working ([C3Nav.resolve]). */
     val aliases: Aliases by lazy { parseAliases(decode(BuildConfig.UI_ALIASES_B64)) }
+
+    /** ui.home (#1969): which live source feeds each Home row; the rows come from the nav declaration. */
+    val home: com.diegonmarcos.cloudc3.pages.HomeLive.Decl by lazy { com.diegonmarcos.cloudc3.pages.HomeLive.parse(decode(BuildConfig.UI_HOME_B64)) }
 
     /** The Containers > Table rows: data/infra_slice.json::routes. */
     val routes: List<RoutesTableModel.Row> by lazy { RoutesTableModel.parse(element(decodeChunks(BuildConfig.ROUTES_B64))) }
@@ -145,7 +148,9 @@ object Declarations {
 
     /** data/container_projects.json: which project each container belongs to (Containers sub-pages). */
     val containerProjects: com.diegonmarcos.cloudc3.pages.ContainerProjects.Decl by lazy {
-        com.diegonmarcos.cloudc3.pages.ContainerProjects.parse(decode(BuildConfig.CONTAINER_PROJECTS_B64), decode(BuildConfig.REPOS_DECLARED_B64))
+        com.diegonmarcos.cloudc3.pages.ContainerProjects.parse(decode(BuildConfig.CONTAINER_PROJECTS_B64), decode(BuildConfig.REPOS_DECLARED_B64)).let { d ->
+            d.copy(hostIds = com.diegonmarcos.cloudc3.pages.ContainerHosts.derive(fleet, com.diegonmarcos.cloudc3.pages.ContainersSource.bundled, d.vm.hostOrder).map { it.id })  // #1971 derived, not typed
+        }
     }
 
     /** Renamed section ids (old -> new) and moved page ids (old -> "section/page"). */

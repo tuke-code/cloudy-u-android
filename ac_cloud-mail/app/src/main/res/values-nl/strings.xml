@@ -1449,6 +1449,8 @@
     <string name="ep_sync_refused">Cloud Account heeft de eindpunten niet gedeeld. Sta Cloud Mail toe onder ‘Geheimen’ in Cloud Account.</string>
     <string name="settings_offline_section">Offline</string>
     <string name="settings_offline_window_title">Mail offline bewaren voor</string>
+    <string name="settings_body_cache_limit_title">Limiet berichtencache</string>
+    <string name="settings_body_cache_usage">%1$s van %2$s · %3$s berichten</string>
     <string name="settings_offline_window_1">1 maand</string>
     <string name="settings_offline_window_3">3 maanden</string>
     <string name="settings_offline_window_6">6 maanden</string>
@@ -1577,4 +1579,6 @@
     <string name="settings_navigation_child_pages">Navigatie van subpagina\'s</string>
     <string name="settings_navigation_default">standaard</string>
     <string name="settings_tree_configs">Configuratie</string>
+    <string name="banner_last_sync">Laatste synchronisatie: %1$s</string>
+    <string name="banner_never_synced">Nooit gesynchroniseerd</string>
 </resources>

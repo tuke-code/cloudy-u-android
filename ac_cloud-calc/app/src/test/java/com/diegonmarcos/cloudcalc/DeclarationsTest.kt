@@ -144,7 +144,7 @@ class DeclarationsTest {
         assertEquals(listOf("sensors", "phone", "camera", "wifi", "bluetooth", "nfc", "lfrfid"), Declarations.tabsOf("measure").map { it.id })
         assertEquals(listOf("light", "recorder", "tracker", "clock"), Declarations.tabsOf("toolkit").map { it.id })
         assertEquals(listOf("home"), Declarations.tabsOf("home").map { it.id })
-        assertEquals("the clock modes did not move or duplicate", listOf("world", "alarms", "timers", "stopwatch", "interval", "bedtime"), Declarations.modesOf("clock").map { it.id })
+        assertEquals("the clock modes did not move or duplicate", com.diegonmarcos.clocktools.ClockSubpages.IDS, Declarations.modesOf("clock").map { it.id })
         fun spec(id: String) = JSONObject(Declarations.mode(id)!!.spec)
         // the Sensors page: every sensor group has its mode, and every tool mode names real sensors
         val catalog = com.diegonmarcos.cloudcalc.sensors.SensorDecl.catalog
@@ -303,7 +303,7 @@ class DeclarationsTest {
     @Test fun `Calc is split Decimals and Others as the Calc section's own groups, down to the last app`() {
         val calc = tree[0].items.filterIsInstance<Declarations.HomeGroup>().first { it.label == "Calc" }
         val groups = calc.items.filterIsInstance<Declarations.HomeGroup>()
-        assertEquals(listOf("Decimals", "Others"), groups.map { it.label })
+        assertEquals(listOf("Decimals", "Finance", "Others"), groups.map { it.label })
         val declared = nav.section("calculator")!!.rowGroups()
         assertEquals(declared.map { it.label }, groups.map { it.label })
         assertEquals(declared.map { g -> g.pages.map { it.id } }, groups.map { g -> g.leaves().map { it.page }.distinct() })
@@ -338,7 +338,7 @@ class DeclarationsTest {
         assertFalse("ai page", "ai" in now)
         assertTrue("ai section", nav.sections.none { it.id == "ai" })
         assertTrue("ai mode", modes.none { it.id == "ai" || it.kind == "ai" })
-        assertEquals("the page set minus AI, plus Home", (pagesBefore.toSet() - "ai") + "home", now)
+        assertEquals("the page set minus AI, plus Home and Exchange (#1945)", (pagesBefore.toSet() - "ai") + "home" + "exchange", now)
         assertEquals("Ask Jev renders", "jev", Declarations.modesOf("ask").single().kind)
         assertEquals("home", Declarations.modesOf("home").single().kind)
     }

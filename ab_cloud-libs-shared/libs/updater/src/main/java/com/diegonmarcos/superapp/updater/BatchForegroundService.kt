@@ -14,6 +14,8 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.work.ForegroundInfo
 import com.diegonmarcos.superapp.core.DataSyncBudget
+import com.diegonmarcos.superapp.core.BackgroundApps
+import com.diegonmarcos.superapp.core.BackgroundCards
 import com.diegonmarcos.superapp.core.FleetNotify
 import com.diegonmarcos.superapp.core.StoreNotifyGate
 import java.util.concurrent.atomic.AtomicInteger
@@ -58,6 +60,8 @@ object BatchForeground {
     @Volatile var text: () -> String? = { null }
     /** The keep-alive badge's data lines (update state: what runs now, N pending, last check), wired by StoreStages. Default: the progress line. */
     @Volatile var statusLines: (Context) -> List<String> = { listOfNotNull(text()) }
+    /** #1965 The "Background Apps" card fields (key, value), wired by StoreStages. Null = the lines as free fields. */
+    @Volatile var cardFields: ((Context) -> List<Pair<String, String>>)? = null
     /** The host's small icon (AppStoreHost.notificationIcon via StoreStages). */
     @Volatile var icon: () -> Int = { android.R.drawable.stat_sys_download }
     /** What a tap opens. Null = no content intent. */
@@ -102,6 +106,7 @@ object BatchForeground {
         }
         lastAt = 0L
         UpdateProgress.addObserver(observer)
+        postSummary(app)
         runCatching { ContextCompat.startForegroundService(app, Intent(app, BatchForegroundService::class.java)) }
             .onFailure { Log.w(TAG, "foreground service not started: ${it.message}") }
     }
@@ -112,6 +117,7 @@ object BatchForeground {
         val app = ctx.applicationContext
         if (foreground) runCatching { app.stopService(Intent(app, BatchForegroundService::class.java)) }
         runCatching { nm(app).cancel(ID) }
+        runCatching { FleetNotify.cancelBackgroundSummary(app) }   // #1944 the card and its group summary go together
         appCtx = null
     }
 
@@ -136,7 +142,16 @@ object BatchForeground {
         val open = (runCatching { launch(ctx) }.getOrNull() ?: ctx.packageManager.getLaunchIntentForPackage(ctx.packageName))?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let {
             PendingIntent.getActivity(ctx, ID, it, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
-        return FleetNotify.keepAliveNotification(ctx, icon(), ctx.applicationInfo.loadLabel(ctx.packageManager).toString(), lines, stop, open)
+        val fields = runCatching { cardFields?.invoke(ctx) }.getOrNull()?.map { BackgroundApps.Field(it.first, it.second) }
+        return FleetNotify.keepAliveNotification(ctx, icon(), ctx.applicationInfo.loadLabel(ctx.packageManager).toString(), lines, stop, open,
+            groupKey = FleetNotify.GROUP_RUNNING,   // #1944 one "running in the background" group
+            cardKind = BackgroundCards.STORE, cardFields = fields)   // #1965 the Background Apps card: Stop, Open, the declared fields
+    }
+
+    /** #1944 The group summary card, up while the Store runs in the background. */
+    private fun postSummary(ctx: Context) = runCatching {
+        FleetNotify.postBackgroundSummary(ctx, icon(), ctx.applicationInfo.loadLabel(ctx.packageManager).toString(),
+            listOf("Updates running"))
     }
 
     /** For a CoroutineWorker's setForeground / getForegroundInfo. */
@@ -196,6 +211,7 @@ class BatchForegroundService : Service() {
         DataSyncBudget.end(this, budgetToken); budgetToken = 0L
         BatchForeground.foreground = false
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        if (!BatchForeground.isHeld()) runCatching { FleetNotify.cancelBackgroundSummary(this) }   // #1944
         super.onDestroy()
     }
 }

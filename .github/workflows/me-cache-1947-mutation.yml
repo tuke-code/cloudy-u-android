@@ -1,0 +1,114 @@
+# #1947 Lnktree cache mutation runs: each applies ONE deliberate break to the page cache (LnktreeCache.kt) and runs Cloud Me's JVM suite,
+# whose named test must catch it. The JVM suite itself is RED (expected); the JOB is green only when the verdict step finds the named test failed
+# (KILLED); a mutation whose named test stayed green, or never ran, fails the job. Manual only.
+name: me-cache-1947-mutation
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'serve-incomplete | blocking-subresource | no-replan | no-tombstone | cache-first | not-armed-uncached | no-hard-refresh | trim-by-age | release-clears-copy | keep-ignored'
+        required: true
+permissions:
+  contents: read
+env:
+  WORK_DIR: ac_cloud-me
+jobs:
+  mutate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply mutation ${{ inputs.name }}
+        run: |
+          F=ac_cloud-me/app/src/main/java/com/diegonmarcos/cloudme/LnktreeCache.kt
+          case "${{ inputs.name }}" in
+            # cached HTML without its CSS/JS is served again (the unstyled page)
+            serve-incomplete)      sed -i 's/if (!store.paintable(pageId, url)) { revalidate(url); return null }//' $F ;;
+            # a sub-resource miss blocks on its own fetch again
+            blocking-subresource)  sed -i 's/if (pageUrl != null \&\& CacheKey.normalize(url) != CacheKey.normalize(pageUrl)) { revalidate(url); return null }//' $F ;;
+            # an incomplete fresh page is not planned for a refetch
+            no-replan)             sed -i 's/st == CacheState.FRESH \&\& !store.complete(p.id, p.url)/false/' $F ;;
+            # a 404 sub-resource is not stored, so the page stays incomplete for ever
+            no-tombstone)          sed -i 's/if (r.status == 404 || r.status == 410) store.put(p.id, u, r.mime, r.encoding, r.status, r.body)/Unit/' $F ;;
+            # #1947 network_first reverted to cache-first: the cache wins online again
+            cache-first)           sed -i 's/if (cfg.networkFirst \&\& networkFirstTarget(url, pageUrl))/if (false)/' $F ;;
+            # the pull-down is armed only on cached pages (the old behaviour)
+            not-armed-uncached)    sed -i 's/fun armed(cached: Boolean): Boolean = true/fun armed(cached: Boolean): Boolean = cached/' $(dirname $F)/WebPullRefresh.kt ;;
+            # the pull-down no longer deletes the cached page's files
+            no-hard-refresh)       sed -i 's/if (cached) hardRefresh()/if (false) hardRefresh()/' $(dirname $F)/WebPullRefresh.kt ;;
+            # trim evicts the oldest entry whatever it is again: a section's images evict the opened page's html/css/js (the empty offline copy)
+            trim-by-age)           sed -i 's/compareBy({ it.second }, { it.third })/compareBy({ 0 }, { it.third })/' $F ;;
+            # the pager's release drops the cached copy under network_first too (the offline copy vanishes after the first open)
+            release-clears-copy)   sed -i 's/val releaseDropsCache: Boolean get() = !networkFirst/val releaseDropsCache: Boolean get() = true/' $F ;;
+            # trim forgets the pages opened this session: the cap wipes the page just opened (the oldest)
+            keep-ignored)          sed -i 's/it.parentFile?.name in keep/false/' $F ;;
+            *) echo "unknown mutation"; exit 2 ;;
+          esac
+          git diff --stat
+          test -n "$(git diff --name-only)" || { echo "mutation target missing"; exit 3; }
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 platforms;android-35 platforms;android-26 build-tools;35.0.0 build-tools;34.0.0 platform-tools"
+      - name: Set up Gradle 8.10.2 (cached)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.10.2"
+      # ── MANAGED-GRADLE-CACHE-HYGIENE: injected by cloud-android-gradle-cache-hygiene.py ──
+      # Edit 1_cicd/src/actions/gradle-cache-hygiene, never this block.
+      - name: Gradle cache hygiene (retry failed resolution, never cache a failed lookup)
+        uses: ./.github/actions/gradle-cache-hygiene
+      # ── end MANAGED-GRADLE-CACHE-HYGIENE ──
+      - name: Checkout vault (shared Android signing key, read by app/build.gradle at configuration)
+        uses: actions/checkout@v4
+        with:
+          repository: diegonmarcos/cloud-me-pvt-vault
+          token: ${{ secrets.ANDROID_SIGNING_VAULT_TOKEN }}
+          path: .vault
+      - name: Install jq
+        run: sudo apt-get update -y && sudo apt-get install -y jq
+      - name: Install ORAS + sops (pinned)
+        uses: ./.github/actions/install-pinned-tools
+        with:
+          tools: oras sops
+      - name: JVM unit tests (RED expected; the verdict step reads the XML)
+        env:
+          BYPASS_NIX: "1"
+          VAULT_DIR: ${{ github.workspace }}/.vault
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: sh 1_cicd/dist/scripts/cloud-android-test-engine.sh unit "$WORK_DIR" || true
+      - name: Verdict (KILLED = the named test failed)
+        env:
+          M: ${{ inputs.name }}
+        run: |
+          case "$M" in
+            serve-incomplete)     C=LnktreeCacheTest; N="cached html without its css or js is incomplete and is not served" ;;
+            blocking-subresource) C=LnktreeCacheTest; N="a sub-resource miss goes to the network at once and is filled in the background, never a blocking fetch" ;;
+            no-replan|no-tombstone) C=LnktreeCacheTest; N="a prefetch whose css failed leaves the page planned again, and a 404 tombstone does not" ;;
+            cache-first)          C=WebPullRefresh1947Test; N="online the network wins even when a fresh cache entry exists, and the entry is refreshed" ;;
+            not-armed-uncached)   C=WebPullRefresh1947Test; N="the refresh is armed for cached and non-cached pages" ;;
+            trim-by-age)          C=WebPullRefresh1947Test; N="trim evicts images before a page's html, css and js, so an opened page keeps its offline copy" ;;
+            release-clears-copy)  C=WebStrategy1947Test; N="a released page keeps its offline copy under network_first and drops it under stale_while_revalidate" ;;
+            keep-ignored)         C=WebPullRefresh1947Test; N="trim spares the pages opened this session, even when they are the oldest" ;;
+            no-hard-refresh)      C=WebPullRefresh1947Test; N="a cached page runs the hard refresh, empties the cache and reloads, in that order" ;;
+          esac
+          X="$(find ac_cloud-me/app/build -path '*test-results*' -name "TEST-*.$C.xml" | head -1)"
+          [ -n "$X" ] || { echo "::error::LEG ERROR $M: no result for $C (did not compile or run); not a kill"; exit 1; }
+          python3 -I - "$X" "$N" "$M" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          path, want, leg = sys.argv[1:]
+          cases = {c.get("name"): c for c in ET.parse(path).getroot().iter("testcase")}
+          failed = sorted(n for n, c in cases.items() if c.find("failure") is not None or c.find("error") is not None)
+          print("failed tests:", failed)
+          if want not in cases: print("::error::LEG ERROR %s: the named test did not run: %s" % (leg, want)); sys.exit(1)
+          if want not in failed: print("::error::LEG SURVIVED %s: the named test stayed green: %s" % (leg, want)); sys.exit(1)
+          print("KILLED %s by: %s" % (leg, want))
+          PY
+      - name: Failed tests
+        if: always()
+        run: grep -rl "<failure" --include="TEST-*.xml" ac_cloud-me/app/build 2>/dev/null | xargs -r grep -h -o 'testcase name="[^"]*"' | head -40 || true
